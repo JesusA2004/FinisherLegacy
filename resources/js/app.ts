@@ -15,7 +15,7 @@ const PUBLIC_PAGES = new Set([
     'Terms',
     'Contact',
 ]);
-const PUBLIC_PREFIXES = ['events/', 'legacy-code/'];
+const PUBLIC_PREFIXES = ['events/', 'legacy-code/', 'profile/'];
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

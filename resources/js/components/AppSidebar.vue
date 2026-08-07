@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid } from '@lucide/vue';
-import AppLogo from '@/components/AppLogo.vue';
-import NavFooter from '@/components/NavFooter.vue';
+import { Award, Compass, LayoutGrid, UserCircle } from '@lucide/vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
+import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -15,6 +14,9 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as medalsIndex } from '@/routes/dashboard/medals';
+import { edit as editProfile } from '@/routes/dashboard/profile';
+import { index as eventsIndex } from '@/routes/events';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -23,18 +25,20 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-];
-
-const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: FolderGit2,
+        title: 'Mi Legacy Profile',
+        href: editProfile(),
+        icon: UserCircle,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
+        title: 'Mis Medallas',
+        href: medalsIndex(),
+        icon: Award,
+    },
+    {
+        title: 'Explorar Eventos',
+        href: eventsIndex(),
+        icon: Compass,
     },
 ];
 </script>
@@ -46,7 +50,7 @@ const footerNavItems: NavItem[] = [
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
                         <Link :href="dashboard()">
-                            <AppLogo />
+                            <FinisherLegacyLogo size="sm" />
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -58,7 +62,6 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>

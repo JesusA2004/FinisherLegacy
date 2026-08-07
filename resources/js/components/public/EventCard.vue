@@ -49,7 +49,19 @@ const formattedDate = computed(() =>
                 loading="lazy"
                 class="size-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div v-else class="flex size-full items-center justify-center">
+            <div
+                v-else
+                class="flex size-full items-center justify-center"
+                style="
+                    background-image: repeating-linear-gradient(
+                        100deg,
+                        rgba(255, 255, 255, 0.04) 0px,
+                        rgba(255, 255, 255, 0.04) 1px,
+                        transparent 1px,
+                        transparent 4px
+                    );
+                "
+            >
                 <span
                     class="text-4xl font-black tracking-tight text-white/10 uppercase"
                 >

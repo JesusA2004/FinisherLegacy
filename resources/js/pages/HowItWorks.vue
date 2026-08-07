@@ -4,6 +4,7 @@ import { Award, IdCard, Medal, QrCode } from '@lucide/vue';
 import CTASection from '@/components/public/CTASection.vue';
 import HowItWorksSteps from '@/components/public/HowItWorksSteps.vue';
 import PlateFlowCard from '@/components/public/PlateFlowCard.vue';
+import PlateShowcase from '@/components/public/PlateShowcase.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 import { register } from '@/routes';
 
@@ -94,32 +95,39 @@ const afterPlate = [
     </section>
 
     <section class="border-b border-white/5 bg-fl-graphite/20 py-24">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="La cadena Finisher Legacy"
                 title="De lo físico a lo digital"
                 description="Cada elemento existe para preservar el anterior. Tu medalla no desaparece: se convierte en algo que puedes volver a visitar."
                 class="mb-14"
             />
-            <div
-                class="flex flex-col items-center gap-6 rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 sm:flex-row sm:justify-center sm:gap-4"
-            >
-                <template v-for="(step, index) in chain" :key="step.label">
-                    <div class="flex flex-col items-center gap-3 text-center">
+
+            <div class="grid items-center gap-12 lg:grid-cols-2">
+                <PlateShowcase />
+
+                <div
+                    class="flex flex-col items-center gap-6 rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 sm:flex-row sm:justify-center sm:gap-4 lg:flex-col lg:items-start"
+                >
+                    <template v-for="(step, index) in chain" :key="step.label">
                         <div
-                            class="flex size-16 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold"
+                            class="flex items-center gap-3 text-center lg:text-left"
                         >
-                            <component :is="step.icon" class="size-7" />
+                            <div
+                                class="flex size-12 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold"
+                            >
+                                <component :is="step.icon" class="size-5" />
+                            </div>
+                            <span class="text-sm font-medium text-white/80">{{
+                                step.label
+                            }}</span>
                         </div>
-                        <span class="text-sm font-medium text-white/80">{{
-                            step.label
-                        }}</span>
-                    </div>
-                    <div
-                        v-if="index < chain.length - 1"
-                        class="h-6 w-px bg-fl-gold/20 sm:h-px sm:w-10"
-                    />
-                </template>
+                        <div
+                            v-if="index < chain.length - 1"
+                            class="h-6 w-px bg-fl-gold/20 sm:h-px sm:w-10 lg:ml-6 lg:h-6 lg:w-px"
+                        />
+                    </template>
+                </div>
             </div>
         </div>
     </section>

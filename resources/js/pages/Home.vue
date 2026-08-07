@@ -6,7 +6,9 @@ import HeroSection from '@/components/public/HeroSection.vue';
 import HowItWorksSteps from '@/components/public/HowItWorksSteps.vue';
 import LegacyCodePreview from '@/components/public/LegacyCodePreview.vue';
 import LegacyProfilePreview from '@/components/public/LegacyProfilePreview.vue';
+import MascotSpotlight from '@/components/public/MascotSpotlight.vue';
 import PlateFlowCard from '@/components/public/PlateFlowCard.vue';
+import PlateShowcase from '@/components/public/PlateShowcase.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 import { howItWorks, register } from '@/routes';
 import { index as eventsIndex } from '@/routes/events';
@@ -95,15 +97,18 @@ TU HISTORIA NO."
 
     <!-- Legacy Code -->
     <section class="border-t border-white/5 py-24">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Legacy Code"
                 title="UN CÓDIGO.
 TODA UNA HISTORIA."
                 description="Cada placa Finisher Legacy incluye un Legacy Code único. Al escanearlo, el Athlete podrá acceder al registro digital asociado con ese logro."
-                class="mb-12"
+                class="mb-14"
             />
-            <LegacyCodePreview />
+            <div class="grid items-center gap-12 lg:grid-cols-2">
+                <PlateShowcase />
+                <LegacyCodePreview />
+            </div>
         </div>
     </section>
 
@@ -179,6 +184,15 @@ TODA UNA HISTORIA."
                     EXPLORAR EVENTOS →
                 </Link>
             </div>
+        </div>
+    </section>
+
+    <section class="border-t border-white/5 bg-fl-graphite/20 py-20">
+        <div class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <MascotSpotlight
+                title="No colecciones objetos. Preserva momentos."
+                description="Muy pronto conocerás a la mascota Finisher Legacy en eventos y en tu propio Legacy Profile."
+            />
         </div>
     </section>
 

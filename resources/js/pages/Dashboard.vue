@@ -1,47 +1,278 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import {
+    Award,
+    Check,
+    Compass,
+    Copy,
+    CreditCard,
+    QrCode,
+    Trophy,
+    UserCircle,
+} from '@lucide/vue';
+import { computed, ref } from 'vue';
+import MascotEmptyState from '@/components/public/MascotEmptyState.vue';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { dashboard } from '@/routes';
+import {
+    create as createMedal,
+    index as medalsIndex,
+} from '@/routes/dashboard/medals';
+import { edit as editProfile } from '@/routes/dashboard/profile';
+import { index as eventsIndex } from '@/routes/events';
+import { show as legacyCodeShow } from '@/routes/legacy-code';
+import type { DashboardProfileSummary, DashboardStats } from '@/types';
 
 defineOptions({
     layout: {
-        breadcrumbs: [
-            {
-                title: 'Dashboard',
-                href: dashboard(),
-            },
-        ],
+        breadcrumbs: [{ title: 'Dashboard', href: dashboard() }],
     },
 });
+
+const { legacyId, profile, stats } = defineProps<{
+    legacyId: string | null;
+    profile: DashboardProfileSummary | null;
+    stats: DashboardStats;
+}>();
+
+const page = usePage();
+const firstName = computed(() => page.props.auth.user.first_name);
+
+const copied = ref(false);
+
+async function copyLegacyId() {
+    if (!legacyId) {
+        return;
+    }
+
+    await navigator.clipboard.writeText(legacyId);
+    copied.value = true;
+    setTimeout(() => (copied.value = false), 1800);
+}
+
+const legacyCodeInput = ref('');
+const legacyCodeDialogOpen = ref(false);
+
+function goToLegacyCode() {
+    if (!legacyCodeInput.value.trim()) {
+        return;
+    }
+
+    router.visit(
+        legacyCodeShow(legacyCodeInput.value.trim().toUpperCase()).url,
+    );
+}
+
+const statCards = computed(() => [
+    {
+        label: 'Mis medallas',
+        value: stats.medals,
+        icon: Award,
+        href: medalsIndex(),
+    },
+    {
+        label: 'Mis eventos',
+        value: stats.events,
+        icon: Trophy,
+        href: eventsIndex(),
+    },
+    { label: 'Mis placas', value: stats.plates, icon: CreditCard, href: null },
+    {
+        label: 'Legacy Codes',
+        value: stats.legacyCodes,
+        icon: QrCode,
+        href: null,
+    },
+]);
 </script>
 
 <template>
     <Head title="Dashboard" />
 
-    <div
-        class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
-    >
-        <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div
-                class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
-            >
-                <PlaceholderPattern />
-            </div>
-            <div
-                class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
-            >
-                <PlaceholderPattern />
-            </div>
-            <div
-                class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
-            >
-                <PlaceholderPattern />
-            </div>
-        </div>
+    <div class="flex flex-col gap-6 p-4 md:p-6">
+        <!-- Welcome + Legacy ID -->
         <div
-            class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
+            class="relative overflow-hidden rounded-2xl border border-fl-gold/20 bg-gradient-to-br from-fl-graphite via-fl-black to-fl-black p-6 md:p-8"
         >
-            <PlaceholderPattern />
+            <div
+                class="absolute -top-20 -right-20 size-56 rounded-full bg-fl-gold/10 blur-3xl"
+            />
+            <div
+                class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
+            >
+                <div>
+                    <p class="text-sm text-white/50">Hola,</p>
+                    <h1 class="text-2xl font-bold text-white md:text-3xl">
+                        {{ firstName }}
+                    </h1>
+                </div>
+
+                <div
+                    v-if="legacyId"
+                    class="flex items-center gap-3 rounded-xl border border-fl-gold/30 bg-fl-black/60 px-4 py-3"
+                >
+                    <div>
+                        <p
+                            class="text-[10px] font-medium tracking-widest text-white/40 uppercase"
+                        >
+                            Legacy ID
+                        </p>
+                        <p class="font-mono text-lg font-semibold text-fl-gold">
+                            {{ legacyId }}
+                        </p>
+                    </div>
+                    <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        class="text-white/60 hover:text-fl-gold"
+                        aria-label="Copiar Legacy ID"
+                        @click="copyLegacyId"
+                    >
+                        <Check v-if="copied" class="size-4" />
+                        <Copy v-else class="size-4" />
+                    </Button>
+                </div>
+            </div>
         </div>
+
+        <!-- Profile prompt -->
+        <div
+            v-if="!profile"
+            class="rounded-2xl border border-dashed border-fl-gold/30 bg-fl-graphite/40 p-6 text-center"
+        >
+            <p class="font-medium text-white">
+                Aún no has completado tu Legacy Profile.
+            </p>
+            <p class="mt-1 text-sm text-white/50">
+                Elige tu username y hazlo público cuando quieras compartir tu
+                colección.
+            </p>
+            <Button
+                as-child
+                class="mt-4 bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+            >
+                <Link :href="editProfile()">Completar mi Legacy Profile</Link>
+            </Button>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <component
+                :is="card.href ? Link : 'div'"
+                v-for="card in statCards"
+                :key="card.label"
+                :href="card.href ?? undefined"
+                class="rounded-xl border border-white/10 bg-fl-graphite/40 p-5 transition-colors"
+                :class="card.href ? 'hover:border-fl-gold/30' : ''"
+            >
+                <component :is="card.icon" class="size-5 text-fl-gold" />
+                <p class="mt-3 text-2xl font-bold text-white">
+                    {{ card.value }}
+                </p>
+                <p class="text-sm text-white/50">{{ card.label }}</p>
+            </component>
+        </div>
+
+        <!-- Quick actions -->
+        <div>
+            <h2
+                class="mb-3 text-sm font-semibold tracking-wide text-white/60 uppercase"
+            >
+                Acciones rápidas
+            </h2>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Button
+                    as-child
+                    variant="outline"
+                    class="justify-start gap-2 border-white/10 bg-fl-graphite/40 text-white hover:border-fl-gold/30 hover:bg-fl-graphite/60 hover:text-white"
+                >
+                    <Link :href="createMedal()">
+                        <Award class="size-4 text-fl-gold" />
+                        Agregar medalla
+                    </Link>
+                </Button>
+                <Button
+                    as-child
+                    variant="outline"
+                    class="justify-start gap-2 border-white/10 bg-fl-graphite/40 text-white hover:border-fl-gold/30 hover:bg-fl-graphite/60 hover:text-white"
+                >
+                    <Link :href="editProfile()">
+                        <UserCircle class="size-4 text-fl-gold" />
+                        Editar mi Legacy Profile
+                    </Link>
+                </Button>
+                <Button
+                    as-child
+                    variant="outline"
+                    class="justify-start gap-2 border-white/10 bg-fl-graphite/40 text-white hover:border-fl-gold/30 hover:bg-fl-graphite/60 hover:text-white"
+                >
+                    <Link :href="eventsIndex()">
+                        <Compass class="size-4 text-fl-gold" />
+                        Explorar eventos
+                    </Link>
+                </Button>
+
+                <Dialog v-model:open="legacyCodeDialogOpen">
+                    <DialogTrigger as-child>
+                        <Button
+                            variant="outline"
+                            class="justify-start gap-2 border-white/10 bg-fl-graphite/40 text-white hover:border-fl-gold/30 hover:bg-fl-graphite/60 hover:text-white"
+                        >
+                            <QrCode class="size-4 text-fl-gold" />
+                            Vincular Legacy Code
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent
+                        class="dark border-white/10 bg-fl-graphite text-white"
+                    >
+                        <DialogHeader>
+                            <DialogTitle>Buscar Legacy Code</DialogTitle>
+                            <DialogDescription class="text-white/50">
+                                Ingresa el código impreso en tu placa para ver
+                                su información.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Input
+                            v-model="legacyCodeInput"
+                            placeholder="FL-XXXXXXX"
+                            class="border-white/10 bg-fl-black text-white placeholder:text-white/30"
+                            @keyup.enter="goToLegacyCode"
+                        />
+                        <DialogFooter>
+                            <Button
+                                class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                                @click="goToLegacyCode"
+                            >
+                                Buscar
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </div>
+
+        <!-- Empty state helper when brand new -->
+        <MascotEmptyState
+            v-if="stats.medals === 0"
+            title="Tu colección comienza con una meta."
+            description="Registra tu primera medalla y empieza a construir tu Legacy."
+        >
+            <Button
+                as-child
+                class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+            >
+                <Link :href="createMedal()">Agregar mi primera medalla</Link>
+            </Button>
+        </MascotEmptyState>
     </div>
 </template>

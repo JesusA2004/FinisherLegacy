@@ -73,3 +73,9 @@ export type LegacyCodePlate = {
     event_date: string | null;
     status: string;
 };
+
+export type LegacyCodeAthlete = {
+    username: string;
+    city: string | null;
+    sport: string | null;
+};

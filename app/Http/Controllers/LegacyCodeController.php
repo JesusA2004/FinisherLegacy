@@ -13,7 +13,7 @@ class LegacyCodeController extends Controller
     {
         $legacyCode = LegacyCode::query()
             ->where('code', $code)
-            ->with('plate')
+            ->with(['plate', 'user.athleteProfile.mainSport'])
             ->first();
 
         abort_unless($legacyCode !== null, 404);
@@ -26,10 +26,13 @@ class LegacyCodeController extends Controller
                 'available' => false,
                 'linked' => false,
                 'plate' => null,
+                'athlete' => null,
             ]);
         }
 
         $plate = $legacyCode->plate;
+        $profile = $legacyCode->user?->athleteProfile;
+        $showProfile = $profile && $profile->profile_visibility->value === 'public';
 
         return Inertia::render('legacy-code/Show', [
             'code' => $legacyCode->code,
@@ -43,6 +46,11 @@ class LegacyCodeController extends Controller
                 'pace' => $plate->pace,
                 'event_date' => $plate->event_date?->toDateString(),
                 'status' => $plate->status->value,
+            ] : null,
+            'athlete' => $showProfile ? [
+                'username' => $profile->username,
+                'city' => $profile->city,
+                'sport' => $profile->mainSport?->name,
             ] : null,
         ]);
     }
