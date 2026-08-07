@@ -1,8 +1,12 @@
 export type User = {
     id: number;
+    first_name: string;
+    last_name: string;
     name: string;
     email: string;
+    phone?: string | null;
     avatar?: string;
+    status: 'pending' | 'active' | 'suspended' | 'blocked';
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;

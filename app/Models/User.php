@@ -2,34 +2,48 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property int $id
- * @property string $name
+ * @property string $first_name
+ * @property string $last_name
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property string|null $phone
+ * @property string|null $avatar_path
+ * @property UserStatus $status
+ * @property Carbon|null $last_login_at
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read string $name
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['first_name', 'last_name', 'email', 'password', 'phone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+
+    protected $appends = ['name'];
 
     /**
      * Get the attributes that should be cast.
@@ -40,7 +54,63 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'password' => 'hashed',
+            'status' => UserStatus::class,
         ];
+    }
+
+    /**
+     * Full name, kept for compatibility with UI built against a single "name" field.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => trim("{$this->first_name} {$this->last_name}"),
+        );
+    }
+
+    /** @return HasOne<AthleteProfile, $this> */
+    public function athleteProfile(): HasOne
+    {
+        return $this->hasOne(AthleteProfile::class);
+    }
+
+    /** @return HasOne<LegacyId, $this> */
+    public function legacyId(): HasOne
+    {
+        return $this->hasOne(LegacyId::class);
+    }
+
+    /** @return HasMany<Medal, $this> */
+    public function medals(): HasMany
+    {
+        return $this->hasMany(Medal::class);
+    }
+
+    /** @return HasMany<Plate, $this> */
+    public function plates(): HasMany
+    {
+        return $this->hasMany(Plate::class);
+    }
+
+    /** @return HasMany<LegacyCode, $this> */
+    public function legacyCodes(): HasMany
+    {
+        return $this->hasMany(LegacyCode::class);
+    }
+
+    /** @return HasMany<EventParticipant, $this> */
+    public function eventParticipations(): HasMany
+    {
+        return $this->hasMany(EventParticipant::class);
+    }
+
+    /** @return HasMany<EventStaffAssignment, $this> */
+    public function staffAssignments(): HasMany
+    {
+        return $this->hasMany(EventStaffAssignment::class);
     }
 }
