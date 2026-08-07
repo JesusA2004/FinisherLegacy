@@ -16,6 +16,7 @@ use App\Models\EventParticipant;
 use App\Models\EventRace;
 use App\Models\EventStaffAssignment;
 use App\Models\LegacyCode;
+use App\Models\Medal;
 use App\Models\Organizer;
 use App\Models\Plate;
 use App\Models\PlateTemplate;
@@ -58,6 +59,30 @@ class DemoDataSeeder extends Seeder
         $this->createQuickPlates($edition, $template, 6);
         $this->createPreregistrations($edition, $races, 30);
         $this->createSampleIncident($edition, $participants->skip(1)->first(), $staff['event_operator']);
+        $this->createDemoMedals($athlete);
+    }
+
+    private function createDemoMedals(User $athlete): void
+    {
+        foreach ([
+            ['title' => 'Maratón CDMX 2026', 'distance_label' => '42K', 'official_time' => '03:47:21', 'city' => 'Ciudad de México'],
+            ['title' => 'Carrera Nocturna Guadalajara', 'distance_label' => '10K', 'official_time' => '00:48:03', 'city' => 'Guadalajara'],
+            ['title' => 'Medio Maratón Querétaro', 'distance_label' => '21K', 'official_time' => '01:52:11', 'city' => 'Querétaro'],
+        ] as $medal) {
+            Medal::query()->firstOrCreate(
+                ['user_id' => $athlete->id, 'title' => $medal['title']],
+                [
+                    'event_name_manual' => $medal['title'],
+                    'event_date' => now()->subMonths(random_int(1, 18)),
+                    'distance_label' => $medal['distance_label'],
+                    'official_time' => $medal['official_time'],
+                    'city' => $medal['city'],
+                    'country' => 'México',
+                    'visibility' => 'public',
+                    'status' => 'active',
+                ],
+            );
+        }
     }
 
     /**

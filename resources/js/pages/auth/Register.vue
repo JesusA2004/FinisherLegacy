@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { store } from '@/routes/register';
 import { login } from '@/routes';
+import { store } from '@/routes/register';
 
 defineOptions({
     layout: {
         title: 'Crea tu Legacy ID',
-        description: 'Tu meta termina. Tu historia no. Regístrate para empezar.',
+        description:
+            'Tu meta termina. Tu historia no. Regístrate para empezar.',
     },
 });
 </script>
@@ -99,7 +100,7 @@ defineOptions({
 
             <Button
                 type="submit"
-                class="mt-2 w-full"
+                class="mt-2 w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
                 :tabindex="6"
                 :disabled="processing"
                 data-test="register-button"
@@ -108,9 +109,14 @@ defineOptions({
                 Crear mi Legacy
             </Button>
 
-            <p class="text-center text-sm text-muted-foreground">
+            <p class="text-center text-sm text-white/50">
                 ¿Ya tienes cuenta?
-                <TextLink :href="login()" :tabindex="7">Inicia sesión</TextLink>
+                <TextLink
+                    :href="login()"
+                    :tabindex="7"
+                    class="text-fl-gold decoration-fl-gold/40"
+                    >Inicia sesión</TextLink
+                >
             </p>
         </div>
     </Form>

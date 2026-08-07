@@ -7,6 +7,7 @@ use App\Enums\OperationMode;
 use App\Enums\ResultsStatus;
 use Database\Factories\EventEditionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,8 @@ class EventEdition extends Model
 {
     /** @use HasFactory<EventEditionFactory> */
     use HasFactory;
+
+    protected $appends = ['phase'];
 
     protected function casts(): array
     {
@@ -37,6 +40,23 @@ class EventEdition extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
+    }
+
+    /**
+     * Public-facing phase, derived from the event date rather than stored: "upcoming",
+     * "ongoing", or "finished". Distinct from `status`, which is the admin lifecycle.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function phase(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): string => match (true) {
+                $this->event_date->isFuture() => 'upcoming',
+                $this->event_date->isToday() => 'ongoing',
+                default => 'finished',
+            },
+        );
     }
 
     /** @return HasMany<EventRace, $this> */

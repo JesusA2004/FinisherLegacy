@@ -47,4 +47,9 @@ class Event extends Model
     {
         return $this->hasMany(Medal::class);
     }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 }

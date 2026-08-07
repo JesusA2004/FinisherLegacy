@@ -1,41 +1,86 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { Award, IdCard, Medal, QrCode } from '@lucide/vue';
+import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
 import { home } from '@/routes';
 
 defineProps<{
     title?: string;
     description?: string;
 }>();
+
+const chain = [
+    { icon: Medal, label: 'Medalla física' },
+    { icon: Award, label: 'Placa' },
+    { icon: QrCode, label: 'Legacy Code' },
+    { icon: IdCard, label: 'Legacy Profile' },
+];
 </script>
 
 <template>
-    <div
-        class="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10"
-    >
-        <div class="w-full max-w-sm">
-            <div class="flex flex-col gap-8">
-                <div class="flex flex-col items-center gap-4">
-                    <Link
-                        :href="home()"
-                        class="flex flex-col items-center gap-2 font-medium"
-                    >
+    <div class="dark grid min-h-svh bg-fl-black lg:grid-cols-2">
+        <div
+            class="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black p-12 lg:flex"
+        >
+            <div
+                class="absolute -top-24 -left-24 size-72 rounded-full bg-fl-gold/10 blur-3xl"
+            />
+
+            <Link :href="home()" class="relative z-10">
+                <FinisherLegacyLogo />
+            </Link>
+
+            <div class="relative z-10 max-w-sm">
+                <p class="text-2xl leading-snug font-bold text-white">
+                    Tu meta termina.
+                    <span class="text-fl-gold">Tu historia no.</span>
+                </p>
+                <p class="mt-4 text-sm leading-relaxed text-white/50">
+                    Cada Legacy ID conecta tus logros deportivos con una
+                    historia que puedes conservar, revivir y compartir.
+                </p>
+            </div>
+
+            <div class="relative z-10 flex flex-col gap-3">
+                <template v-for="(step, index) in chain" :key="step.label">
+                    <div class="flex items-center gap-3">
                         <div
-                            class="mb-1 flex h-9 w-9 items-center justify-center rounded-md"
+                            class="flex size-9 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold"
                         >
-                            <AppLogoIcon
-                                class="size-9 fill-current text-[var(--foreground)] dark:text-white"
-                            />
+                            <component :is="step.icon" class="size-4" />
                         </div>
-                        <span class="sr-only">{{ title }}</span>
-                    </Link>
-                    <div class="space-y-2 text-center">
-                        <h1 class="text-xl font-medium">{{ title }}</h1>
-                        <p class="text-center text-sm text-muted-foreground">
-                            {{ description }}
-                        </p>
+                        <span class="text-sm text-white/70">{{
+                            step.label
+                        }}</span>
                     </div>
+                    <div
+                        v-if="index < chain.length - 1"
+                        class="ml-[18px] h-4 w-px bg-fl-gold/20"
+                    />
+                </template>
+            </div>
+        </div>
+
+        <div
+            class="flex flex-col items-center justify-center px-6 py-16 sm:px-10"
+        >
+            <div class="w-full max-w-sm">
+                <Link :href="home()" class="mb-8 flex justify-center lg:hidden">
+                    <FinisherLegacyLogo />
+                </Link>
+
+                <div
+                    v-if="title || description"
+                    class="mb-8 space-y-2 text-center lg:text-left"
+                >
+                    <h1 v-if="title" class="text-2xl font-bold text-white">
+                        {{ title }}
+                    </h1>
+                    <p v-if="description" class="text-sm text-white/50">
+                        {{ description }}
+                    </p>
                 </div>
+
                 <slot />
             </div>
         </div>

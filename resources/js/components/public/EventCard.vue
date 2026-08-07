@@ -1,0 +1,109 @@
+<script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
+import { ArrowRight, MapPin } from '@lucide/vue';
+import { computed } from 'vue';
+import { Badge } from '@/components/ui/badge';
+import { show as eventShow } from '@/routes/events';
+import type { EventEditionCard, EventPhase } from '@/types';
+
+const { edition } = defineProps<{
+    edition: EventEditionCard;
+}>();
+
+const phaseCopy: Record<EventPhase, { label: string; class: string }> = {
+    upcoming: {
+        label: 'Próximo',
+        class: 'bg-fl-gold/15 text-fl-gold border-fl-gold/30',
+    },
+    ongoing: {
+        label: 'En curso',
+        class: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    },
+    finished: {
+        label: 'Finalizado',
+        class: 'bg-white/10 text-white/50 border-white/15',
+    },
+};
+
+const formattedDate = computed(() =>
+    new Date(`${edition.event_date}T00:00:00`).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    }),
+);
+</script>
+
+<template>
+    <Link
+        :href="eventShow(edition.event.slug)"
+        class="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-fl-graphite/60 transition-all duration-300 hover:-translate-y-1 hover:border-fl-gold/40 hover:shadow-[0_0_40px_-12px_rgba(212,175,106,0.35)]"
+    >
+        <div
+            class="relative aspect-16/9 w-full overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black"
+        >
+            <img
+                v-if="edition.event.cover_url"
+                :src="edition.event.cover_url"
+                :alt="edition.event.name"
+                loading="lazy"
+                class="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div v-else class="flex size-full items-center justify-center">
+                <span
+                    class="text-4xl font-black tracking-tight text-white/10 uppercase"
+                >
+                    {{ edition.event.sport.name }}
+                </span>
+            </div>
+
+            <Badge
+                variant="outline"
+                class="absolute top-3 left-3 backdrop-blur-sm"
+                :class="phaseCopy[edition.phase].class"
+            >
+                {{ phaseCopy[edition.phase].label }}
+            </Badge>
+        </div>
+
+        <div class="flex flex-1 flex-col gap-3 p-5">
+            <span
+                class="text-xs font-semibold tracking-[0.2em] text-fl-gold uppercase"
+            >
+                {{ edition.event.sport.name }}
+            </span>
+
+            <h3
+                class="text-lg font-semibold text-white transition-colors group-hover:text-fl-gold"
+            >
+                {{ edition.event.name }}
+            </h3>
+
+            <div class="flex items-center gap-1.5 text-sm text-white/50">
+                <MapPin class="size-3.5 shrink-0" />
+                <span class="truncate">{{ edition.city }}</span>
+                <span aria-hidden="true">·</span>
+                <span class="capitalize">{{ formattedDate }}</span>
+            </div>
+
+            <div v-if="edition.distances.length" class="flex flex-wrap gap-1.5">
+                <span
+                    v-for="distance in edition.distances"
+                    :key="distance"
+                    class="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-white/60"
+                >
+                    {{ distance }}
+                </span>
+            </div>
+
+            <div
+                class="mt-auto flex items-center gap-1.5 pt-2 text-sm font-medium text-fl-gold"
+            >
+                Ver evento
+                <ArrowRight
+                    class="size-3.5 transition-transform group-hover:translate-x-1"
+                />
+            </div>
+        </div>
+    </Link>
+</template>
