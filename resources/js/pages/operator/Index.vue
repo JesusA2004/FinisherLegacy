@@ -148,7 +148,10 @@ function submitQuickPlate() {
             </template>
 
             <template v-else>
-                <div class="relative mb-4">
+                <p class="mb-2 text-xs font-semibold tracking-[0.2em] text-white/40 uppercase">
+                    Buscar corredor
+                </p>
+                <div class="relative mb-3">
                     <Search
                         class="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-white/40"
                     />
@@ -156,10 +159,19 @@ function submitQuickPlate() {
                         v-model="query"
                         autofocus
                         placeholder="Número de corredor o nombre…"
-                        class="h-14 border-white/10 bg-fl-graphite/60 pl-12 text-lg text-white placeholder:text-white/30"
+                        class="fl-focus-glow h-14 border-white/10 bg-fl-graphite/60 pl-12 text-lg text-white placeholder:text-white/30"
                         @keyup.enter="runSearch"
                     />
                 </div>
+
+                <Button
+                    variant="outline"
+                    class="fl-focus-glow mb-6 h-12 w-full gap-2 border-fl-gold/30 text-sm font-semibold tracking-wide text-fl-gold uppercase hover:bg-fl-gold/10"
+                    @click="quickPlateOpen = true"
+                >
+                    <Zap class="size-4" />
+                    Generar placa rápida
+                </Button>
 
                 <div
                     v-if="searching"
@@ -200,14 +212,12 @@ function submitQuickPlate() {
                     </Link>
                 </div>
 
-                <Button
-                    variant="outline"
-                    class="mt-6 h-16 w-full gap-3 border-fl-gold/30 text-fl-gold hover:bg-fl-gold/10"
-                    @click="quickPlateOpen = true"
+                <p
+                    v-else-if="query.trim().length > 0"
+                    class="py-6 text-center text-sm text-white/30"
                 >
-                    <Zap class="size-5" />
-                    Generar placa rápida (sin participante)
-                </Button>
+                    Sin corredores para «{{ query }}». Prueba con otro nombre o número, o genera una placa rápida.
+                </p>
             </template>
         </div>
 

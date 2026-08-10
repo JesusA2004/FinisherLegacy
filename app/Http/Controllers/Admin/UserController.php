@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -41,6 +42,8 @@ class UserController extends Controller
         return Inertia::render('admin/users/Index', [
             'users' => $users,
             'roles' => Role::orderBy('name')->pluck('name'),
+            'currentUserId' => $request->user()->id,
+            'currentUserIsSuperAdmin' => $request->user()->hasRole('super_admin'),
             'filters' => [
                 'q' => $request->string('q')->toString(),
                 'status' => $request->string('status')->toString(),
@@ -55,10 +58,26 @@ class UserController extends Controller
             'status' => ['required', Rule::enum(UserStatus::class)],
         ]);
 
-        abort_if($user->is($request->user()), 422, 'No puedes cambiar tu propio estado.');
+        if ($user->is($request->user())) {
+            throw ValidationException::withMessages(['status' => 'No puedes cambiar tu propio estado.']);
+        }
 
-        $user->status = $data['status'];
+        $newStatus = UserStatus::from($data['status']);
+
+        if ($newStatus !== UserStatus::Active && $this->isLastActiveSuperAdmin($user)) {
+            throw ValidationException::withMessages(['status' => 'No puedes dejar el sistema sin un super_admin activo.']);
+        }
+
+        $previousStatus = $user->status;
+        $user->status = $newStatus;
         $user->save();
+
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($user)
+            ->event('updated')
+            ->withProperties(['from' => $previousStatus->value, 'to' => $newStatus->value])
+            ->log("Estado de {$user->name} cambiado de {$previousStatus->value} a {$newStatus->value}");
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Estado del usuario actualizado.']);
 
@@ -72,10 +91,42 @@ class UserController extends Controller
             'roles.*' => ['string', Rule::exists('roles', 'name')],
         ]);
 
-        $user->syncRoles($data['roles'] ?? []);
+        $newRoles = $data['roles'] ?? [];
+        $grantingSuperAdmin = in_array('super_admin', $newRoles, true) && ! $user->hasRole('super_admin');
+        $revokingSuperAdmin = ! in_array('super_admin', $newRoles, true) && $user->hasRole('super_admin');
+
+        if ($grantingSuperAdmin && ! $request->user()->hasRole('super_admin')) {
+            throw ValidationException::withMessages(['roles' => 'Solo un super_admin puede otorgar el rol super_admin.']);
+        }
+
+        if ($revokingSuperAdmin && $this->isLastActiveSuperAdmin($user)) {
+            throw ValidationException::withMessages(['roles' => 'No puedes quitar el único super_admin activo del sistema.']);
+        }
+
+        $previousRoles = $user->roles->pluck('name')->all();
+        $user->syncRoles($newRoles);
+
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($user)
+            ->event('updated')
+            ->withProperties(['from' => $previousRoles, 'to' => $newRoles])
+            ->log("Roles de {$user->name} actualizados");
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Roles actualizados.']);
 
         return back();
+    }
+
+    private function isLastActiveSuperAdmin(User $user): bool
+    {
+        if (! $user->hasRole('super_admin')) {
+            return false;
+        }
+
+        return User::role('super_admin')
+            ->where('status', UserStatus::Active)
+            ->where('id', '!=', $user->id)
+            ->doesntExist();
     }
 }

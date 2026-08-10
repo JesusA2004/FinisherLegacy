@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { Pencil, Plus } from '@lucide/vue';
+import { Building2, Pencil, Plus } from '@lucide/vue';
 import { ref } from 'vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
+import ImageDropzone from '@/components/forms/ImageDropzone.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,10 +27,13 @@ import { Spinner } from '@/components/ui/spinner';
 type OrganizerRow = {
     id: number;
     name: string;
+    legal_name: string | null;
     email: string;
+    phone: string | null;
     website: string;
     status: string;
     events_count: number;
+    logo_url: string | null;
 };
 
 defineProps<{
@@ -41,6 +45,7 @@ defineProps<{
 }>();
 
 const columns = [
+    { key: 'logo_url', label: '' },
     { key: 'name', label: 'Nombre' },
     { key: 'email', label: 'Contacto' },
     { key: 'website', label: 'Sitio web' },
@@ -52,6 +57,8 @@ const columns = [
 const dialogOpen = ref(false);
 const editing = ref<OrganizerRow | null>(null);
 const submitting = ref(false);
+const logoFile = ref<File | null>(null);
+const editingLogoUrl = ref<string | null>(null);
 
 const form = ref({
     name: '',
@@ -64,17 +71,21 @@ const form = ref({
 
 function openCreate() {
     editing.value = null;
+    logoFile.value = null;
+    editingLogoUrl.value = null;
     form.value = { name: '', legal_name: '', email: '', phone: '', website: '', status: 'active' };
     dialogOpen.value = true;
 }
 
 function openEdit(row: OrganizerRow) {
     editing.value = row;
+    logoFile.value = null;
+    editingLogoUrl.value = row.logo_url;
     form.value = {
         name: row.name,
-        legal_name: '',
+        legal_name: row.legal_name ?? '',
         email: row.email === '—' ? '' : row.email,
-        phone: '',
+        phone: row.phone ?? '',
         website: row.website === '—' ? '' : row.website,
         status: row.status,
     };
@@ -83,18 +94,20 @@ function openEdit(row: OrganizerRow) {
 
 function submit() {
     submitting.value = true;
+    const payload = { ...form.value, logo: logoFile.value };
     const onFinish = () => {
         submitting.value = false;
         dialogOpen.value = false;
     };
 
     if (editing.value) {
-        router.patch(`/admin/organizers/${editing.value.id}`, form.value, {
-            preserveScroll: true,
-            onFinish,
-        });
+        router.post(
+            `/admin/organizers/${editing.value.id}`,
+            { ...payload, _method: 'patch' },
+            { preserveScroll: true, forceFormData: true, onFinish },
+        );
     } else {
-        router.post('/admin/organizers', form.value, { preserveScroll: true, onFinish });
+        router.post('/admin/organizers', payload, { preserveScroll: true, forceFormData: true, onFinish });
     }
 }
 </script>
@@ -117,6 +130,17 @@ function submit() {
         </div>
 
         <AdminTable :columns="columns" :rows="organizers" searchable :initial-query="filters.q">
+            <template #cell-logo_url="{ row }">
+                <div class="flex size-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-fl-black">
+                    <img
+                        v-if="row.logo_url"
+                        :src="row.logo_url as string"
+                        alt=""
+                        class="size-full object-cover"
+                    />
+                    <Building2 v-else class="size-4 text-white/20" />
+                </div>
+            </template>
             <template #cell-status="{ row }">
                 <Badge
                     variant="outline"
@@ -148,6 +172,14 @@ function submit() {
                     <DialogTitle>{{ editing ? 'Editar organizador' : 'Nuevo organizador' }}</DialogTitle>
                 </DialogHeader>
                 <form class="space-y-4" @submit.prevent="submit">
+                    <ImageDropzone
+                        v-model="logoFile"
+                        :initial-url="editingLogoUrl"
+                        label="Logo (opcional)"
+                        help-text="Cuadrado, mínimo 256×256px."
+                        aspect="square"
+                        class="mx-auto max-w-32"
+                    />
                     <div class="grid gap-2">
                         <Label>Nombre</Label>
                         <Input v-model="form.name" required class="bg-fl-black" />

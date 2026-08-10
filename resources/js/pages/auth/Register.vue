@@ -42,8 +42,8 @@ defineOptions({
                         required
                         autofocus
                         :tabindex="1"
-                        autocomplete="off"
-                        placeholder="Zuriel"
+                        autocomplete="given-name"
+                        placeholder="María"
                     />
                     <InputError :message="errors.first_name" />
                 </div>
@@ -56,7 +56,7 @@ defineOptions({
                         required
                         :tabindex="2"
                         autocomplete="family-name"
-                        placeholder="Ávila"
+                        placeholder="García"
                     />
                     <InputError :message="errors.last_name" />
                 </div>

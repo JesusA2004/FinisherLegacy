@@ -11,6 +11,8 @@ import {
     UserCircle,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import Reveal from '@/components/motion/Reveal.vue';
+import StaggerGroup from '@/components/motion/StaggerGroup.vue';
 import MascotEmptyState from '@/components/public/MascotEmptyState.vue';
 import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
 import { Button } from '@/components/ui/button';
@@ -103,7 +105,8 @@ const statCards = computed(() => [
 
     <div class="flex flex-col gap-6 p-4 md:p-6">
         <!-- Welcome + Legacy ID -->
-        <div
+        <Reveal
+            as="div"
             class="relative overflow-hidden rounded-2xl border border-fl-gold/20 bg-gradient-to-br from-fl-graphite via-fl-black to-fl-black p-6 md:p-8"
         >
             <div
@@ -150,7 +153,7 @@ const statCards = computed(() => [
                     </Button>
                 </div>
             </div>
-        </div>
+        </Reveal>
 
         <!-- Profile prompt -->
         <div
@@ -195,13 +198,13 @@ const statCards = computed(() => [
         </div>
 
         <!-- Stat cards -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StaggerGroup as="div" class="grid grid-cols-2 gap-4 lg:grid-cols-4" :stagger-ms="70">
             <component
                 :is="card.href ? Link : 'div'"
                 v-for="card in statCards"
                 :key="card.label"
                 :href="card.href ?? undefined"
-                class="rounded-xl border border-white/10 bg-fl-graphite/40 p-5 transition-colors"
+                class="fl-hover-lift rounded-xl border border-white/10 bg-fl-graphite/40 p-5 transition-colors"
                 :class="card.href ? 'hover:border-fl-gold/30' : ''"
             >
                 <component :is="card.icon" class="size-5 text-fl-gold" />
@@ -210,7 +213,7 @@ const statCards = computed(() => [
                 </p>
                 <p class="text-sm text-white/50">{{ card.label }}</p>
             </component>
-        </div>
+        </StaggerGroup>
 
         <!-- Quick actions -->
         <div>
@@ -219,7 +222,7 @@ const statCards = computed(() => [
             >
                 Acciones rápidas
             </h2>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StaggerGroup as="div" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" :stagger-ms="50">
                 <Button
                     as-child
                     variant="outline"
@@ -287,7 +290,7 @@ const statCards = computed(() => [
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-            </div>
+            </StaggerGroup>
         </div>
 
         <!-- Empty state helper when brand new -->

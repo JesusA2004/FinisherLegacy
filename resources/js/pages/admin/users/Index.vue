@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { ShieldCheck } from '@lucide/vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+import { toast } from 'vue-sonner';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -29,14 +30,33 @@ type UserRow = {
     last_login_at: string;
 };
 
-const { users, roles, filters } = defineProps<{
+const { users, roles, filters, currentUserId, currentUserIsSuperAdmin } = defineProps<{
     users: {
         data: UserRow[];
         links: { url: string | null; label: string; active: boolean }[];
     };
     roles: string[];
+    currentUserId: number;
+    currentUserIsSuperAdmin: boolean;
     filters: { q: string; status: string; role: string };
 }>();
+
+const roleLabels: Record<string, string> = {
+    super_admin: 'Super administrador',
+    admin: 'Administrador',
+    event_manager: 'Gestor de eventos',
+    event_operator: 'Operador de evento',
+    production_operator: 'Operador de producción',
+    athlete: 'Atleta',
+};
+
+function roleLabel(role: string): string {
+    return roleLabels[role] ?? role;
+}
+
+const assignableRoles = computed(() =>
+    currentUserIsSuperAdmin ? roles : roles.filter((r) => r !== 'super_admin'),
+);
 
 const columns = [
     { key: 'name', label: 'Nombre' },
@@ -70,7 +90,14 @@ function applyFilter(key: 'status' | 'role', value: string) {
 }
 
 function changeStatus(userId: number, status: string) {
-    router.patch(`/admin/users/${userId}/status`, { status }, { preserveScroll: true });
+    router.patch(
+        `/admin/users/${userId}/status`,
+        { status },
+        {
+            preserveScroll: true,
+            onError: (errors) => toast.error(errors.status ?? 'No se pudo actualizar el estado.'),
+        },
+    );
 }
 
 const rolesDialogOpen = ref(false);
@@ -97,7 +124,11 @@ return;
     router.patch(
         `/admin/users/${rolesDialogUser.value.id}/roles`,
         { roles: selectedRoles.value },
-        { preserveScroll: true, onSuccess: () => (rolesDialogOpen.value = false) },
+        {
+            preserveScroll: true,
+            onSuccess: () => (rolesDialogOpen.value = false),
+            onError: (errors) => toast.error(errors.roles ?? 'No se pudieron actualizar los roles.'),
+        },
     );
 }
 </script>
@@ -133,20 +164,24 @@ return;
                 <SelectContent>
                     <SelectItem value=" ">Todos los roles</SelectItem>
                     <SelectItem v-for="r in roles" :key="r" :value="r">
-                        {{ r }}
+                        {{ roleLabel(r) }}
                     </SelectItem>
                 </SelectContent>
             </Select>
         </div>
 
         <AdminTable :columns="columns" :rows="users" searchable :initial-query="filters.q">
+            <template #cell-roles="{ row }">
+                <span>{{ (row.roles as string).split(', ').map(roleLabel).join(', ') }}</span>
+            </template>
             <template #cell-status="{ row }">
                 <Select
                     :model-value="String(row.status)"
+                    :disabled="row.id === currentUserId"
                     @update:model-value="(v) => changeStatus(row.id as number, String(v))"
                 >
                     <SelectTrigger
-                        class="h-8 w-36 border-white/10 bg-transparent text-xs"
+                        class="h-8 w-36 border-white/10 bg-transparent text-xs disabled:opacity-40"
                         :class="statusBadgeClass[row.status as string]"
                     >
                         <SelectValue />
@@ -178,7 +213,7 @@ return;
                 </DialogHeader>
                 <div class="space-y-3">
                     <label
-                        v-for="role in roles"
+                        v-for="role in assignableRoles"
                         :key="role"
                         class="flex items-center gap-2.5 text-sm text-white/80"
                     >
@@ -186,8 +221,11 @@ return;
                             :model-value="selectedRoles.includes(role)"
                             @update:model-value="(v) => toggleRole(role, !!v)"
                         />
-                        {{ role }}
+                        {{ roleLabel(role) }}
                     </label>
+                    <p v-if="!currentUserIsSuperAdmin" class="text-xs text-white/30">
+                        Solo un super administrador puede otorgar el rol de super administrador.
+                    </p>
                 </div>
                 <DialogFooter>
                     <Button class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft" @click="saveRoles">

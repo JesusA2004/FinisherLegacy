@@ -8,7 +8,7 @@ import PublicLayout from '@/layouts/PublicLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'Finisher Legacy';
 
 const PUBLIC_PAGES = new Set([
     'Home',
