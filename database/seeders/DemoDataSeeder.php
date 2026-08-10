@@ -124,7 +124,7 @@ class DemoDataSeeder extends Seeder
         $user = User::query()->updateOrCreate(
             ['email' => 'athlete@finisherlegacy.com'],
             [
-                'first_name' => 'Jesús',
+                'first_name' => 'Zuriel',
                 'last_name' => 'Ávila',
                 'password' => 'password',
                 'status' => UserStatus::Active,
