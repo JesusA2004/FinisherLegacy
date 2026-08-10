@@ -18,7 +18,12 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SportSeeder::class,
             PlateTemplateSeeder::class,
-            DemoDataSeeder::class,
         ]);
+
+        // Demo users ship with a known password ("password") — never seed
+        // them in production, even if someone runs `db:seed` by accident.
+        if (! app()->isProduction()) {
+            $this->call(DemoDataSeeder::class);
+        }
     }
 }

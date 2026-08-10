@@ -16,7 +16,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Profile settings',
+                title: 'Configuración de perfil',
                 href: edit(),
             },
         ],
@@ -28,15 +28,15 @@ const user = computed(() => page.props.auth.user);
 </script>
 
 <template>
-    <Head title="Profile settings" />
+    <Head title="Configuración de perfil" />
 
-    <h1 class="sr-only">Profile settings</h1>
+    <h1 class="sr-only">Configuración de perfil</h1>
 
     <div class="flex flex-col space-y-6">
         <Heading
             variant="small"
-            title="Profile"
-            description="Update your name and email address"
+            title="Perfil"
+            description="Actualiza tu nombre y correo electrónico"
         />
 
         <Form
@@ -46,7 +46,7 @@ const user = computed(() => page.props.auth.user);
         >
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="grid gap-2">
-                    <Label for="first_name">First name</Label>
+                    <Label for="first_name">Nombre</Label>
                     <Input
                         id="first_name"
                         class="mt-1 block w-full"
@@ -54,13 +54,13 @@ const user = computed(() => page.props.auth.user);
                         :default-value="user.first_name"
                         required
                         autocomplete="given-name"
-                        placeholder="First name"
+                        placeholder="Nombre"
                     />
                     <InputError class="mt-2" :message="errors.first_name" />
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="last_name">Last name</Label>
+                    <Label for="last_name">Apellidos</Label>
                     <Input
                         id="last_name"
                         class="mt-1 block w-full"
@@ -68,14 +68,14 @@ const user = computed(() => page.props.auth.user);
                         :default-value="user.last_name"
                         required
                         autocomplete="family-name"
-                        placeholder="Last name"
+                        placeholder="Apellidos"
                     />
                     <InputError class="mt-2" :message="errors.last_name" />
                 </div>
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
+                <Label for="email">Correo electrónico</Label>
                 <Input
                     id="email"
                     type="email"
@@ -84,20 +84,20 @@ const user = computed(() => page.props.auth.user);
                     :default-value="user.email"
                     required
                     autocomplete="username"
-                    placeholder="Email address"
+                    placeholder="Correo electrónico"
                 />
                 <InputError class="mt-2" :message="errors.email" />
             </div>
 
             <div v-if="page.props.mustVerifyEmail && !user.email_verified_at">
                 <p class="-mt-4 text-sm text-muted-foreground">
-                    Your email address is unverified.
+                    Tu correo electrónico no está verificado.
                     <Link
                         :href="send()"
                         as="button"
                         class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
                     >
-                        Click here to re-send the verification email.
+                        Haz clic aquí para reenviar el correo de verificación.
                     </Link>
                 </p>
 
@@ -105,13 +105,13 @@ const user = computed(() => page.props.auth.user);
                     v-if="page.props.status === 'verification-link-sent'"
                     class="mt-2 text-sm font-medium text-green-600"
                 >
-                    A new verification link has been sent to your email address.
+                    Se ha enviado un nuevo enlace de verificación a tu correo electrónico.
                 </div>
             </div>
 
             <div class="flex items-center gap-4">
                 <Button :disabled="processing" data-test="update-profile-button"
-                    >Save</Button
+                    >Guardar</Button
                 >
             </div>
         </Form>

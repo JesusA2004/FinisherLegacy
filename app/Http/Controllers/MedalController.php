@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateMedalRequest;
 use App\Models\EventEdition;
 use App\Models\EventRace;
 use App\Models\Medal;
+use App\Models\MedalImage;
 use App\Services\MedalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -40,9 +41,10 @@ class MedalController extends Controller
     {
         $medal = $this->medals->create(
             $request->user(),
-            $request->safe()->except(['front_image', 'back_image']),
+            $request->safe()->except(['front_image', 'back_image', 'gallery_images']),
             $request->file('front_image'),
             $request->file('back_image'),
+            $request->file('gallery_images', []),
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Medalla agregada a tu colección.']);
@@ -78,9 +80,10 @@ class MedalController extends Controller
 
         $this->medals->update(
             $medal,
-            $request->safe()->except(['front_image', 'back_image']),
+            $request->safe()->except(['front_image', 'back_image', 'gallery_images']),
             $request->file('front_image'),
             $request->file('back_image'),
+            $request->file('gallery_images', []),
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Medalla actualizada.']);
@@ -97,6 +100,19 @@ class MedalController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Medalla archivada de tu colección.']);
 
         return to_route('dashboard.medals.index');
+    }
+
+    public function destroyGalleryImage(Medal $medal, MedalImage $medalImage): RedirectResponse
+    {
+        $this->authorize('update', $medal);
+
+        abort_unless($medalImage->medal_id === $medal->id, 404);
+
+        $this->medals->removeGalleryImage($medal, $medalImage->id);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Imagen eliminada.']);
+
+        return back();
     }
 
     /**
@@ -180,6 +196,7 @@ class MedalController extends Controller
     {
         $frontImage = $medal->images->firstWhere('type', 'front');
         $backImage = $medal->images->firstWhere('type', 'back');
+        $galleryImages = $medal->images->where('type', 'gallery')->sortBy('sort_order')->values();
         $plate = $medal->plates()->first();
         $legacyCode = $medal->legacyCodes()->first();
 
@@ -204,6 +221,11 @@ class MedalController extends Controller
             'back_image_url' => $backImage?->optimized_path
                 ? Storage::disk('public')->url($backImage->optimized_path)
                 : null,
+            'gallery_images' => $galleryImages->map(fn (MedalImage $image) => [
+                'id' => $image->id,
+                'url' => $image->optimized_path ? Storage::disk('public')->url($image->optimized_path) : null,
+            ])->values(),
+            'gallery_slots_remaining' => max(0, config('finisher.medal.gallery.max_files') - $galleryImages->count()),
             'plate' => $plate ? [
                 'serial_number' => $plate->serial_number,
                 'status' => $plate->status->value,

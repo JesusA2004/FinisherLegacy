@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import { Award, IdCard, Medal, QrCode } from '@lucide/vue';
 import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
+import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
 import { home } from '@/routes';
 
 defineProps<{
@@ -23,7 +24,11 @@ const chain = [
             class="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black p-12 lg:flex"
         >
             <div
-                class="absolute -top-24 -left-24 size-72 rounded-full bg-fl-gold/10 blur-3xl"
+                class="absolute -top-24 -left-24 size-72 animate-pulse rounded-full bg-fl-gold/10 blur-3xl"
+                style="animation-duration: 6s"
+            />
+            <div
+                class="absolute -right-16 bottom-0 size-64 rounded-full bg-fl-gold/5 blur-3xl"
             />
 
             <Link :href="home()" class="relative z-10">
@@ -41,23 +46,32 @@ const chain = [
                 </p>
             </div>
 
-            <div class="relative z-10 flex flex-col gap-3">
-                <template v-for="(step, index) in chain" :key="step.label">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="flex size-9 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold"
-                        >
-                            <component :is="step.icon" class="size-4" />
+            <div class="relative z-10 flex items-end justify-between gap-6">
+                <div class="flex flex-col gap-3">
+                    <template
+                        v-for="(step, index) in chain"
+                        :key="step.label"
+                    >
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="fl-hover-glow flex size-9 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold transition-colors duration-300"
+                            >
+                                <component :is="step.icon" class="size-4" />
+                            </div>
+                            <span class="text-sm text-white/70">{{
+                                step.label
+                            }}</span>
                         </div>
-                        <span class="text-sm text-white/70">{{
-                            step.label
-                        }}</span>
-                    </div>
-                    <div
-                        v-if="index < chain.length - 1"
-                        class="ml-[18px] h-4 w-px bg-fl-gold/20"
-                    />
-                </template>
+                        <div
+                            v-if="index < chain.length - 1"
+                            class="ml-[18px] h-4 w-px bg-fl-gold/20"
+                        />
+                    </template>
+                </div>
+
+                <MascotPlaceholderIcon
+                    class="hidden size-14 shrink-0 opacity-40 xl:block"
+                />
             </div>
         </div>
 

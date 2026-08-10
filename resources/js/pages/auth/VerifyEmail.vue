@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { Check, Copy } from '@lucide/vue';
+import { ref } from 'vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -8,19 +10,58 @@ import { send } from '@/routes/verification';
 
 defineOptions({
     layout: {
-        title: 'Verifica tu correo',
+        title: 'Tu Legacy comienza aquí',
         description:
-            'Por favor confirma tu dirección de correo dando clic en el enlace que te enviamos.',
+            'Confirma tu correo dando clic en el enlace que te enviamos.',
     },
 });
 
-defineProps<{
+const { status, legacyId } = defineProps<{
     status?: string;
+    legacyId?: string | null;
 }>();
+
+const copied = ref(false);
+
+async function copyLegacyId() {
+    if (!legacyId) {
+return;
+}
+
+    await navigator.clipboard.writeText(legacyId);
+    copied.value = true;
+    setTimeout(() => (copied.value = false), 1800);
+}
 </script>
 
 <template>
     <Head title="Verificación de correo" />
+
+    <div
+        v-if="legacyId"
+        class="fl-hover-glow mb-6 rounded-xl border border-fl-gold/30 bg-gradient-to-br from-fl-gold/10 to-transparent p-5 text-center transition-shadow duration-300"
+    >
+        <p class="text-xs font-medium tracking-widest text-white/40 uppercase">
+            Tu Legacy ID
+        </p>
+        <div class="mt-2 flex items-center justify-center gap-2">
+            <p class="font-mono text-2xl font-bold text-fl-gold">
+                {{ legacyId }}
+            </p>
+            <button
+                type="button"
+                class="fl-focus-glow flex size-8 items-center justify-center rounded-full text-white/50 transition-colors hover:text-fl-gold"
+                aria-label="Copiar Legacy ID"
+                @click="copyLegacyId"
+            >
+                <Check v-if="copied" class="size-4" />
+                <Copy v-else class="size-4" />
+            </button>
+        </div>
+        <p class="mt-3 text-sm text-white/50">
+            Confirma tu correo para desbloquear tu Legacy Profile.
+        </p>
+    </div>
 
     <div
         v-if="status === 'verification-link-sent'"

@@ -12,6 +12,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import MascotEmptyState from '@/components/public/MascotEmptyState.vue';
+import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -23,6 +24,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
 import { dashboard } from '@/routes';
 import {
     create as createMedal,
@@ -110,11 +112,16 @@ const statCards = computed(() => [
             <div
                 class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
             >
-                <div>
-                    <p class="text-sm text-white/50">Hola,</p>
-                    <h1 class="text-2xl font-bold text-white md:text-3xl">
-                        {{ firstName }}
-                    </h1>
+                <div class="flex items-center gap-4">
+                    <MascotPlaceholderIcon
+                        class="hidden size-12 shrink-0 opacity-70 sm:block"
+                    />
+                    <div>
+                        <p class="text-sm text-white/50">Hola,</p>
+                        <h1 class="text-2xl font-bold text-white md:text-3xl">
+                            {{ firstName }}
+                        </h1>
+                    </div>
                 </div>
 
                 <div
@@ -163,6 +170,28 @@ const statCards = computed(() => [
             >
                 <Link :href="editProfile()">Completar mi Legacy Profile</Link>
             </Button>
+        </div>
+
+        <!-- Profile completion -->
+        <div
+            v-else-if="profile.completion < 100"
+            class="rounded-2xl border border-white/10 bg-fl-graphite/40 p-5"
+        >
+            <div class="flex items-center justify-between gap-4">
+                <p class="text-sm text-white/70">
+                    Tu Legacy Profile está
+                    <span class="font-semibold text-fl-gold"
+                        >{{ profile.completion }}% completo</span
+                    >.
+                </p>
+                <Link
+                    :href="editProfile()"
+                    class="shrink-0 text-sm font-medium text-fl-gold hover:text-fl-gold-soft"
+                >
+                    Completar
+                </Link>
+            </div>
+            <Progress :model-value="profile.completion" class="mt-3" />
         </div>
 
         <!-- Stat cards -->

@@ -18,6 +18,7 @@ class UpdateAthleteProfileRequest extends FormRequest
     public function rules(): array
     {
         $currentProfileId = $this->user()->athleteProfile?->id;
+        $mimes = implode(',', config('finisher.image.mimes'));
 
         return [
             'username' => [
@@ -34,8 +35,8 @@ class UpdateAthleteProfileRequest extends FormRequest
             'country' => ['nullable', 'string', 'max:100'],
             'main_sport_id' => ['nullable', 'integer', 'exists:sports,id'],
             'profile_visibility' => ['required', 'string', 'in:public,private'],
-            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'cover_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
+            'profile_photo' => ['nullable', 'image', "mimes:{$mimes}", 'max:'.config('finisher.profile.avatar.max_kb')],
+            'cover_photo' => ['nullable', 'image', "mimes:{$mimes}", 'max:'.config('finisher.profile.cover.max_kb')],
         ];
     }
 }

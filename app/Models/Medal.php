@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'user_id', 'event_id', 'event_edition_id', 'event_race_id', 'event_participant_id', 'title',
@@ -21,6 +22,13 @@ class Medal extends Model
 {
     /** @use HasFactory<MedalFactory> */
     use HasFactory, SoftDeletes;
+
+    protected static function booted(): void
+    {
+        static::creating(function (Medal $medal) {
+            $medal->uuid ??= (string) Str::uuid();
+        });
+    }
 
     protected function casts(): array
     {

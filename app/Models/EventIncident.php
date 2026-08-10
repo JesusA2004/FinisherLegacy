@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Enums\IncidentStatus;
 use App\Enums\IncidentType;
+use Database\Factories\EventIncidentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -16,7 +18,8 @@ use Spatie\Activitylog\Support\LogOptions;
 ])]
 class EventIncident extends Model
 {
-    use LogsActivity;
+    /** @use HasFactory<EventIncidentFactory> */
+    use HasFactory, LogsActivity;
 
     protected function casts(): array
     {

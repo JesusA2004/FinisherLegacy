@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateAthleteProfileRequest;
 use App\Models\Sport;
+use App\Services\AthleteProfileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,8 @@ use Inertia\Response;
 
 class AthleteProfileController extends Controller
 {
+    public function __construct(private readonly AthleteProfileService $profiles) {}
+
     public function edit(Request $request): Response
     {
         $profile = $request->user()->athleteProfile;
@@ -38,32 +41,12 @@ class AthleteProfileController extends Controller
 
     public function update(UpdateAthleteProfileRequest $request): RedirectResponse
     {
-        $user = $request->user();
-        $profile = $user->athleteProfile ?: $user->athleteProfile()->make();
-
-        $profile->fill($request->safe()->except(['profile_photo', 'cover_photo']));
-
-        if ($request->hasFile('profile_photo')) {
-            if ($profile->profile_photo_path) {
-                Storage::disk('public')->delete($profile->profile_photo_path);
-            }
-
-            $path = $request->file('profile_photo')->store('profiles', 'public');
-            abort_if($path === false, 500, 'No se pudo guardar la foto de perfil.');
-            $profile->profile_photo_path = $path;
-        }
-
-        if ($request->hasFile('cover_photo')) {
-            if ($profile->cover_photo_path) {
-                Storage::disk('public')->delete($profile->cover_photo_path);
-            }
-
-            $path = $request->file('cover_photo')->store('profiles/covers', 'public');
-            abort_if($path === false, 500, 'No se pudo guardar la portada.');
-            $profile->cover_photo_path = $path;
-        }
-
-        $profile->save();
+        $this->profiles->update(
+            $request->user(),
+            $request->safe()->except(['profile_photo', 'cover_photo']),
+            $request->file('profile_photo'),
+            $request->file('cover_photo'),
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Tu Legacy Profile fue actualizado.']);
 

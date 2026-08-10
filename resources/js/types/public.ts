@@ -24,10 +24,12 @@ export type EventEditionCard = {
 export type LegacyProfilePreview = {
     username: string;
     name: string;
+    bio?: string | null;
     city: string | null;
     country: string | null;
     sport: string | null;
     photo_url: string | null;
+    cover_url?: string | null;
     medals_count: number;
     medals: Array<{
         title: string;
@@ -36,6 +38,7 @@ export type LegacyProfilePreview = {
 };
 
 export type EventRacePreview = {
+    id: number;
     name: string;
     distance_value: string | number | null;
     distance_unit: string | null;

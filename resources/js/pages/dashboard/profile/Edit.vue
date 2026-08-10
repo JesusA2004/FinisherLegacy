@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import ImageDropzone from '@/components/forms/ImageDropzone.vue';
 import LegacyProfilePreview from '@/components/public/LegacyProfilePreview.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,16 +51,14 @@ const profilePhotoPreview = ref<string | null>(
 );
 const coverPhotoPreview = ref<string | null>(profile?.cover_photo_url ?? null);
 
-function onProfilePhotoChange(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+function onProfilePhotoChange(file: File | null) {
     form.profile_photo = file;
     profilePhotoPreview.value = file
         ? URL.createObjectURL(file)
         : (profile?.profile_photo_url ?? null);
 }
 
-function onCoverPhotoChange(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+function onCoverPhotoChange(file: File | null) {
     form.cover_photo = file;
     coverPhotoPreview.value = file
         ? URL.createObjectURL(file)
@@ -77,11 +76,13 @@ function submit() {
 const previewProfile = computed(() => ({
     username: form.username || 'tulegacy',
     name: 'Tu Legacy Profile',
+    bio: form.bio || null,
     city: form.city || null,
     country: form.country || null,
     sport:
         sports.find((s) => String(s.id) === form.main_sport_id)?.name ?? null,
     photo_url: profilePhotoPreview.value,
+    cover_url: coverPhotoPreview.value,
     medals_count: 0,
     medals: [],
 }));
@@ -91,7 +92,7 @@ const previewProfile = computed(() => ({
     <Head title="Mi Legacy Profile" />
 
     <div
-        class="mx-auto grid max-w-5xl gap-8 p-4 md:p-6 lg:grid-cols-[1fr_320px]"
+        class="mx-auto grid max-w-6xl gap-8 p-4 md:p-6 lg:grid-cols-[1fr_420px]"
     >
         <form class="space-y-6" @submit.prevent="submit">
             <div>
@@ -102,7 +103,7 @@ const previewProfile = computed(() => ({
             </div>
 
             <div class="grid gap-2">
-                <Label for="username">Username</Label>
+                <Label for="username">Nombre de usuario</Label>
                 <Input
                     id="username"
                     v-model="form.username"
@@ -114,13 +115,13 @@ const previewProfile = computed(() => ({
                 </p>
                 <p v-else class="text-xs text-white/40">
                     Tu perfil público estará en /@{{
-                        form.username || 'username'
+                        form.username || 'tunombre'
                     }}
                 </p>
             </div>
 
             <div class="grid gap-2">
-                <Label for="bio">Bio</Label>
+                <Label for="bio">Biografía</Label>
                 <Textarea
                     id="bio"
                     v-model="form.bio"
@@ -184,36 +185,26 @@ const previewProfile = computed(() => ({
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-                <div class="grid gap-2">
-                    <Label for="profile_photo">Foto de perfil</Label>
-                    <Input
-                        id="profile_photo"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        @change="onProfilePhotoChange"
-                    />
-                    <p
-                        v-if="form.errors.profile_photo"
-                        class="text-sm text-red-500"
-                    >
-                        {{ form.errors.profile_photo }}
-                    </p>
-                </div>
-                <div class="grid gap-2">
-                    <Label for="cover_photo">Foto de portada</Label>
-                    <Input
-                        id="cover_photo"
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        @change="onCoverPhotoChange"
-                    />
-                    <p
-                        v-if="form.errors.cover_photo"
-                        class="text-sm text-red-500"
-                    >
-                        {{ form.errors.cover_photo }}
-                    </p>
-                </div>
+                <ImageDropzone
+                    :model-value="form.profile_photo"
+                    :initial-url="profile?.profile_photo_url ?? null"
+                    label="Foto de perfil"
+                    help-text="JPG, PNG o WEBP · máx. 4 MB"
+                    :max-size-mb="4"
+                    aspect="square"
+                    :error="form.errors.profile_photo"
+                    @update:model-value="onProfilePhotoChange"
+                />
+                <ImageDropzone
+                    :model-value="form.cover_photo"
+                    :initial-url="profile?.cover_photo_url ?? null"
+                    label="Foto de portada"
+                    help-text="JPG, PNG o WEBP · máx. 6 MB"
+                    :max-size-mb="6"
+                    aspect="wide"
+                    :error="form.errors.cover_photo"
+                    @update:model-value="onCoverPhotoChange"
+                />
             </div>
 
             <Button
@@ -225,15 +216,20 @@ const previewProfile = computed(() => ({
             </Button>
         </form>
 
-        <div>
+        <div class="lg:sticky lg:top-6 lg:self-start">
             <p
                 class="mb-3 text-sm font-semibold tracking-wide text-white/50 uppercase"
             >
-                Vista previa
+                Vista previa en tiempo real
             </p>
-            <div class="rounded-2xl bg-fl-black p-4">
+            <div
+                class="rounded-2xl border border-white/5 bg-fl-black p-6 sm:p-8"
+            >
                 <LegacyProfilePreview :profile="previewProfile" />
             </div>
+            <p class="mt-3 text-center text-xs text-white/30">
+                Así se ve tu Legacy Profile mientras escribes.
+            </p>
         </div>
     </div>
 </template>

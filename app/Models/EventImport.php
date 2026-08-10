@@ -12,8 +12,8 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 #[Fillable([
-    'event_edition_id', 'type', 'file_path', 'original_filename', 'status', 'total_rows',
-    'processed_rows', 'successful_rows', 'failed_rows', 'created_by', 'started_at', 'completed_at',
+    'event_edition_id', 'type', 'file_path', 'original_filename', 'column_mapping', 'status',
+    'total_rows', 'processed_rows', 'successful_rows', 'failed_rows', 'created_by', 'started_at', 'completed_at',
 ])]
 class EventImport extends Model
 {
@@ -24,6 +24,7 @@ class EventImport extends Model
         return [
             'type' => ImportType::class,
             'status' => ImportStatus::class,
+            'column_mapping' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];

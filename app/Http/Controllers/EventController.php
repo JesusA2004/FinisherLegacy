@@ -2,60 +2,45 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\EditionStatus;
 use App\Enums\EventStatus;
+use App\Http\Requests\StorePreregistrationRequest;
 use App\Http\Resources\EventEditionCardResource;
 use App\Models\Event;
 use App\Models\EventEdition;
+use App\Models\EventRace;
 use App\Models\Sport;
+use App\Services\EventCatalogService;
+use App\Services\PreregistrationService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class EventController extends Controller
 {
+    public function __construct(
+        private readonly EventCatalogService $events,
+        private readonly PreregistrationService $preregistrations,
+    ) {}
+
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->query('q', ''));
-        $sportSlug = $request->query('sport');
-        $phase = $request->query('status');
+        $filters = [
+            'q' => trim((string) $request->query('q', '')),
+            'sport' => $request->query('sport'),
+            'status' => $request->query('status'),
+        ];
 
-        $query = EventEdition::query()
-            ->whereHas('event', fn ($q) => $q->where('status', EventStatus::Published))
-            ->where('status', EditionStatus::Published)
-            ->with(['event.sport', 'races']);
-
-        if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('city', 'like', "%{$search}%")
-                    ->orWhereHas('event', fn ($eq) => $eq->where('name', 'like', "%{$search}%"));
-            });
-        }
-
-        if (is_string($sportSlug) && $sportSlug !== '') {
-            $query->whereHas('event.sport', fn ($q) => $q->where('slug', $sportSlug));
-        }
-
-        if (in_array($phase, ['upcoming', 'ongoing', 'finished'], true)) {
-            $today = now()->toDateString();
-            match ($phase) {
-                'upcoming' => $query->whereDate('event_date', '>', $today),
-                'ongoing' => $query->whereDate('event_date', '=', $today),
-                'finished' => $query->whereDate('event_date', '<', $today),
-            };
-        }
-
-        $editions = $query->orderBy('event_date')->paginate(9)->withQueryString();
-        $editions->through(fn (EventEdition $edition) => (new EventEditionCardResource($edition))->resolve());
+        $editions = $this->events->publishedEditions($filters);
+        $editions->through(fn ($edition) => (new EventEditionCardResource($edition))->resolve());
 
         return Inertia::render('events/Index', [
             'editions' => $editions,
             'sports' => Sport::query()->where('active', true)->orderBy('sort_order')->get(['id', 'name', 'slug']),
             'filters' => [
-                'q' => $search,
-                'sport' => $sportSlug,
-                'status' => $phase,
+                'q' => $filters['q'],
+                'sport' => $filters['sport'],
+                'status' => $filters['status'],
             ],
         ]);
     }
@@ -65,7 +50,7 @@ class EventController extends Controller
         abort_unless($event->status === EventStatus::Published, 404);
 
         $event->load(['organizer', 'sport']);
-        $edition = $this->currentEdition($event);
+        $edition = $this->events->currentEdition($event);
 
         return Inertia::render('events/Show', [
             'event' => [
@@ -80,11 +65,12 @@ class EventController extends Controller
         ]);
     }
 
-    public function preregister(Event $event): Response
+    public function preregister(Request $request, Event $event): Response
     {
         abort_unless($event->status === EventStatus::Published, 404);
 
-        $edition = $this->currentEdition($event);
+        $edition = $this->events->currentEdition($event);
+        $user = $request->user();
 
         return Inertia::render('events/Preregister', [
             'event' => [
@@ -92,19 +78,35 @@ class EventController extends Controller
                 'slug' => $event->slug,
             ],
             'edition' => $edition ? $this->editionPayload($edition) : null,
+            'isOpen' => $edition ? $this->preregistrations->isOpen($edition) : false,
+            'prefill' => $user ? [
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ] : null,
         ]);
     }
 
-    private function currentEdition(Event $event): ?EventEdition
+    public function storePreregistration(StorePreregistrationRequest $request, Event $event): RedirectResponse
     {
-        /** @var Collection<int, EventEdition> $editions */
-        $editions = $event->editions()
-            ->where('status', EditionStatus::Published)
-            ->with(['races' => fn ($q) => $q->where('active', true)->orderBy('distance_value')])
-            ->orderBy('event_date')
-            ->get();
+        abort_unless($event->status === EventStatus::Published, 404);
 
-        return $editions->first(fn (EventEdition $edition) => ! $edition->event_date->isPast()) ?? $editions->last();
+        $edition = $this->events->currentEdition($event);
+        abort_unless($edition && $this->preregistrations->isOpen($edition), 403);
+
+        $race = EventRace::query()
+            ->where('event_edition_id', $edition->id)
+            ->findOrFail($request->integer('event_race_id'));
+
+        $preregistration = $this->preregistrations->create(
+            $edition,
+            $race,
+            $request->safe()->except('event_race_id'),
+            $request->user(),
+        );
+
+        return redirect()->route('preregistrations.show', $preregistration->token);
     }
 
     /**
@@ -123,6 +125,7 @@ class EventController extends Controller
             'registration_open_at' => $edition->registration_open_at?->toDateString(),
             'registration_close_at' => $edition->registration_close_at?->toDateString(),
             'races' => $edition->races->map(fn ($race) => [
+                'id' => $race->id,
                 'name' => $race->name,
                 'distance_value' => $race->distance_value,
                 'distance_unit' => $race->distance_unit,

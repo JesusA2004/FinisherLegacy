@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
-import { Lock } from '@lucide/vue';
-import { ref } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { Lock, X } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import DatePicker from '@/components/DatePicker.vue';
+import GalleryImagePicker from '@/components/forms/GalleryImagePicker.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,8 +15,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { confirmDestructive } from '@/lib/swal';
 import { dashboard } from '@/routes';
 import { index, show, update } from '@/routes/dashboard/medals';
+import { destroy as destroyGalleryImage } from '@/routes/dashboard/medals/gallery';
 import type { MedalDetail } from '@/types';
 
 const { medal } = defineProps<{
@@ -44,6 +48,7 @@ const form = useForm({
     visibility: medal.visibility,
     front_image: null as File | null,
     back_image: null as File | null,
+    gallery_images: [] as File[],
 });
 
 const frontPreview = ref<string | null>(medal.front_image_url);
@@ -67,8 +72,26 @@ function onBackChange(event: Event) {
     }
 }
 
+const quotaError = computed(
+    () => (form.errors as Record<string, string>).quota,
+);
+
 function submit() {
     form.put(update(medal.id).url, { forceFormData: true });
+}
+
+async function removeGalleryImage(medalImageId: number) {
+    const result = await confirmDestructive({
+        title: '¿Quitar esta imagen?',
+        text: 'Se eliminará de la galería de esta medalla.',
+        confirmButtonText: 'Sí, quitar',
+    });
+
+    if (result.isConfirmed) {
+        router.delete(destroyGalleryImage({ medal: medal.id, medalImage: medalImageId }).url, {
+            preserveScroll: true,
+        });
+    }
 }
 </script>
 
@@ -125,10 +148,11 @@ function submit() {
                 </div>
                 <div class="grid gap-2">
                     <Label for="event_date">Fecha</Label>
-                    <Input
-                        id="event_date"
-                        v-model="form.event_date"
-                        type="date"
+                    <DatePicker
+                        :model-value="form.event_date || null"
+                        @update:model-value="
+                            (value) => (form.event_date = value ?? '')
+                        "
                     />
                 </div>
                 <div class="grid gap-2">
@@ -228,6 +252,50 @@ function submit() {
                     </p>
                 </div>
             </div>
+
+            <div class="grid gap-2">
+                <Label>Galería</Label>
+
+                <div
+                    v-if="medal.gallery_images.length"
+                    class="flex flex-wrap gap-3"
+                >
+                    <div
+                        v-for="image in medal.gallery_images"
+                        :key="image.id"
+                        class="relative size-20 overflow-hidden rounded-lg border border-white/10"
+                    >
+                        <img
+                            v-if="image.url"
+                            :src="image.url"
+                            class="size-full object-cover"
+                            alt="Foto de la galería"
+                        />
+                        <button
+                            type="button"
+                            class="fl-focus-glow absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-fl-black/80 text-white/70 hover:text-white"
+                            aria-label="Quitar imagen"
+                            @click="removeGalleryImage(image.id)"
+                        >
+                            <X class="size-3" />
+                        </button>
+                    </div>
+                </div>
+
+                <GalleryImagePicker
+                    v-if="medal.gallery_slots_remaining > 0"
+                    v-model="form.gallery_images"
+                    :max="medal.gallery_slots_remaining"
+                    :error="form.errors.gallery_images"
+                />
+            </div>
+
+            <p
+                v-if="quotaError"
+                class="fl-error-shake rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400"
+            >
+                {{ quotaError }}
+            </p>
 
             <Button
                 type="submit"

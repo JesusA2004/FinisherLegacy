@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Award, Plus } from '@lucide/vue';
+import { Award, PenLine, QrCode } from '@lucide/vue';
+import { ref } from 'vue';
+import StaggerGroup from '@/components/motion/StaggerGroup.vue';
 import MascotEmptyState from '@/components/public/MascotEmptyState.vue';
+import QrScannerDialog from '@/components/qr/QrScannerDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { dashboard } from '@/routes';
@@ -20,12 +23,28 @@ defineOptions({
 defineProps<{
     medals: MedalCard[];
 }>();
+
+const scannerOpen = ref(false);
+
+function formatDate(value: string | null): string | null {
+    if (!value) {
+return null;
+}
+
+    return new Date(`${value}T00:00:00`).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+}
 </script>
 
 <template>
     <Head title="Mis Medallas" />
 
-    <div class="p-4 md:p-6">
+    <QrScannerDialog v-model:open="scannerOpen" />
+
+    <div class="mx-auto max-w-7xl p-4 md:p-6">
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-xl font-bold text-white">Mis Medallas</h1>
@@ -33,21 +52,57 @@ defineProps<{
                     Tu vitrina digital de logros.
                 </p>
             </div>
-            <Button
-                as-child
-                class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+        </div>
+
+        <!-- Guided "how to add" panel — the QR path skips typing event/time/pace -->
+        <div
+            class="mb-8 grid gap-3 rounded-2xl border border-fl-gold/15 bg-gradient-to-br from-fl-graphite/60 to-fl-black p-5 sm:grid-cols-2 sm:p-6"
+        >
+            <button
+                type="button"
+                class="fl-hover-lift fl-hover-glow group flex items-center gap-4 rounded-xl border border-fl-gold/30 bg-fl-black/60 p-4 text-left transition-colors"
+                @click="scannerOpen = true"
             >
-                <Link :href="create()">
-                    <Plus class="size-4" />
-                    Agregar medalla
-                </Link>
-            </Button>
+                <div
+                    class="flex size-12 shrink-0 items-center justify-center rounded-full bg-fl-gold/10 text-fl-gold transition-transform duration-300 group-hover:scale-110"
+                >
+                    <QrCode class="size-6" />
+                </div>
+                <div>
+                    <p class="font-semibold text-white">
+                        Escanear el QR de mi placa
+                    </p>
+                    <p class="mt-0.5 text-xs text-white/50">
+                        Más rápido — el evento, tiempo y ritmo se cargan
+                        solos.
+                    </p>
+                </div>
+            </button>
+
+            <Link
+                :href="create()"
+                class="fl-hover-lift group flex items-center gap-4 rounded-xl border border-white/10 bg-fl-black/40 p-4 transition-colors hover:border-white/20"
+            >
+                <div
+                    class="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/5 text-white/60 transition-transform duration-300 group-hover:scale-110"
+                >
+                    <PenLine class="size-6" />
+                </div>
+                <div>
+                    <p class="font-semibold text-white">
+                        Agregar manualmente
+                    </p>
+                    <p class="mt-0.5 text-xs text-white/50">
+                        Busca tu evento o captura los datos tú mismo.
+                    </p>
+                </div>
+            </Link>
         </div>
 
         <MascotEmptyState
             v-if="medals.length === 0"
             title="Tu colección comienza con una meta."
-            description="Registra tu primera medalla y empieza a construir tu Legacy."
+            description="Escanea el QR de tu placa o registra tu primera medalla a mano."
         >
             <Button
                 as-child
@@ -57,15 +112,16 @@ defineProps<{
             </Button>
         </MascotEmptyState>
 
-        <div
+        <StaggerGroup
             v-else
-            class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+            as="div"
+            class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6"
         >
             <Link
                 v-for="medal in medals"
                 :key="medal.id"
                 :href="show(medal.id)"
-                class="group overflow-hidden rounded-xl border border-white/10 bg-fl-graphite/40 transition-colors hover:border-fl-gold/30"
+                class="fl-hover-lift fl-hover-zoom group overflow-hidden rounded-xl border border-white/10 bg-fl-graphite/40 transition-colors duration-300 hover:border-fl-gold/30"
             >
                 <div
                     class="relative aspect-square bg-gradient-to-br from-fl-graphite-light to-fl-black"
@@ -75,7 +131,7 @@ defineProps<{
                         :src="medal.thumbnail_url"
                         :alt="medal.title"
                         loading="lazy"
-                        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        class="size-full object-cover"
                     />
                     <div
                         v-else
@@ -90,6 +146,16 @@ defineProps<{
                     >
                         Privada
                     </Badge>
+                    <div
+                        class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-fl-black/95 via-fl-black/40 to-transparent px-3 pt-6 pb-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                    >
+                        <p
+                            v-if="formatDate(medal.event_date)"
+                            class="text-sm font-semibold text-fl-gold"
+                        >
+                            {{ formatDate(medal.event_date) }}
+                        </p>
+                    </div>
                 </div>
                 <div class="p-3">
                     <p class="truncate text-sm font-medium text-white">
@@ -104,6 +170,6 @@ defineProps<{
                     </p>
                 </div>
             </Link>
-        </div>
+        </StaggerGroup>
     </div>
 </template>

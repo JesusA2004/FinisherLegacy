@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/vue3';
 import { Search } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
 import { reactive } from 'vue';
+import StaggerGroup from '@/components/motion/StaggerGroup.vue';
 import EventCard from '@/components/public/EventCard.vue';
 import Pagination from '@/components/public/Pagination.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
@@ -31,7 +32,7 @@ const { editions, sports, filters } = defineProps<{
 const form = reactive({
     q: filters.q ?? '',
     sport: filters.sport ?? 'all',
-    status: filters.status ?? 'all',
+    status: filters.status ?? 'available',
 });
 
 function applyFilters() {
@@ -40,7 +41,7 @@ function applyFilters() {
         {
             q: form.q || undefined,
             sport: form.sport === 'all' ? undefined : form.sport,
-            status: form.status === 'all' ? undefined : form.status,
+            status: form.status === 'available' ? undefined : form.status,
         },
         { preserveState: true, replace: true },
     );
@@ -49,7 +50,7 @@ function applyFilters() {
 const debouncedApply = useDebounceFn(applyFilters, 350);
 
 const statusOptions = [
-    { value: 'all', label: 'Todos los estados' },
+    { value: 'available', label: 'Disponibles' },
     { value: 'upcoming', label: 'Próximo' },
     { value: 'ongoing', label: 'En curso' },
     { value: 'finished', label: 'Finalizado' },
@@ -151,13 +152,17 @@ const statusOptions = [
                 </p>
             </div>
 
-            <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerGroup
+                v-else
+                as="div"
+                class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            >
                 <EventCard
                     v-for="edition in editions.data"
                     :key="edition.id"
                     :edition="edition"
                 />
-            </div>
+            </StaggerGroup>
 
             <div class="mt-14">
                 <Pagination :links="editions.links" />

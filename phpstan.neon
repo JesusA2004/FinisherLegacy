@@ -12,3 +12,11 @@ parameters:
 
     level: 7
     parseModelCastsMethod: true
+
+    ignoreErrors:
+        -
+            # Unmodified Sanctum-published config boilerplate — env()'s stub
+            # return type includes bool because Laravel casts "true"/"false"
+            # strings, not something to change in vendor-default config.
+            message: '~Parameter #2 \$string of function explode expects string, bool\|string given\.~'
+            path: config/sanctum.php

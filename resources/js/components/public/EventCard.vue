@@ -25,12 +25,24 @@ const phaseCopy: Record<EventPhase, { label: string; class: string }> = {
     },
 };
 
+const eventDate = computed(() => new Date(`${edition.event_date}T00:00:00`));
+
 const formattedDate = computed(() =>
-    new Date(`${edition.event_date}T00:00:00`).toLocaleDateString('es-MX', {
+    eventDate.value.toLocaleDateString('es-MX', {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
     }),
+);
+
+const dayNumber = computed(() =>
+    eventDate.value.toLocaleDateString('es-MX', { day: 'numeric' }),
+);
+
+const monthAbbrev = computed(() =>
+    eventDate.value
+        .toLocaleDateString('es-MX', { month: 'short' })
+        .replace('.', ''),
 );
 </script>
 
@@ -76,6 +88,18 @@ const formattedDate = computed(() =>
             >
                 {{ phaseCopy[edition.phase].label }}
             </Badge>
+
+            <div
+                class="absolute top-3 right-3 flex flex-col items-center rounded-lg border border-white/10 bg-fl-black/80 px-2.5 py-1.5 leading-none backdrop-blur-sm"
+            >
+                <span class="text-lg font-bold text-white">{{
+                    dayNumber
+                }}</span>
+                <span
+                    class="mt-0.5 text-[10px] font-semibold tracking-wide text-fl-gold uppercase"
+                    >{{ monthAbbrev }}</span
+                >
+            </div>
         </div>
 
         <div class="flex flex-1 flex-col gap-3 p-5">

@@ -8,6 +8,7 @@ export type DashboardStats = {
 export type DashboardProfileSummary = {
     username: string;
     profile_visibility: 'public' | 'private';
+    completion: number;
 };
 
 export type SportOption = {
@@ -36,6 +37,11 @@ export type MedalCard = {
     thumbnail_url: string | null;
 };
 
+export type MedalGalleryImage = {
+    id: number;
+    url: string | null;
+};
+
 export type MedalDetail = {
     id: number;
     title: string;
@@ -53,6 +59,8 @@ export type MedalDetail = {
     race_name: string | null;
     front_image_url: string | null;
     back_image_url: string | null;
+    gallery_images: MedalGalleryImage[];
+    gallery_slots_remaining: number;
     plate: { serial_number: string; status: string } | null;
     legacy_code: { code: string; status: string } | null;
 };

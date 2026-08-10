@@ -167,6 +167,28 @@ async function handleDelete() {
             </div>
         </div>
 
+        <div v-if="medal.gallery_images.length" class="mt-6">
+            <h2
+                class="mb-3 text-sm font-semibold tracking-wide text-white/60 uppercase"
+            >
+                Galería
+            </h2>
+            <div class="grid grid-cols-3 gap-3 sm:grid-cols-5">
+                <div
+                    v-for="image in medal.gallery_images"
+                    :key="image.id"
+                    class="aspect-square overflow-hidden rounded-xl border border-white/10 bg-fl-black"
+                >
+                    <img
+                        v-if="image.url"
+                        :src="image.url"
+                        alt="Foto de la galería"
+                        class="size-full object-cover"
+                    />
+                </div>
+            </div>
+        </div>
+
         <div v-if="medal.story" class="mt-6">
             <h2
                 class="text-sm font-semibold tracking-wide text-white/60 uppercase"

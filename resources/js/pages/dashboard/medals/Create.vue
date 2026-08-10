@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
+import { getLocalTimeZone, today } from '@internationalized/date';
 import { Award, Check, Loader2, Search } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
 import { computed, ref, watch } from 'vue';
+import DatePicker from '@/components/DatePicker.vue';
+import GalleryImagePicker from '@/components/forms/GalleryImagePicker.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +46,7 @@ const steps = [
     'Confirmar',
 ];
 const currentStep = ref(1);
+const todayCalendarDate = today(getLocalTimeZone());
 
 const form = useForm({
     origin: 'manual' as 'registered' | 'manual',
@@ -58,6 +62,7 @@ const form = useForm({
     pace: '',
     front_image: null as File | null,
     back_image: null as File | null,
+    gallery_images: [] as File[],
     story: '',
     visibility: 'public' as 'public' | 'private',
 });
@@ -156,6 +161,10 @@ const canProceed = computed(() => {
 
     return true;
 });
+
+const quotaError = computed(
+    () => (form.errors as Record<string, string>).quota,
+);
 
 function next() {
     if (currentStep.value < steps.length && canProceed.value) {
@@ -341,10 +350,12 @@ function submit() {
                 </div>
                 <div class="grid gap-2">
                     <Label for="event_date">Fecha</Label>
-                    <Input
-                        id="event_date"
-                        v-model="form.event_date"
-                        type="date"
+                    <DatePicker
+                        :model-value="form.event_date || null"
+                        :max-value="todayCalendarDate"
+                        @update:model-value="
+                            (value) => (form.event_date = value ?? '')
+                        "
                     />
                 </div>
                 <div class="grid gap-2">
@@ -472,6 +483,15 @@ function submit() {
                     </p>
                 </div>
             </div>
+
+            <div class="grid gap-2">
+                <Label>Fotos adicionales (opcional)</Label>
+                <GalleryImagePicker
+                    v-model="form.gallery_images"
+                    :max="3"
+                    :error="form.errors.gallery_images"
+                />
+            </div>
         </div>
 
         <!-- Step 4: Story -->
@@ -556,6 +576,13 @@ function submit() {
                 {{ form.story }}
             </p>
         </div>
+
+        <p
+            v-if="quotaError"
+            class="fl-error-shake mt-6 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-400"
+        >
+            {{ quotaError }}
+        </p>
 
         <!-- Navigation -->
         <div class="mt-8 flex justify-between">

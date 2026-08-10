@@ -1,18 +1,37 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import { Award, Lock, MapPin, QrCode } from '@lucide/vue';
-import { computed } from 'vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { Award, Lock, MapPin } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
+import { claim, continueMethod } from '@/routes/legacy-code';
 import type { LegacyCodeAthlete, LegacyCodePlate } from '@/types';
 
-const { code, available, linked, plate, athlete } = defineProps<{
-    code: string;
-    available: boolean;
-    linked: boolean;
-    plate: LegacyCodePlate | null;
-    athlete: LegacyCodeAthlete | null;
-}>();
+const { code, available, linked, ownedByMe, plate, athlete, qrUrl } =
+    defineProps<{
+        code: string;
+        available: boolean;
+        linked: boolean;
+        ownedByMe: boolean;
+        plate: LegacyCodePlate | null;
+        athlete: LegacyCodeAthlete | null;
+        qrUrl: string | null;
+    }>();
+
+const page = usePage();
+const isAuthenticated = computed(() => page.props.auth.user != null);
+
+const confirmOpen = ref(false);
+const claiming = ref(false);
 
 const formattedDate = computed(() => {
     if (!plate?.event_date) {
@@ -33,6 +52,24 @@ const initials = computed(() =>
         .join('')
         .toUpperCase(),
 );
+
+function submitClaim() {
+    claiming.value = true;
+
+    router.post(
+        claim(code).url,
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                confirmOpen.value = false;
+            },
+            onFinish: () => {
+                claiming.value = false;
+            },
+        },
+    );
+}
 </script>
 
 <template>
@@ -72,9 +109,14 @@ const initials = computed(() =>
                 class="rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 text-center"
             >
                 <div
-                    class="mx-auto flex size-16 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold"
+                    class="mx-auto flex size-20 items-center justify-center rounded-xl border border-fl-gold/30 bg-white p-2"
                 >
-                    <QrCode class="size-7" />
+                    <img
+                        v-if="qrUrl"
+                        :src="qrUrl"
+                        alt="Código QR de este Legacy Code"
+                        class="size-full"
+                    />
                 </div>
                 <p
                     class="mt-6 rounded-md border border-white/10 bg-fl-black px-3 py-1.5 font-mono text-sm text-fl-gold"
@@ -163,24 +205,88 @@ const initials = computed(() =>
             <div
                 class="mt-4 rounded-xl border border-dashed border-white/15 p-5 text-center"
             >
-                <template v-if="linked">
+                <template v-if="ownedByMe">
+                    <Award class="mx-auto size-5 text-fl-gold" />
+                    <p class="fl-success-pulse mt-2 text-sm text-white/70">
+                        Esta historia ya forma parte de tu Legacy.
+                    </p>
+                </template>
+                <template v-else-if="linked">
                     <Award class="mx-auto size-5 text-fl-gold" />
                     <p class="mt-2 text-sm text-white/70">
                         Esta placa ya forma parte de un Legacy Profile.
                     </p>
                 </template>
-                <template v-else>
+                <template v-else-if="isAuthenticated">
                     <p class="text-sm text-white/70">
-                        Esta placa aún no ha sido vinculada a un Legacy.
+                        Esta placa está esperando formar parte de un Legacy.
                     </p>
                     <Button
-                        disabled
-                        class="mt-4 w-full bg-fl-gold/40 text-fl-black/70"
+                        class="fl-hover-lift mt-4 w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        @click="confirmOpen = true"
                     >
-                        Vincular a mi Legacy — Próximamente
+                        Vincular a mi Legacy
                     </Button>
+                </template>
+                <template v-else>
+                    <p class="text-sm text-white/70">
+                        Esta placa está esperando formar parte de un Legacy.
+                    </p>
+                    <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <Button
+                            as-child
+                            variant="outline"
+                            class="fl-hover-lift w-full border-white/15 text-white hover:bg-white/5"
+                        >
+                            <a :href="continueMethod({ code, provider: 'login' }).url"
+                                >Iniciar sesión</a
+                            >
+                        </Button>
+                        <Button
+                            as-child
+                            class="fl-hover-lift w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        >
+                            <a
+                                :href="
+                                    continueMethod({ code, provider: 'register' })
+                                        .url
+                                "
+                                >Crear mi Legacy</a
+                            >
+                        </Button>
+                    </div>
                 </template>
             </div>
         </template>
+
+        <Dialog v-model:open="confirmOpen">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>¿Vincular esta placa a tu Legacy?</DialogTitle>
+                    <DialogDescription>
+                        {{ plate?.event_name ?? 'Esta placa' }} pasará a formar
+                        parte de tu Legacy Profile de forma permanente. Esta
+                        acción no se puede deshacer.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter class="gap-2">
+                    <Button
+                        variant="secondary"
+                        :disabled="claiming"
+                        @click="confirmOpen = false"
+                    >
+                        Cancelar
+                    </Button>
+                    <Button
+                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        :disabled="claiming"
+                        @click="submitClaim"
+                    >
+                        <Spinner v-if="claiming" />
+                        Confirmar y vincular
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </section>
 </template>

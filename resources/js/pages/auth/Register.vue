@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
+import PasswordStrengthMeter from '@/components/PasswordStrengthMeter.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
+
+const passwordValue = ref('');
 
 defineOptions({
     layout: {
@@ -76,12 +80,14 @@ defineOptions({
                 <Label for="password">Contraseña</Label>
                 <PasswordInput
                     id="password"
+                    v-model="passwordValue"
                     name="password"
                     required
                     :tabindex="4"
                     autocomplete="new-password"
                     placeholder="Contraseña"
                 />
+                <PasswordStrengthMeter :password="passwordValue" />
                 <InputError :message="errors.password" />
             </div>
 

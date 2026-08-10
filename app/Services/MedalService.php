@@ -8,9 +8,11 @@ use App\Models\EventEdition;
 use App\Models\EventParticipant;
 use App\Models\EventRace;
 use App\Models\Medal;
+use App\Models\MedalImage;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class MedalService
 {
@@ -18,10 +20,14 @@ class MedalService
 
     /**
      * @param  array<string, mixed>  $data
+     * @param  array<int, UploadedFile>  $galleryImages
      */
-    public function create(User $user, array $data, UploadedFile $front, ?UploadedFile $back): Medal
+    public function create(User $user, array $data, UploadedFile $front, ?UploadedFile $back, array $galleryImages = []): Medal
     {
-        return DB::transaction(function () use ($user, $data, $front, $back) {
+        $this->ensureMedalQuota($user);
+        $this->ensureImageQuota($user, 1 + ($back ? 1 : 0) + count($galleryImages));
+
+        return DB::transaction(function () use ($user, $data, $front, $back, $galleryImages) {
             $attributes = $this->resolveOrigin($user, $data);
             $attributes['story'] = $data['story'] ?? null;
             $attributes['visibility'] = $data['visibility'];
@@ -36,16 +42,26 @@ class MedalService
                 $this->images->store($back, $medal, MedalImageType::Back, 1);
             }
 
+            foreach (array_values($galleryImages) as $index => $galleryImage) {
+                $this->images->store($galleryImage, $medal, MedalImageType::Gallery, 2 + $index);
+            }
+
             return $medal->fresh('images');
         });
     }
 
     /**
      * @param  array<string, mixed>  $data
+     * @param  array<int, UploadedFile>  $newGalleryImages
      */
-    public function update(Medal $medal, array $data, ?UploadedFile $front, ?UploadedFile $back): Medal
+    public function update(Medal $medal, array $data, ?UploadedFile $front, ?UploadedFile $back, array $newGalleryImages = []): Medal
     {
-        return DB::transaction(function () use ($medal, $data, $front, $back) {
+        if ($newGalleryImages !== []) {
+            $this->ensureMedalImageLimit($medal, count($newGalleryImages));
+            $this->ensureImageQuota($medal->user, count($newGalleryImages));
+        }
+
+        return DB::transaction(function () use ($medal, $data, $front, $back, $newGalleryImages) {
             $isOfficial = $medal->event_participant_id !== null;
 
             $attributes = [
@@ -76,8 +92,21 @@ class MedalService
                 $this->replaceImage($medal, MedalImageType::Back, $back, 1);
             }
 
+            $nextSortOrder = $medal->images()->where('type', MedalImageType::Gallery)->max('sort_order') + 1;
+
+            foreach (array_values($newGalleryImages) as $index => $galleryImage) {
+                $this->images->store($galleryImage, $medal, MedalImageType::Gallery, $nextSortOrder + $index);
+            }
+
             return $medal->fresh('images');
         });
+    }
+
+    public function removeGalleryImage(Medal $medal, int $medalImageId): void
+    {
+        $image = $medal->images()->where('type', MedalImageType::Gallery)->findOrFail($medalImageId);
+
+        $this->images->delete($image);
     }
 
     public function delete(Medal $medal): void
@@ -85,6 +114,45 @@ class MedalService
         // Medal uses SoftDeletes: this always archives (deleted_at is set) and
         // never destroys the row, so Plate/LegacyCode historical links stay intact.
         $medal->delete();
+    }
+
+    private function ensureMedalQuota(User $user): void
+    {
+        $max = (int) config('finisher.quotas.max_medals_per_athlete');
+
+        if ($user->medals()->count() >= $max) {
+            throw ValidationException::withMessages([
+                'quota' => ["No pudimos agregar otra medalla porque alcanzaste el límite de {$max} medallas de esta versión piloto."],
+            ]);
+        }
+    }
+
+    private function ensureImageQuota(User $user, int $incomingCount): void
+    {
+        if ($incomingCount === 0) {
+            return;
+        }
+
+        $max = (int) config('finisher.quotas.max_images_per_athlete');
+        $current = MedalImage::whereIn('medal_id', $user->medals()->pluck('id'))->count();
+
+        if ($current + $incomingCount > $max) {
+            throw ValidationException::withMessages([
+                'quota' => ['No pudimos agregar otra imagen porque alcanzaste el límite de almacenamiento de esta versión piloto.'],
+            ]);
+        }
+    }
+
+    private function ensureMedalImageLimit(Medal $medal, int $incomingCount): void
+    {
+        $max = (int) config('finisher.medal.max_images_per_medal');
+        $current = $medal->images()->count();
+
+        if ($current + $incomingCount > $max) {
+            throw ValidationException::withMessages([
+                'gallery_images' => ["Esta medalla puede tener máximo {$max} imágenes en total."],
+            ]);
+        }
     }
 
     /**

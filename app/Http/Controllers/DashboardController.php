@@ -13,11 +13,28 @@ class DashboardController extends Controller
         $user = $request->user();
         $user->loadMissing(['legacyId', 'athleteProfile']);
 
+        $profile = $user->athleteProfile;
+        $completion = null;
+
+        if ($profile) {
+            $checks = [
+                filled($profile->username),
+                filled($profile->profile_photo_path),
+                filled($profile->bio),
+                filled($profile->city),
+                $profile->main_sport_id !== null,
+                filled($profile->cover_photo_path),
+            ];
+
+            $completion = (int) round((count(array_filter($checks)) / count($checks)) * 100);
+        }
+
         return Inertia::render('Dashboard', [
             'legacyId' => $user->legacyId?->code,
-            'profile' => $user->athleteProfile ? [
-                'username' => $user->athleteProfile->username,
-                'profile_visibility' => $user->athleteProfile->profile_visibility->value,
+            'profile' => $profile ? [
+                'username' => $profile->username,
+                'profile_visibility' => $profile->profile_visibility->value,
+                'completion' => $completion,
             ] : null,
             'stats' => [
                 'medals' => $user->medals()->count(),
