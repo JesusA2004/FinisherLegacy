@@ -42,8 +42,8 @@ defineOptions({
                         required
                         autofocus
                         :tabindex="1"
-                        autocomplete="given-name"
-                        placeholder="Jesús"
+                        autocomplete="off"
+                        placeholder="Zuriel"
                     />
                     <InputError :message="errors.first_name" />
                 </div>
