@@ -26,14 +26,14 @@ const { medal } = defineProps<{
 }>();
 
 defineOptions({
-    layout: {
+    layout: (props: { medal: MedalDetail }) => ({
         breadcrumbs: [
             { title: 'Dashboard', href: dashboard() },
             { title: 'Mis Medallas', href: index() },
-            { title: medal.title, href: show(medal.id) },
+            { title: props.medal.title, href: show(props.medal.id) },
             { title: 'Editar', href: '#' },
         ],
-    },
+    }),
 });
 
 const form = useForm({

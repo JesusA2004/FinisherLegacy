@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { QrCode, Search, Zap } from '@lucide/vue';
+import { CalendarClock, QrCode, Search, Zap } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
 import { ref, watch } from 'vue';
 import {
@@ -9,6 +9,7 @@ import {
     selectEvent,
     showParticipant,
 } from '@/actions/App/Http/Controllers/OperatorController';
+import Reveal from '@/components/motion/Reveal.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -105,10 +106,15 @@ function submitQuickPlate() {
 
     <div class="min-h-svh bg-fl-black p-4 md:p-8">
         <div class="mx-auto max-w-2xl">
-            <div class="mb-6 flex items-center justify-between">
-                <h1 class="text-xl font-bold text-white">Event OS</h1>
+            <div class="mb-6 flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold tracking-[0.2em] text-fl-gold uppercase">
+                        Event OS
+                    </p>
+                    <h1 class="text-2xl font-bold text-white">Operador</h1>
+                </div>
                 <Select :model-value="String(activeEdition?.id ?? '')" @update:model-value="onSelectEvent">
-                    <SelectTrigger class="w-64 border-white/10 bg-fl-graphite/60 text-white">
+                    <SelectTrigger class="fl-focus-glow h-12 w-64 border-white/10 bg-fl-graphite/60 text-white transition-colors hover:border-fl-gold/40">
                         <SelectValue placeholder="Selecciona un evento" />
                     </SelectTrigger>
                     <SelectContent>
@@ -124,12 +130,21 @@ function submitQuickPlate() {
             </div>
 
             <template v-if="!activeEdition">
-                <div
-                    class="rounded-2xl border border-dashed border-white/15 p-10 text-center text-white/50"
-                >
-                    Selecciona un evento activo para empezar a buscar
-                    corredores y generar placas.
-                </div>
+                <Reveal>
+                    <div
+                        class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/15 bg-fl-graphite/20 p-14 text-center"
+                    >
+                        <div
+                            class="flex size-14 items-center justify-center rounded-full border border-fl-gold/25 bg-fl-black"
+                        >
+                            <CalendarClock class="size-7 text-fl-gold" />
+                        </div>
+                        <p class="max-w-xs text-sm text-white/50">
+                            Selecciona un evento activo para empezar a buscar
+                            corredores y generar placas.
+                        </p>
+                    </div>
+                </Reveal>
             </template>
 
             <template v-else>

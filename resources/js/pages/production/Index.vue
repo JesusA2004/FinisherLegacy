@@ -53,7 +53,15 @@ function cancel(plateId: number) {
                     <span class="text-white/30">({{ columns[key]?.length ?? 0 }})</span>
                 </p>
 
-                <div class="space-y-2">
+                <TransitionGroup
+                    tag="div"
+                    class="relative space-y-2"
+                    enter-active-class="transition duration-300 ease-out"
+                    enter-from-class="opacity-0 -translate-y-2 scale-95"
+                    leave-active-class="absolute w-full transition duration-200 ease-in"
+                    leave-to-class="opacity-0 translate-x-3 scale-95"
+                    move-class="transition duration-300 ease-out"
+                >
                     <div
                         v-for="card in columns[key]"
                         :key="card.id"
@@ -92,14 +100,14 @@ function cancel(plateId: number) {
                             </button>
                         </div>
                     </div>
+                </TransitionGroup>
 
-                    <p
-                        v-if="!columns[key]?.length"
-                        class="py-6 text-center text-xs text-white/20"
-                    >
-                        Sin placas aquí
-                    </p>
-                </div>
+                <p
+                    v-if="!columns[key]?.length"
+                    class="py-6 text-center text-xs text-white/20"
+                >
+                    Sin placas aquí
+                </p>
             </div>
         </div>
     </div>

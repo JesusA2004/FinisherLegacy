@@ -3,11 +3,14 @@ import { Link } from '@inertiajs/vue3';
 import {
     Award,
     Boxes,
+    Building2,
     Calendar,
     ClipboardList,
+    History,
     LayoutGrid,
     QrCode,
     Upload,
+    UserCog,
     Users,
 } from '@lucide/vue';
 import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
@@ -27,6 +30,9 @@ const nav = [
     { label: 'Importaciones', href: '/imports', icon: Upload },
     { label: 'Producción', href: '/production', icon: Boxes },
     { label: 'Event OS', href: '/operator', icon: Users },
+    { label: 'Usuarios', href: '/admin/users', icon: UserCog },
+    { label: 'Organizadores', href: '/admin/organizers', icon: Building2 },
+    { label: 'Auditoría', href: '/admin/audit', icon: History },
 ];
 </script>
 

@@ -1,12 +1,15 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditController as AdminAuditController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EditionController as AdminEditionController;
 use App\Http\Controllers\Admin\IncidentController as AdminIncidentController;
 use App\Http\Controllers\Admin\LegacyCodeController as AdminLegacyCodeController;
+use App\Http\Controllers\Admin\OrganizerController as AdminOrganizerController;
 use App\Http\Controllers\Admin\ParticipantController as AdminParticipantController;
 use App\Http\Controllers\Admin\PlateController as AdminPlateController;
 use App\Http\Controllers\Admin\PreregistrationController as AdminPreregistrationController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AthleteProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
@@ -96,6 +99,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::middleware('can:incidents.view')->get('incidents', [AdminIncidentController::class, 'index'])->name('incidents.index');
         Route::middleware('can:incidents.manage')->patch('incidents/{incident}/resolve', [AdminIncidentController::class, 'resolve'])->name('incidents.resolve');
+
+        Route::middleware('can:users.view')->get('users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::middleware('can:users.manage')->patch('users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.update-status');
+        Route::middleware('can:users.manage')->patch('users/{user}/roles', [AdminUserController::class, 'updateRoles'])->name('users.update-roles');
+
+        Route::middleware('can:organizers.view')->get('organizers', [AdminOrganizerController::class, 'index'])->name('organizers.index');
+        Route::middleware('can:organizers.manage')->post('organizers', [AdminOrganizerController::class, 'store'])->name('organizers.store');
+        Route::middleware('can:organizers.manage')->patch('organizers/{organizer}', [AdminOrganizerController::class, 'update'])->name('organizers.update');
+
+        Route::middleware('can:audit.view')->get('audit', [AdminAuditController::class, 'index'])->name('audit.index');
     });
 });
 

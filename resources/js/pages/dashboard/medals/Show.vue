@@ -14,13 +14,13 @@ const { medal } = defineProps<{
 }>();
 
 defineOptions({
-    layout: {
+    layout: (props: { medal: MedalDetail }) => ({
         breadcrumbs: [
             { title: 'Dashboard', href: dashboard() },
             { title: 'Mis Medallas', href: index() },
-            { title: medal.title, href: '#' },
+            { title: props.medal.title, href: '#' },
         ],
-    },
+    }),
 });
 
 async function handleDelete() {
