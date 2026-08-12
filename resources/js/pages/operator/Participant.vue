@@ -1,27 +1,24 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, CheckCircle2 } from '@lucide/vue';
-import { ref } from 'vue';
-import { generateIntegratedPlate, index } from '@/actions/App/Http/Controllers/OperatorController';
-import PlatePreview from '@/components/PlatePreview.vue';
+import { ArrowLeft } from '@lucide/vue';
+import { ref, watch } from 'vue';
+import { generateIntegratedPlate, index, previewPlate as previewAction } from '@/actions/App/Http/Controllers/OperatorController';
+import PlateResultPanel from '@/components/operator/PlateResultPanel.vue';
+import PlatePreviewCard from '@/components/plates/PlatePreviewCard.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import type { PlateFace, PlateRenderMode } from '@/types/plate-studio';
 
 type PlatePreviewData = {
+    id: number;
     serial_number: string;
     athlete_name: string;
-    bib_number: string | null;
-    event_name: string | null;
-    race_name: string | null;
-    official_time: string | null;
-    pace: string | null;
-    event_date: string | null;
-    status: string;
     legacy_code: string | null;
     qr_url: string | null;
+    status: string;
 };
 
-const { participant, existingPlate } = defineProps<{
+const { participant, existingPlate, templateName } = defineProps<{
     participant: {
         id: number;
         bib_number: string | null;
@@ -31,10 +28,53 @@ const { participant, existingPlate } = defineProps<{
         pace: string | null;
         result_status: string | null;
     };
+    templateName: string | null;
     existingPlate: PlatePreviewData | null;
 }>();
 
 const generating = ref(false);
+
+const face = ref<PlateFace>('front');
+const mode = ref<PlateRenderMode>('product');
+const svg = ref<string | null>(null);
+const warnings = ref<string[]>([]);
+const previewError = ref<string | null>(null);
+const loading = ref(false);
+
+function csrfToken(): string {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+}
+
+async function fetchPreview() {
+    loading.value = true;
+
+    try {
+        if (existingPlate) {
+            const response = await fetch(`/admin/plates/${existingPlate.id}/export/${face.value}/svg?mode=${mode.value}`);
+            svg.value = response.ok ? await response.text() : null;
+            warnings.value = [];
+            previewError.value = response.ok ? null : 'No se pudo generar la vista previa.';
+        } else {
+            const response = await fetch(previewAction().url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+                body: JSON.stringify({
+                    event_participant_id: participant.id,
+                    face: face.value,
+                    mode: mode.value,
+                }),
+            });
+            const json = await response.json();
+            svg.value = json.svg;
+            warnings.value = json.warnings ?? [];
+            previewError.value = json.error ?? null;
+        }
+    } finally {
+        loading.value = false;
+    }
+}
+
+watch([face, mode], fetchPreview, { immediate: true });
 
 function generate() {
     generating.value = true;
@@ -45,20 +85,6 @@ function generate() {
     );
 }
 
-const previewPlate: PlatePreviewData =
-    existingPlate ?? {
-        serial_number: 'PLT-XXXXXXXX',
-        athlete_name: participant.full_name,
-        bib_number: participant.bib_number,
-        event_name: null,
-        race_name: participant.race,
-        official_time: participant.official_time,
-        pace: participant.pace,
-        event_date: null,
-        status: 'draft',
-        legacy_code: null,
-        qr_url: null,
-    };
 </script>
 
 <template>
@@ -73,7 +99,7 @@ const previewPlate: PlatePreviewData =
                 <ArrowLeft class="size-4" /> Volver a la búsqueda
             </Link>
 
-            <div class="mt-6 grid gap-8 sm:grid-cols-[1fr_320px]">
+            <div class="mt-6 grid gap-8 sm:grid-cols-[1fr_360px]">
                 <div>
                     <h1 class="text-2xl font-bold text-white">
                         {{ participant.full_name }}
@@ -89,6 +115,12 @@ const previewPlate: PlatePreviewData =
                                 .filter(Boolean)
                                 .join(' · ')
                         }}
+                    </p>
+                    <p v-if="templateName" class="mt-1 text-xs text-white/40">
+                        Molde: {{ templateName }}
+                    </p>
+                    <p v-else class="mt-1 text-xs text-amber-400">
+                        Este evento no tiene un molde asignado — configúralo en "Preparar evento para producción".
                     </p>
 
                     <div
@@ -108,14 +140,16 @@ const previewPlate: PlatePreviewData =
                         </div>
                     </div>
 
-                    <div v-if="existingPlate" class="mt-6 flex items-center gap-2 rounded-xl border border-fl-gold/20 bg-fl-gold/5 p-4 text-sm text-fl-gold">
-                        <CheckCircle2 class="size-4" />
-                        Placa generada — Legacy Code {{ existingPlate.legacy_code }}
-                    </div>
+                    <PlateResultPanel
+                        v-if="existingPlate"
+                        class="mt-6"
+                        :plate="existingPlate"
+                        :generate-another-href="index().url"
+                    />
                     <Button
                         v-else
                         class="mt-6 w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
-                        :disabled="generating"
+                        :disabled="generating || !templateName"
                         @click="generate"
                     >
                         <Spinner v-if="generating" />
@@ -124,7 +158,15 @@ const previewPlate: PlatePreviewData =
                 </div>
 
                 <div class="flex justify-center">
-                    <PlatePreview :plate="previewPlate" />
+                    <PlatePreviewCard
+                        v-model:face="face"
+                        v-model:mode="mode"
+                        :svg="svg"
+                        :warnings="warnings"
+                        :loading="loading"
+                        :error="previewError"
+                        :is-demo="!existingPlate"
+                    />
                 </div>
             </div>
         </div>

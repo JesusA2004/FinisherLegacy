@@ -10,7 +10,7 @@ use App\Models\EventEdition;
 use App\Models\EventParticipant;
 use App\Models\LegacyCode;
 use App\Models\Plate;
-use App\Models\PlateTemplate;
+use App\Models\PlateTemplateVersion;
 use App\Models\ProductionJob;
 use App\Support\CodeGenerator;
 use Illuminate\Support\Facades\DB;
@@ -24,18 +24,20 @@ use Illuminate\Support\Str;
  */
 class PlateGenerationService
 {
-    public function generateIntegrated(EventParticipant $participant, ?PlateTemplate $template = null): Plate
+    public function generateIntegrated(EventParticipant $participant, ?PlateTemplateVersion $version = null): Plate
     {
         $participant->loadMissing(['eventEdition.event', 'eventRace', 'result']);
         $edition = $participant->eventEdition;
         $result = $participant->result;
+        $version ??= $edition->defaultPlateTemplateVersion($participant->event_race_id);
 
-        return DB::transaction(function () use ($participant, $edition, $result, $template) {
+        return DB::transaction(function () use ($participant, $edition, $result, $version) {
             $plate = Plate::create([
                 'user_id' => $participant->user_id,
                 'event_edition_id' => $edition->id,
                 'event_participant_id' => $participant->id,
-                'plate_template_id' => $template?->id,
+                'plate_template_id' => $version?->plate_template_id,
+                'plate_template_version_id' => $version?->id,
                 'serial_number' => CodeGenerator::generate('PLT', 8),
                 'generation_mode' => PlateGenerationMode::Integrated,
                 'athlete_name' => $participant->full_name ?: trim("{$participant->first_name} {$participant->last_name}"),
@@ -45,6 +47,11 @@ class PlateGenerationService
                 'official_time' => $result?->official_time,
                 'pace' => $result?->pace,
                 'event_date' => $edition->event_date,
+                'dynamic_fields' => [
+                    'category' => $participant->category,
+                    'overall_position' => $result?->overall_position,
+                    'category_position' => $result?->category_position,
+                ],
                 'status' => PlateStatus::Draft,
                 'linked_at' => $participant->user_id ? now() : null,
             ]);
@@ -57,17 +64,19 @@ class PlateGenerationService
     }
 
     /**
-     * @param  array{athlete_name: string, bib_number?: ?string, event_name?: ?string, race_name?: ?string, official_time?: ?string, pace?: ?string}  $data
+     * @param  array{athlete_name: string, bib_number?: ?string, event_name?: ?string, race_name?: ?string, official_time?: ?string, pace?: ?string, event_race_id?: ?int, swim_time?: ?string, bike_time?: ?string, run_time?: ?string, personal_phrase?: ?string}  $data
      */
-    public function generateQuick(EventEdition $edition, array $data, ?PlateTemplate $template = null): Plate
+    public function generateQuick(EventEdition $edition, array $data, ?PlateTemplateVersion $version = null): Plate
     {
         $edition->loadMissing('event');
+        $version ??= $edition->defaultPlateTemplateVersion($data['event_race_id'] ?? null);
 
-        return DB::transaction(function () use ($edition, $data, $template) {
+        return DB::transaction(function () use ($edition, $data, $version) {
             $plate = Plate::create([
                 'user_id' => null,
                 'event_edition_id' => $edition->id,
-                'plate_template_id' => $template?->id,
+                'plate_template_id' => $version?->plate_template_id,
+                'plate_template_version_id' => $version?->id,
                 'serial_number' => CodeGenerator::generate('PLT', 8),
                 'generation_mode' => PlateGenerationMode::Quick,
                 'athlete_name' => $data['athlete_name'],
@@ -77,6 +86,12 @@ class PlateGenerationService
                 'official_time' => $data['official_time'] ?? null,
                 'pace' => $data['pace'] ?? null,
                 'event_date' => $edition->event_date,
+                'dynamic_fields' => [
+                    'swim_time' => $data['swim_time'] ?? null,
+                    'bike_time' => $data['bike_time'] ?? null,
+                    'run_time' => $data['run_time'] ?? null,
+                    'personal_phrase' => $data['personal_phrase'] ?? null,
+                ],
                 'status' => PlateStatus::Draft,
             ]);
 
@@ -92,9 +107,10 @@ class PlateGenerationService
      */
     public function previewPayload(Plate $plate): array
     {
-        $plate->loadMissing(['legacyCode', 'plateTemplate']);
+        $plate->loadMissing(['legacyCode', 'plateTemplateVersion']);
 
         return [
+            'id' => $plate->id,
             'serial_number' => $plate->serial_number,
             'athlete_name' => $plate->athlete_name,
             'bib_number' => $plate->bib_number,
@@ -106,7 +122,7 @@ class PlateGenerationService
             'status' => $plate->status->value,
             'legacy_code' => $plate->legacyCode?->code,
             'qr_url' => $plate->legacyCode ? route('legacy-code.qr', $plate->legacyCode->code) : null,
-            'template' => $plate->plateTemplate?->configuration,
+            'plate_template_version_id' => $plate->plate_template_version_id,
         ];
     }
 

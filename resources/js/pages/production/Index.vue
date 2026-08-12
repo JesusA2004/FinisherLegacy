@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { ArrowRight, Ban, PackageOpen } from '@lucide/vue';
+import { ArrowRight, Ban, Download, PackageOpen } from '@lucide/vue';
 import { ref } from 'vue';
+import { exportMethod as exportFace } from '@/actions/App/Http/Controllers/Admin/PlateController';
 import { updateStatus } from '@/actions/App/Http/Controllers/ProductionController';
 import { Spinner } from '@/components/ui/spinner';
 
@@ -15,7 +16,15 @@ type Card = {
     legacy_code: string | null;
     generation_mode: string;
     updated_at: string | null;
+    download_format: string;
+    download_dpi: number;
 };
+
+function quickDownloadUrl(card: Card): string {
+    return exportFace.url([card.id, 'front', card.download_format], {
+        query: card.download_format === 'png' ? { dpi: String(card.download_dpi) } : {},
+    });
+}
 
 const { columns } = defineProps<{
     columns: Record<'pending' | 'processing' | 'ready' | 'delivered' | 'issue', Card[]>;
@@ -98,9 +107,19 @@ function cancel(plateId: number) {
                                     .join(' · ')
                             }}
                         </p>
-                        <p class="mt-1 font-mono text-[10px] text-white/30">
-                            {{ card.serial_number }}
-                        </p>
+                        <div class="mt-1 flex items-center justify-between">
+                            <p class="font-mono text-[10px] text-white/30">
+                                {{ card.serial_number }}
+                            </p>
+                            <a
+                                :href="quickDownloadUrl(card)"
+                                :title="`Descargar ${card.download_format.toUpperCase()} (frente)`"
+                                class="text-white/30 hover:text-fl-gold"
+                                target="_blank"
+                            >
+                                <Download class="size-3" />
+                            </a>
+                        </div>
 
                         <div v-if="columnMeta[key].next" class="mt-2 flex gap-1.5">
                             <button

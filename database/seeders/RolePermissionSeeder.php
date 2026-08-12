@@ -23,6 +23,7 @@ class RolePermissionSeeder extends Seeder
         'users', 'athletes', 'organizers', 'events', 'editions', 'races',
         'participants', 'results', 'preregistrations', 'medals', 'plates',
         'legacycodes', 'production', 'imports', 'incidents', 'operators',
+        'platetemplates',
     ];
 
     public function run(): void
@@ -50,11 +51,11 @@ class RolePermissionSeeder extends Seeder
             'events.view', 'editions.view', 'editions.manage', 'races.manage',
             'participants.manage', 'results.manage', 'preregistrations.manage',
             'imports.manage', 'incidents.manage', 'plates.view', 'legacycodes.view',
-            'operators.manage',
+            'operators.manage', 'platetemplates.view',
         ]);
 
         Role::findOrCreate('event_operator')->syncPermissions([
-            'participants.view', 'results.view', 'plates.manage', 'legacycodes.manage',
+            'participants.view', 'results.view', 'plates.view', 'plates.manage', 'legacycodes.manage',
             'incidents.manage', 'operator.access',
         ]);
 

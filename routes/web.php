@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\LegacyCodeController as AdminLegacyCodeController
 use App\Http\Controllers\Admin\OrganizerController as AdminOrganizerController;
 use App\Http\Controllers\Admin\ParticipantController as AdminParticipantController;
 use App\Http\Controllers\Admin\PlateController as AdminPlateController;
+use App\Http\Controllers\Admin\PlateStudioController as AdminPlateStudioController;
 use App\Http\Controllers\Admin\PreregistrationController as AdminPreregistrationController;
+use App\Http\Controllers\Admin\ProductionSetupController as AdminProductionSetupController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AthleteProfileController;
 use App\Http\Controllers\DashboardController;
@@ -68,9 +70,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [OperatorController::class, 'index'])->name('index');
         Route::post('event', [OperatorController::class, 'selectEvent'])->name('select-event');
         Route::get('search', [OperatorController::class, 'search'])->middleware('throttle:60,1')->name('search');
+        Route::post('preview', [OperatorController::class, 'previewPlate'])->middleware('throttle:60,1')->name('preview');
         Route::get('participants/{eventParticipant}', [OperatorController::class, 'showParticipant'])->name('participants.show');
         Route::post('participants/{eventParticipant}/plate', [OperatorController::class, 'generateIntegratedPlate'])->name('participants.plate');
         Route::post('quick-plate', [OperatorController::class, 'generateQuickPlate'])->name('quick-plate');
+        Route::get('quick-plate/{plate}', [OperatorController::class, 'showQuickPlate'])->name('quick-plate.show');
     });
 
     Route::middleware('can:production.access')->prefix('production')->name('production.')->group(function () {
@@ -78,6 +82,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('plates/{plate}/status', [ProductionController::class, 'updateStatus'])
             ->middleware('can:production.manage')
             ->name('plates.status');
+    });
+
+    // Production file downloads: gated by plates.view alone (not the wider
+    // dashboard.admin.view admin-panel gate) so operators and production staff can
+    // download what they just generated without needing full admin access.
+    Route::middleware('can:plates.view')->prefix('admin/plates')->name('admin.plates.')->group(function () {
+        Route::get('{plate}/export/{face}/{format}', [AdminPlateController::class, 'export'])->name('export');
+        Route::get('{plate}/export-qr/{format?}', [AdminPlateController::class, 'exportQr'])->name('export-qr');
+        Route::get('{plate}/export-package', [AdminPlateController::class, 'exportPackage'])->name('export-package');
     });
 
     Route::middleware('can:imports.manage')->prefix('imports')->name('imports.')->group(function () {
@@ -92,10 +105,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::middleware('can:events.view')->get('editions', [AdminEditionController::class, 'index'])->name('editions.index');
+
+        Route::middleware('can:editions.manage')->prefix('events/{eventEdition}/production-setup')->name('editions.production-setup.')->group(function () {
+            Route::get('/', [AdminProductionSetupController::class, 'show'])->name('show');
+            Route::post('assign-template', [AdminProductionSetupController::class, 'assignTemplate'])->name('assign-template');
+            Route::post('qr-test', [AdminProductionSetupController::class, 'markQrTested'])->name('qr-test');
+        });
         Route::middleware('can:preregistrations.view')->get('preregistrations', [AdminPreregistrationController::class, 'index'])->name('preregistrations.index');
         Route::middleware('can:participants.view')->get('participants', [AdminParticipantController::class, 'index'])->name('participants.index');
-        Route::middleware('can:plates.view')->get('plates', [AdminPlateController::class, 'index'])->name('plates.index');
+        Route::middleware('can:plates.view')->group(function () {
+            Route::get('plates', [AdminPlateController::class, 'index'])->name('plates.index');
+            Route::post('plates/export-batch', [AdminPlateController::class, 'exportBatch'])->name('plates.export-batch');
+            Route::get('plates/{plate}', [AdminPlateController::class, 'show'])->name('plates.show');
+            Route::middleware('can:plates.manage')->post('plates/{plate}/reprint', [AdminPlateController::class, 'reprint'])->name('plates.reprint');
+        });
         Route::middleware('can:legacycodes.view')->get('legacy-codes', [AdminLegacyCodeController::class, 'index'])->name('legacy-codes.index');
+
+        Route::middleware('can:platetemplates.view')->prefix('plate-studio')->name('plate-studio.')->group(function () {
+            Route::get('/', [AdminPlateStudioController::class, 'index'])->name('index');
+            Route::get('templates/{plateTemplate}/versions/{plateTemplateVersion}', [AdminPlateStudioController::class, 'edit'])->name('edit');
+            Route::post('preview', [AdminPlateStudioController::class, 'preview'])->name('preview');
+            Route::get('versions/{plateTemplateVersion}/test-export/{face}', [AdminPlateStudioController::class, 'testExport'])->name('versions.test-export');
+
+            Route::middleware('can:platetemplates.manage')->group(function () {
+                Route::post('templates', [AdminPlateStudioController::class, 'store'])->name('templates.store');
+                Route::patch('templates/{plateTemplate}', [AdminPlateStudioController::class, 'update'])->name('templates.update');
+                Route::post('templates/{plateTemplate}/duplicate', [AdminPlateStudioController::class, 'duplicate'])->name('templates.duplicate');
+                Route::post('templates/{plateTemplate}/archive', [AdminPlateStudioController::class, 'archiveTemplate'])->name('templates.archive');
+                Route::post('templates/{plateTemplate}/versions', [AdminPlateStudioController::class, 'createVersion'])->name('versions.create');
+                Route::patch('versions/{plateTemplateVersion}', [AdminPlateStudioController::class, 'updateVersion'])->name('versions.update');
+                Route::post('versions/{plateTemplateVersion}/publish', [AdminPlateStudioController::class, 'publish'])->name('versions.publish');
+                Route::post('versions/{plateTemplateVersion}/archive', [AdminPlateStudioController::class, 'archiveVersion'])->name('versions.archive');
+            });
+        });
 
         Route::middleware('can:incidents.view')->get('incidents', [AdminIncidentController::class, 'index'])->name('incidents.index');
         Route::middleware('can:incidents.manage')->patch('incidents/{incident}/resolve', [AdminIncidentController::class, 'resolve'])->name('incidents.resolve');

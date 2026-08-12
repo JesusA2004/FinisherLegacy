@@ -3,14 +3,18 @@
 use App\Enums\EditionStatus;
 use App\Enums\EventStatus;
 use App\Enums\PlateStatus;
+use App\Enums\PlateTemplateVersionStatus;
 use App\Enums\ResultStatus;
 use App\Models\EventEdition;
 use App\Models\EventParticipant;
+use App\Models\EventPlateTemplate;
 use App\Models\EventRace;
 use App\Models\EventResult;
 use App\Models\LegacyCode;
 use App\Models\Medal;
 use App\Models\Plate;
+use App\Models\PlateTemplate;
+use App\Models\PlateTemplateVersion;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 
@@ -81,6 +85,80 @@ test('end to end: participant with a result generates an integrated plate, legac
     // already see it resolve to their Legacy via the public QR URL.
     $legacyPage = $this->get(route('legacy-code.show', $legacyCode->code));
     $legacyPage->assertOk();
+});
+
+test('a plate generated for an event with an assigned template uses that exact version, and the operator can download it', function () {
+    $edition = publishedEditionForOperator();
+    $race = EventRace::factory()->create(['event_edition_id' => $edition->id]);
+    $template = PlateTemplate::factory()->create();
+    $version = PlateTemplateVersion::factory()->create([
+        'plate_template_id' => $template->id,
+        'status' => PlateTemplateVersionStatus::Published,
+        'front_configuration' => ['elements' => [
+            ['id' => 'name', 'type' => 'dynamic_text', 'field' => 'athlete_name', 'x_mm' => 3, 'y_mm' => 3, 'width_mm' => 40, 'height_mm' => 6, 'font_size_pt' => 8],
+        ]],
+    ]);
+    EventPlateTemplate::create([
+        'event_edition_id' => $edition->id,
+        'plate_template_version_id' => $version->id,
+        'is_default' => true,
+        'active' => true,
+    ]);
+
+    $participant = EventParticipant::factory()->create(['event_edition_id' => $edition->id, 'event_race_id' => $race->id]);
+
+    $this->actingAs($this->operator)->post(route('operator.select-event'), ['event_edition_id' => $edition->id]);
+    $this->actingAs($this->operator)->post(route('operator.participants.plate', $participant));
+
+    $plate = Plate::where('event_participant_id', $participant->id)->firstOrFail();
+    expect($plate->plate_template_version_id)->toBe($version->id);
+
+    $download = $this->actingAs($this->operator)->get(route('admin.plates.export', [$plate, 'front', 'svg']));
+    $download->assertOk()->assertHeader('Content-Type', 'image/svg+xml');
+});
+
+test('the pre-generation preview never creates a legacy code and reflects the draft data typed so far', function () {
+    $edition = publishedEditionForOperator();
+    $race = EventRace::factory()->create(['event_edition_id' => $edition->id]);
+    $template = PlateTemplate::factory()->create();
+    $version = PlateTemplateVersion::factory()->create([
+        'plate_template_id' => $template->id,
+        'status' => PlateTemplateVersionStatus::Published,
+        'front_configuration' => ['elements' => [
+            ['id' => 'name', 'type' => 'dynamic_text', 'field' => 'athlete_name', 'x_mm' => 3, 'y_mm' => 3, 'width_mm' => 40, 'height_mm' => 6, 'font_size_pt' => 8],
+        ]],
+    ]);
+    EventPlateTemplate::create(['event_edition_id' => $edition->id, 'plate_template_version_id' => $version->id, 'is_default' => true, 'active' => true]);
+
+    $participant = EventParticipant::factory()->create(['event_edition_id' => $edition->id, 'event_race_id' => $race->id, 'full_name' => 'Corredor De Prueba']);
+    $this->actingAs($this->operator)->post(route('operator.select-event'), ['event_edition_id' => $edition->id]);
+
+    $preview = $this->actingAs($this->operator)->postJson(route('operator.preview'), [
+        'event_participant_id' => $participant->id,
+        'face' => 'front',
+        'mode' => 'product',
+    ]);
+
+    $preview->assertOk();
+    expect($preview->json('svg'))->toContain('Corredor De Prueba')
+        ->and(LegacyCode::count())->toBe(0);
+});
+
+test('a quick plate redirects to a dedicated result page showing the real plate', function () {
+    $edition = publishedEditionForOperator();
+    $this->actingAs($this->operator)->post(route('operator.select-event'), ['event_edition_id' => $edition->id]);
+
+    $response = $this->actingAs($this->operator)->post(route('operator.quick-plate'), ['athlete_name' => 'Placa Rápida De Prueba']);
+
+    $plate = Plate::where('athlete_name', 'Placa Rápida De Prueba')->firstOrFail();
+    $response->assertRedirect(route('operator.quick-plate.show', $plate));
+
+    $show = $this->actingAs($this->operator)->get(route('operator.quick-plate.show', $plate));
+    $show->assertOk();
+    $show->assertInertia(fn ($page) => $page
+        ->component('operator/QuickPlateResult')
+        ->where('plate.athlete_name', 'Placa Rápida De Prueba')
+    );
 });
 
 test('a participant cannot get two plates', function () {

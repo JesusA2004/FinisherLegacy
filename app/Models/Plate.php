@@ -15,9 +15,10 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 #[Fillable([
-    'user_id', 'medal_id', 'event_edition_id', 'event_participant_id', 'plate_template_id', 'legacy_code_id',
-    'serial_number', 'generation_mode', 'athlete_name', 'bib_number', 'event_name', 'race_name',
-    'official_time', 'pace', 'event_date', 'status', 'linked_at', 'produced_at', 'delivered_at',
+    'user_id', 'medal_id', 'event_edition_id', 'event_participant_id', 'plate_template_id',
+    'plate_template_version_id', 'legacy_code_id', 'serial_number', 'generation_mode', 'athlete_name',
+    'bib_number', 'event_name', 'race_name', 'official_time', 'pace', 'event_date', 'dynamic_fields',
+    'status', 'linked_at', 'produced_at', 'delivered_at',
 ])]
 class Plate extends Model
 {
@@ -30,6 +31,7 @@ class Plate extends Model
             'generation_mode' => PlateGenerationMode::class,
             'status' => PlateStatus::class,
             'event_date' => 'date',
+            'dynamic_fields' => 'array',
             'linked_at' => 'datetime',
             'produced_at' => 'datetime',
             'delivered_at' => 'datetime',
@@ -64,6 +66,12 @@ class Plate extends Model
     public function plateTemplate(): BelongsTo
     {
         return $this->belongsTo(PlateTemplate::class);
+    }
+
+    /** @return BelongsTo<PlateTemplateVersion, $this> */
+    public function plateTemplateVersion(): BelongsTo
+    {
+        return $this->belongsTo(PlateTemplateVersion::class);
     }
 
     /** @return BelongsTo<LegacyCode, $this> */

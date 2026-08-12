@@ -1,0 +1,331 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\PlateTemplateVersion;
+use App\Support\PlateMeasurementService;
+use App\Support\PlateRenderData;
+use App\Support\TextFitService;
+use DOMDocument;
+use DOMElement;
+
+/**
+ * The single renderer every output reads from: web preview, SVG/PNG/PDF export, and
+ * the calibration print all call resolveElements() for the same computed layout, then
+ * only the final drawing step (SVG string here, GD in GdPlateRenderer, HTML in the
+ * dompdf view) differs. Nothing recomputes positions or auto-fit independently.
+ */
+class PlateTemplateRenderService
+{
+    public const MODE_PRODUCT = 'product';
+
+    public const MODE_PRODUCTION = 'production';
+
+    private const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    public function __construct(
+        private readonly PlateMeasurementService $measure,
+        private readonly TextFitService $textFit,
+        private readonly QrCodeService $qr,
+    ) {}
+
+    /**
+     * @return array{elements: list<array<string, mixed>>, warnings: list<string>}
+     */
+    public function resolveElements(PlateTemplateVersion $version, string $face, PlateRenderData $data): array
+    {
+        $template = $version->plateTemplate;
+        $config = $face === 'back' ? $version->back_configuration : $version->front_configuration;
+        $elements = $config['elements'] ?? [];
+
+        $resolved = [];
+        $warnings = [];
+
+        foreach ($elements as $element) {
+            [$out, $elementWarnings] = $this->resolveElement($element, $data, $template);
+            $resolved[] = $out;
+            array_push($warnings, ...$elementWarnings);
+        }
+
+        return ['elements' => $resolved, 'warnings' => array_values(array_unique($warnings))];
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     * @return array{0: array<string, mixed>, 1: list<string>}
+     */
+    private function resolveElement(array $element, PlateRenderData $data, mixed $template): array
+    {
+        $type = $element['type'] ?? 'static_text';
+        $out = $element;
+        $warnings = [];
+        $label = $element['id'] ?? $type;
+
+        if (in_array($type, ['static_text', 'dynamic_text', 'serial'], true)) {
+            $rawText = $element['text'] ?? (isset($element['field']) ? '{{'.$element['field'].'}}' : '');
+            $text = $this->interpolate((string) $rawText, $data);
+            $out['resolved_text'] = $text;
+
+            if (($element['required'] ?? false) && trim($text) === '') {
+                $warnings[] = "Campo obligatorio vacío: {$label}";
+            }
+
+            $fontSize = (float) ($element['font_size_pt'] ?? 10);
+            if (($element['auto_fit'] ?? false) && $text !== '' && (float) ($element['width_mm'] ?? 0) > 0) {
+                $fit = $this->textFit->fit(
+                    $text,
+                    (float) $element['width_mm'],
+                    $fontSize,
+                    (float) ($element['min_font_size_pt'] ?? $fontSize),
+                );
+                $out['computed_font_size_pt'] = $fit['font_size_pt'];
+
+                if (! $fit['fits']) {
+                    $preview = mb_strimwidth($text, 0, 24, '…');
+                    $warnings[] = "El texto \"{$preview}\" no cabe ni al tamaño mínimo configurado en \"{$label}\".";
+                }
+            } else {
+                $out['computed_font_size_pt'] = $fontSize;
+            }
+        }
+
+        if ($type === 'qr') {
+            $widthMm = (float) ($element['width_mm'] ?? 0);
+
+            if ($widthMm > 0 && $widthMm < 10) {
+                $warnings[] = sprintf(
+                    'El QR "%s" mide %.1fmm — mínimo operativo sugerido ~10-12mm. Valida este tamaño con una muestra de grabado antes de producción masiva.',
+                    $label,
+                    $widthMm,
+                );
+            }
+
+            $legacyCode = $data->get('legacy_code');
+            $out['qr_content'] = $legacyCode ? url('/l/'.$legacyCode) : null;
+        }
+
+        $x = (float) ($element['x_mm'] ?? 0);
+        $y = (float) ($element['y_mm'] ?? 0);
+        $w = (float) ($element['width_mm'] ?? 0);
+        $h = (float) ($element['height_mm'] ?? 0);
+        $tw = (float) ($template->width_mm ?? 0);
+        $th = (float) ($template->height_mm ?? 0);
+        $margin = (float) ($template->safe_margin_mm ?? 0);
+
+        if ($tw > 0 && $th > 0) {
+            if ($x < 0 || $y < 0 || ($x + $w) > $tw || ($y + $h) > $th) {
+                $warnings[] = "El elemento \"{$label}\" queda fuera del canvas.";
+            } elseif ($margin > 0 && ($x < $margin || $y < $margin || ($x + $w) > ($tw - $margin) || ($y + $h) > ($th - $margin))) {
+                $warnings[] = sprintf('El elemento "%s" invade el área de seguridad (%.1fmm).', $label, $margin);
+            }
+        }
+
+        return [$out, $warnings];
+    }
+
+    public function interpolate(string $text, PlateRenderData $data): string
+    {
+        return (string) preg_replace_callback(
+            '/\{\{\s*([a-z_]+)\s*\}\}/i',
+            fn (array $m) => $data->get($m[1]) ?? '',
+            $text,
+        );
+    }
+
+    /**
+     * @return array{elements: list<array<string, mixed>>, warnings: list<string>}
+     */
+    public function warnings(PlateTemplateVersion $version, string $face, PlateRenderData $data): array
+    {
+        return $this->resolveElements($version, $face, $data);
+    }
+
+    public function renderSvg(PlateTemplateVersion $version, string $face, PlateRenderData $data, string $mode = self::MODE_PRODUCT): string
+    {
+        $template = $version->plateTemplate;
+        $tw = (float) $template->width_mm;
+        $th = (float) $template->height_mm;
+        $resolved = $this->resolveElements($version, $face, $data);
+
+        $doc = new DOMDocument('1.0', 'UTF-8');
+        $svg = $doc->createElementNS(self::SVG_NS, 'svg');
+        $svg->setAttribute('width', $tw.'mm');
+        $svg->setAttribute('height', $th.'mm');
+        $svg->setAttribute('viewBox', "0 0 {$tw} {$th}");
+        $doc->appendChild($svg);
+
+        if ($mode === self::MODE_PRODUCTION) {
+            $bg = $doc->createElement('rect');
+            $bg->setAttribute('x', '0');
+            $bg->setAttribute('y', '0');
+            $bg->setAttribute('width', (string) $tw);
+            $bg->setAttribute('height', (string) $th);
+            $bg->setAttribute('fill', '#ffffff');
+            $svg->appendChild($bg);
+        }
+
+        foreach ($resolved['elements'] as $element) {
+            $node = $this->buildSvgElement($doc, $element, $mode === self::MODE_PRODUCTION);
+
+            if ($node !== null) {
+                $svg->appendChild($node);
+            }
+        }
+
+        return (string) $doc->saveXML($svg);
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function buildSvgElement(DOMDocument $doc, array $element, bool $isProduction): ?DOMElement
+    {
+        return match ($element['type'] ?? 'static_text') {
+            'static_text', 'dynamic_text', 'serial' => $this->buildTextNode($doc, $element, $isProduction),
+            'line' => $this->buildLineNode($doc, $element, $isProduction),
+            'rect' => $this->buildRectNode($doc, $element, $isProduction),
+            'qr' => $this->buildQrNode($doc, $element),
+            'image', 'logo', 'icon' => $this->buildImageNode($doc, $element, $isProduction),
+            default => null,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function buildTextNode(DOMDocument $doc, array $element, bool $isProduction): DOMElement
+    {
+        $x = (float) ($element['x_mm'] ?? 0);
+        $y = (float) ($element['y_mm'] ?? 0);
+        $w = (float) ($element['width_mm'] ?? 0);
+        $h = (float) ($element['height_mm'] ?? 0);
+        $align = $element['text_align'] ?? 'left';
+        $anchor = match ($align) {
+            'center' => 'middle',
+            'right' => 'end',
+            default => 'start',
+        };
+        $tx = match ($align) {
+            'center' => $x + $w / 2,
+            'right' => $x + $w,
+            default => $x,
+        };
+        $ty = $y + $h / 2;
+
+        $text = $doc->createElement('text');
+        $text->setAttribute('x', $this->fmt($tx));
+        $text->setAttribute('y', $this->fmt($ty));
+        $text->setAttribute('text-anchor', $anchor);
+        $text->setAttribute('dominant-baseline', 'central');
+        $fontFamily = $element['font_family'] ?? 'Inter';
+        $text->setAttribute('font-family', "{$fontFamily}, Arial, sans-serif");
+        $fontSizePt = (float) ($element['computed_font_size_pt'] ?? $element['font_size_pt'] ?? 10);
+        $text->setAttribute('font-size', $this->fmt($this->measure->ptToMm($fontSizePt)));
+        $text->setAttribute('font-weight', (string) (int) ($element['font_weight'] ?? 400));
+        $text->setAttribute('fill', $isProduction ? '#000000' : ($element['color'] ?? '#000000'));
+        $text->appendChild($doc->createTextNode((string) ($element['resolved_text'] ?? '')));
+
+        return $text;
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function buildLineNode(DOMDocument $doc, array $element, bool $isProduction): DOMElement
+    {
+        $line = $doc->createElement('line');
+        $x = (float) ($element['x_mm'] ?? 0);
+        $y = (float) ($element['y_mm'] ?? 0);
+        $line->setAttribute('x1', $this->fmt($x));
+        $line->setAttribute('y1', $this->fmt($y));
+        $line->setAttribute('x2', $this->fmt($x + (float) ($element['width_mm'] ?? 0)));
+        $line->setAttribute('y2', $this->fmt($y + (float) ($element['height_mm'] ?? 0)));
+        $line->setAttribute('stroke', $isProduction ? '#000000' : ($element['stroke'] ?? '#000000'));
+        $line->setAttribute('stroke-width', $this->fmt((float) ($element['stroke_width_mm'] ?? 0.2)));
+
+        return $line;
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function buildRectNode(DOMDocument $doc, array $element, bool $isProduction): DOMElement
+    {
+        $rect = $doc->createElement('rect');
+        $rect->setAttribute('x', $this->fmt((float) ($element['x_mm'] ?? 0)));
+        $rect->setAttribute('y', $this->fmt((float) ($element['y_mm'] ?? 0)));
+        $rect->setAttribute('width', $this->fmt((float) ($element['width_mm'] ?? 0)));
+        $rect->setAttribute('height', $this->fmt((float) ($element['height_mm'] ?? 0)));
+        $rect->setAttribute('fill', $isProduction ? 'none' : ($element['fill'] ?? 'none'));
+        $rect->setAttribute('stroke', $isProduction ? '#000000' : ($element['stroke'] ?? '#000000'));
+        $rect->setAttribute('stroke-width', $this->fmt((float) ($element['stroke_width_mm'] ?? 0.2)));
+
+        return $rect;
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function buildQrNode(DOMDocument $doc, array $element): ?DOMElement
+    {
+        $content = $element['qr_content'] ?? null;
+
+        if (! $content) {
+            return null;
+        }
+
+        $qrSvgString = $this->qr->svg((string) $content, 240);
+        $qrDoc = new DOMDocument;
+        $qrDoc->loadXML($qrSvgString);
+        $qrRoot = $qrDoc->documentElement;
+
+        if ($qrRoot === null) {
+            return null;
+        }
+
+        $wrapper = $doc->createElementNS(self::SVG_NS, 'svg');
+        $wrapper->setAttribute('x', $this->fmt((float) ($element['x_mm'] ?? 0)));
+        $wrapper->setAttribute('y', $this->fmt((float) ($element['y_mm'] ?? 0)));
+        $wrapper->setAttribute('width', $this->fmt((float) ($element['width_mm'] ?? 0)));
+        $wrapper->setAttribute('height', $this->fmt((float) ($element['height_mm'] ?? 0)));
+        $viewBox = $qrRoot->getAttribute('viewBox') ?: ('0 0 '.$qrRoot->getAttribute('width').' '.$qrRoot->getAttribute('height'));
+        $wrapper->setAttribute('viewBox', $viewBox);
+        $wrapper->setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+        foreach (iterator_to_array($qrRoot->childNodes) as $child) {
+            $wrapper->appendChild($doc->importNode($child, true));
+        }
+
+        return $wrapper;
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function buildImageNode(DOMDocument $doc, array $element, bool $isProduction): ?DOMElement
+    {
+        $src = $element['src'] ?? null;
+
+        if (! $src) {
+            return null;
+        }
+
+        $image = $doc->createElement('image');
+        $image->setAttribute('x', $this->fmt((float) ($element['x_mm'] ?? 0)));
+        $image->setAttribute('y', $this->fmt((float) ($element['y_mm'] ?? 0)));
+        $image->setAttribute('width', $this->fmt((float) ($element['width_mm'] ?? 0)));
+        $image->setAttribute('height', $this->fmt((float) ($element['height_mm'] ?? 0)));
+        $image->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', (string) $src);
+
+        if ($isProduction) {
+            $image->setAttribute('style', 'filter: grayscale(1) contrast(1000%);');
+        }
+
+        return $image;
+    }
+
+    private function fmt(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 3, '.', ''), '0'), '.') ?: '0';
+    }
+}

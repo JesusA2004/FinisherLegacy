@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
+import { Wrench } from '@lucide/vue';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 defineProps<{
     editions: {
@@ -23,6 +25,7 @@ const columns = [
     { key: 'edition', label: 'Edición' },
     { key: 'event_date', label: 'Fecha' },
     { key: 'phase', label: 'Fase' },
+    { key: 'actions', label: '' },
 ];
 </script>
 
@@ -37,6 +40,14 @@ const columns = [
                 <Badge variant="outline" class="border-white/15 text-white/60">
                     {{ row.phase }}
                 </Badge>
+            </template>
+            <template #cell-actions="{ row }">
+                <Button as-child size="sm" variant="outline" class="border-white/15 text-white hover:bg-white/10">
+                    <Link :href="`/admin/events/${row.id}/production-setup`">
+                        <Wrench class="size-3.5" />
+                        Producción
+                    </Link>
+                </Button>
             </template>
         </AdminTable>
     </div>

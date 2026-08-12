@@ -8,6 +8,7 @@ import {
     ClipboardList,
     History,
     LayoutGrid,
+    Palette,
     QrCode,
     Upload,
     UserCog,
@@ -22,9 +23,14 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 const nav = [
     { label: 'Resumen', href: '/admin', icon: LayoutGrid },
     { label: 'Eventos y ediciones', href: '/admin/editions', icon: Calendar },
-    { label: 'Prerregistros', href: '/admin/preregistrations', icon: ClipboardList },
+    {
+        label: 'Prerregistros',
+        href: '/admin/preregistrations',
+        icon: ClipboardList,
+    },
     { label: 'Participantes', href: '/admin/participants', icon: Users },
     { label: 'Placas', href: '/admin/plates', icon: Boxes },
+    { label: 'Plate Studio', href: '/admin/plate-studio', icon: Palette },
     { label: 'Legacy Codes', href: '/admin/legacy-codes', icon: QrCode },
     { label: 'Incidencias', href: '/admin/incidents', icon: Award },
     { label: 'Importaciones', href: '/imports', icon: Upload },
@@ -39,7 +45,9 @@ const nav = [
 <template>
     <div class="dark min-h-svh bg-fl-black">
         <div class="flex">
-            <aside class="hidden w-60 shrink-0 border-r border-white/10 p-4 lg:block">
+            <aside
+                class="hidden w-60 shrink-0 border-r border-white/10 p-4 lg:block"
+            >
                 <Link href="/admin" class="mb-6 block px-2">
                     <FinisherLegacyLogo size="sm" />
                 </Link>

@@ -66,6 +66,8 @@ class ProductionController extends Controller
             'legacy_code' => $plate->legacyCode?->code,
             'generation_mode' => $plate->generation_mode->value,
             'updated_at' => $plate->updated_at?->diffForHumans(),
+            'download_format' => $plate->eventEdition->production_export_format ?? 'svg',
+            'download_dpi' => $plate->eventEdition->default_dpi ?? 300,
         ];
     }
 }
