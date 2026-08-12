@@ -7,6 +7,7 @@ import AdminTable from '@/components/admin/AdminTable.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { plateStatus, statusClass, statusLabel } from '@/lib/statusLabels';
 
 const { plates, batchExportLimit } = defineProps<{
     plates: {
@@ -53,7 +54,11 @@ function toggle(id: number) {
 const overLimit = computed(() => selected.value.size >= batchExportLimit);
 
 function csrfToken(): string {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    );
 }
 
 function downloadBatch() {
@@ -98,10 +103,16 @@ function downloadBatch() {
             </Button>
         </div>
         <p v-if="overLimit" class="mb-4 text-xs text-amber-400">
-            Máximo {{ batchExportLimit }} placas por lote. Descarga este grupo antes de seleccionar más.
+            Máximo {{ batchExportLimit }} placas por lote. Descarga este grupo
+            antes de seleccionar más.
         </p>
 
-        <AdminTable :columns="columns" :rows="plates" searchable :initial-query="filters.q">
+        <AdminTable
+            :columns="columns"
+            :rows="plates"
+            searchable
+            :initial-query="filters.q"
+        >
             <template #cell-select="{ row }">
                 <Checkbox
                     :model-value="selected.has(row.id as number)"
@@ -109,12 +120,20 @@ function downloadBatch() {
                 />
             </template>
             <template #cell-status="{ row }">
-                <Badge variant="outline" class="border-white/15 text-white/60">
-                    {{ row.status }}
+                <Badge
+                    variant="outline"
+                    :class="statusClass(plateStatus, row.status as string)"
+                >
+                    {{ statusLabel(plateStatus, row.status as string) }}
                 </Badge>
             </template>
             <template #cell-actions="{ row }">
-                <Button as-child size="sm" variant="outline" class="border-white/15 text-white hover:bg-white/10">
+                <Button
+                    as-child
+                    size="sm"
+                    variant="outline"
+                    class="border-white/15 text-white hover:bg-white/10"
+                >
                     <Link :href="`/admin/plates/${row.id}`">
                         <Eye class="size-3.5" />
                         Ver

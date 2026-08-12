@@ -2,6 +2,11 @@
 import { Head } from '@inertiajs/vue3';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { Badge } from '@/components/ui/badge';
+import {
+    preregistrationStatus,
+    statusClass,
+    statusLabel,
+} from '@/lib/statusLabels';
 
 defineProps<{
     preregistrations: {
@@ -35,10 +40,22 @@ const columns = [
     <div class="p-4 md:p-8">
         <h1 class="mb-6 text-xl font-bold text-white">Prerregistros</h1>
 
-        <AdminTable :columns="columns" :rows="preregistrations" searchable :initial-query="filters.q">
+        <AdminTable
+            :columns="columns"
+            :rows="preregistrations"
+            searchable
+            :initial-query="filters.q"
+        >
             <template #cell-status="{ row }">
-                <Badge variant="outline" class="border-white/15 text-white/60">
-                    {{ row.status }}
+                <Badge
+                    variant="outline"
+                    :class="
+                        statusClass(preregistrationStatus, row.status as string)
+                    "
+                >
+                    {{
+                        statusLabel(preregistrationStatus, row.status as string)
+                    }}
                 </Badge>
             </template>
         </AdminTable>

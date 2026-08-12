@@ -224,7 +224,8 @@
 
     .fl-focus-glow:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--fl-gold) 35%, transparent);
+        box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--fl-gold) 35%, transparent);
     }
 
     .fl-error-shake {
@@ -275,4 +276,40 @@
     .fl-success-pulse {
         animation: none !important;
     }
+}
+
+/*
+  Modern, on-brand scrollbar — thin gold thumb on a transparent track instead
+  of the default OS scrollbar. Applied globally (sidebar, dialogs, permission
+  matrix, any other overflow panel) rather than as an opt-in utility, since
+  the ugly default was showing up anywhere content happened to overflow.
+*/
+* {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--fl-gold) 35%, transparent)
+        transparent;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--fl-gold) 35%, transparent);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--fl-gold) 60%, transparent);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
 }

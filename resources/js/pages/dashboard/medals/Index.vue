@@ -28,8 +28,8 @@ const scannerOpen = ref(false);
 
 function formatDate(value: string | null): string | null {
     if (!value) {
-return null;
-}
+        return null;
+    }
 
     return new Date(`${value}T00:00:00`).toLocaleDateString('es-MX', {
         day: 'numeric',
@@ -73,8 +73,7 @@ return null;
                         Escanear el QR de mi placa
                     </p>
                     <p class="mt-0.5 text-xs text-white/50">
-                        Más rápido — el evento, tiempo y ritmo se cargan
-                        solos.
+                        Más rápido — el evento, tiempo y ritmo se cargan solos.
                     </p>
                 </div>
             </button>
@@ -89,9 +88,7 @@ return null;
                     <PenLine class="size-6" />
                 </div>
                 <div>
-                    <p class="font-semibold text-white">
-                        Agregar manualmente
-                    </p>
+                    <p class="font-semibold text-white">Agregar manualmente</p>
                     <p class="mt-0.5 text-xs text-white/50">
                         Busca tu evento o captura los datos tú mismo.
                     </p>

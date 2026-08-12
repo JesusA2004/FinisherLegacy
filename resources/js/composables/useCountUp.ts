@@ -1,5 +1,5 @@
-import {  ref, watch } from 'vue';
-import type {Ref} from 'vue';
+import { ref, watch } from 'vue';
+import type { Ref } from 'vue';
 import { useReducedMotion } from '@/composables/useReducedMotion';
 
 /**
@@ -20,8 +20,8 @@ export function useCountUp(
         targetRef,
         (value) => {
             if (frame) {
-cancelAnimationFrame(frame);
-}
+                cancelAnimationFrame(frame);
+            }
 
             if (prefersReducedMotion.value) {
                 display.value = value;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from '@lucide/vue';
+import { LayoutGrid, LogOut, Settings, UserCircle } from '@lucide/vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -9,18 +9,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import UserInfo from '@/components/UserInfo.vue';
 import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
+import { edit as editProfile } from '@/routes/dashboard/profile';
+import { edit as editSettingsProfile } from '@/routes/profile';
 import type { User } from '@/types';
 
-type Props = {
-    user: User;
-};
+defineProps<{ user: User }>();
 
 const handleLogout = () => {
     router.flushAll();
 };
-
-defineProps<Props>();
 </script>
 
 <template>
@@ -32,9 +29,33 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
+            <Link
+                class="block w-full cursor-pointer"
+                href="/dashboard"
+                prefetch
+            >
+                <LayoutGrid class="mr-2 h-4 w-4" />
+                Mi Legacy
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem :as-child="true">
+            <Link
+                class="block w-full cursor-pointer"
+                :href="editProfile()"
+                prefetch
+            >
+                <UserCircle class="mr-2 h-4 w-4" />
+                Mi perfil
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem :as-child="true">
+            <Link
+                class="block w-full cursor-pointer"
+                :href="editSettingsProfile()"
+                prefetch
+            >
                 <Settings class="mr-2 h-4 w-4" />
-                Settings
+                Configuración
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
@@ -48,7 +69,7 @@ defineProps<Props>();
             data-test="logout-button"
         >
             <LogOut class="mr-2 h-4 w-4" />
-            Log out
+            Cerrar sesión
         </Link>
     </DropdownMenuItem>
 </template>

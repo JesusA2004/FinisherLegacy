@@ -35,14 +35,24 @@ const columns = [
     <div class="p-4 md:p-8">
         <h1 class="mb-6 text-xl font-bold text-white">Eventos y ediciones</h1>
 
-        <AdminTable :columns="columns" :rows="editions" searchable :initial-query="filters.q">
+        <AdminTable
+            :columns="columns"
+            :rows="editions"
+            searchable
+            :initial-query="filters.q"
+        >
             <template #cell-phase="{ row }">
                 <Badge variant="outline" class="border-white/15 text-white/60">
                     {{ row.phase }}
                 </Badge>
             </template>
             <template #cell-actions="{ row }">
-                <Button as-child size="sm" variant="outline" class="border-white/15 text-white hover:bg-white/10">
+                <Button
+                    as-child
+                    size="sm"
+                    variant="outline"
+                    class="border-white/15 text-white hover:bg-white/10"
+                >
                     <Link :href="`/admin/events/${row.id}/production-setup`">
                         <Wrench class="size-3.5" />
                         Producción

@@ -2,43 +2,25 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
+use App\Support\PermissionCatalog;
+use App\Support\SystemRoles;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Modules covered by Phase 1 + Phase 2. Each gets a "view" and a "manage"
-     * (create/update/delete) permission, which keeps the matrix simple while still
-     * letting a role see something without being able to change it.
-     *
-     * @var list<string>
-     */
-    private const MODULES = [
-        'users', 'athletes', 'organizers', 'events', 'editions', 'races',
-        'participants', 'results', 'preregistrations', 'medals', 'plates',
-        'legacycodes', 'production', 'imports', 'incidents', 'operators',
-        'platetemplates',
-    ];
-
     public function run(): void
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        foreach (self::MODULES as $module) {
-            Permission::findOrCreate("{$module}.view");
-            Permission::findOrCreate("{$module}.manage");
+        foreach (PermissionCatalog::allKeys() as $key) {
+            Permission::findOrCreate($key);
         }
-
-        Permission::findOrCreate('audit.view');
-        Permission::findOrCreate('dashboard.admin.view');
-        Permission::findOrCreate('operator.access');
-        Permission::findOrCreate('production.access');
 
         $admin = Role::findOrCreate('admin');
         $admin->syncPermissions(Permission::all());
@@ -64,5 +46,13 @@ class RolePermissionSeeder extends Seeder
         ]);
 
         Role::findOrCreate('athlete');
+
+        $roles = Role::query()->whereIn('name', SystemRoles::names())->get();
+
+        foreach ($roles as $role) {
+            if (blank($role->label)) {
+                $role->update(['label' => SystemRoles::LABELS[$role->name]]);
+            }
+        }
     }
 }

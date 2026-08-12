@@ -2,7 +2,11 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
 import { ref, watch } from 'vue';
-import { generateIntegratedPlate, index, previewPlate as previewAction } from '@/actions/App/Http/Controllers/OperatorController';
+import {
+    generateIntegratedPlate,
+    index,
+    previewPlate as previewAction,
+} from '@/actions/App/Http/Controllers/OperatorController';
 import PlateResultPanel from '@/components/operator/PlateResultPanel.vue';
 import PlatePreviewCard from '@/components/plates/PlatePreviewCard.vue';
 import { Button } from '@/components/ui/button';
@@ -42,7 +46,11 @@ const previewError = ref<string | null>(null);
 const loading = ref(false);
 
 function csrfToken(): string {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    );
 }
 
 async function fetchPreview() {
@@ -50,14 +58,22 @@ async function fetchPreview() {
 
     try {
         if (existingPlate) {
-            const response = await fetch(`/admin/plates/${existingPlate.id}/export/${face.value}/svg?mode=${mode.value}`);
+            const response = await fetch(
+                `/admin/plates/${existingPlate.id}/export/${face.value}/svg?mode=${mode.value}`,
+            );
             svg.value = response.ok ? await response.text() : null;
             warnings.value = [];
-            previewError.value = response.ok ? null : 'No se pudo generar la vista previa.';
+            previewError.value = response.ok
+                ? null
+                : 'No se pudo generar la vista previa.';
         } else {
             const response = await fetch(previewAction().url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
                 body: JSON.stringify({
                     event_participant_id: participant.id,
                     face: face.value,
@@ -84,7 +100,6 @@ function generate() {
         { onFinish: () => (generating.value = false) },
     );
 }
-
 </script>
 
 <template>
@@ -120,14 +135,17 @@ function generate() {
                         Molde: {{ templateName }}
                     </p>
                     <p v-else class="mt-1 text-xs text-amber-400">
-                        Este evento no tiene un molde asignado — configúralo en "Preparar evento para producción".
+                        Este evento no tiene un molde asignado — configúralo en
+                        "Preparar evento para producción".
                     </p>
 
                     <div
                         class="mt-6 grid grid-cols-2 gap-4 rounded-xl border border-white/10 bg-fl-graphite/40 p-5"
                     >
                         <div>
-                            <p class="text-xs text-white/40 uppercase">Tiempo</p>
+                            <p class="text-xs text-white/40 uppercase">
+                                Tiempo
+                            </p>
                             <p class="font-mono text-lg text-fl-gold">
                                 {{ participant.official_time ?? '—' }}
                             </p>

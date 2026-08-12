@@ -25,8 +25,8 @@ const copied = ref(false);
 
 async function copyLegacyId() {
     if (!legacyId) {
-return;
-}
+        return;
+    }
 
     await navigator.clipboard.writeText(legacyId);
     copied.value = true;

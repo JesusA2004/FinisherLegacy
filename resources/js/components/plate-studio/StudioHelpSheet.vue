@@ -40,7 +40,12 @@ const items = [
 <template>
     <Sheet>
         <SheetTrigger as-child>
-            <Button variant="ghost" size="icon" class="size-8 text-white/50 hover:text-white" title="Ayuda">
+            <Button
+                variant="ghost"
+                size="icon"
+                class="size-8 text-white/50 hover:text-white"
+                title="Ayuda"
+            >
                 <HelpCircle class="size-4" />
             </Button>
         </SheetTrigger>
@@ -50,7 +55,9 @@ const items = [
             </SheetHeader>
             <div class="space-y-5 overflow-y-auto px-4 pb-6">
                 <div v-for="item in items" :key="item.q">
-                    <p class="text-sm font-semibold text-fl-gold">{{ item.q }}</p>
+                    <p class="text-sm font-semibold text-fl-gold">
+                        {{ item.q }}
+                    </p>
                     <p class="mt-1 text-sm text-white/60">{{ item.a }}</p>
                 </div>
             </div>

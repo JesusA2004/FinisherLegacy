@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import { onBeforeUnmount, onMounted } from 'vue';
 import { Progress } from '@/components/ui/progress';
+import { importStatus, statusLabel } from '@/lib/statusLabels';
 
 const { importData, errors } = defineProps<{
     importData: {
@@ -17,14 +18,6 @@ const { importData, errors } = defineProps<{
     };
     errors: { row_number: number; error_message: string }[];
 }>();
-
-const statusLabel: Record<string, string> = {
-    pending: 'En espera',
-    processing: 'Procesando…',
-    completed: 'Completada',
-    completed_with_errors: 'Completada con errores',
-    failed: 'Falló',
-};
 
 const progressPercent = importData.total_rows
     ? Math.round((importData.processed_rows / importData.total_rows) * 100)
@@ -42,8 +35,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     if (timer) {
-clearInterval(timer);
-}
+        clearInterval(timer);
+    }
 });
 </script>
 
@@ -52,7 +45,9 @@ clearInterval(timer);
 
     <div class="mx-auto max-w-2xl space-y-6 p-4 md:p-6">
         <div>
-            <h1 class="text-xl font-bold text-white">{{ importData.filename }}</h1>
+            <h1 class="text-xl font-bold text-white">
+                {{ importData.filename }}
+            </h1>
             <p class="mt-1 text-sm text-white/50">
                 {{ importData.event }} — {{ importData.edition }}
             </p>
@@ -60,9 +55,12 @@ clearInterval(timer);
 
         <div class="rounded-xl border border-white/10 bg-fl-graphite/40 p-5">
             <div class="mb-2 flex items-center justify-between text-sm">
-                <span class="text-white/70">{{ statusLabel[importData.status] }}</span>
+                <span class="text-white/70">{{
+                    statusLabel(importStatus, importData.status)
+                }}</span>
                 <span class="text-white/40"
-                    >{{ importData.processed_rows }} / {{ importData.total_rows ?? '…' }}</span
+                    >{{ importData.processed_rows }} /
+                    {{ importData.total_rows ?? '…' }}</span
                 >
             </div>
             <Progress :model-value="progressPercent" />

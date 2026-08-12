@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PlateController as AdminPlateController;
 use App\Http\Controllers\Admin\PlateStudioController as AdminPlateStudioController;
 use App\Http\Controllers\Admin\PreregistrationController as AdminPreregistrationController;
 use App\Http\Controllers\Admin\ProductionSetupController as AdminProductionSetupController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AthleteProfileController;
 use App\Http\Controllers\DashboardController;
@@ -143,8 +144,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('can:incidents.manage')->patch('incidents/{incident}/resolve', [AdminIncidentController::class, 'resolve'])->name('incidents.resolve');
 
         Route::middleware('can:users.view')->get('users', [AdminUserController::class, 'index'])->name('users.index');
-        Route::middleware('can:users.manage')->patch('users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.update-status');
-        Route::middleware('can:users.manage')->patch('users/{user}/roles', [AdminUserController::class, 'updateRoles'])->name('users.update-roles');
+        Route::middleware('can:users.manage')->group(function () {
+            Route::get('users/create', [AdminUserController::class, 'create'])->name('users.create');
+            Route::post('users', [AdminUserController::class, 'store'])->name('users.store');
+            Route::patch('users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+            Route::patch('users/{user}/status', [AdminUserController::class, 'updateStatus'])->name('users.update-status');
+            Route::patch('users/{user}/roles', [AdminUserController::class, 'updateRoles'])->name('users.update-roles');
+            Route::post('users/{user}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+        });
+
+        Route::middleware('can:roles.manage')->prefix('roles')->name('roles.')->group(function () {
+            Route::get('/', [AdminRoleController::class, 'index'])->name('index');
+            Route::get('create', [AdminRoleController::class, 'create'])->name('create');
+            Route::post('/', [AdminRoleController::class, 'store'])->name('store');
+            Route::get('{role}/edit', [AdminRoleController::class, 'edit'])->name('edit');
+            Route::patch('{role}', [AdminRoleController::class, 'update'])->name('update');
+            Route::post('{role}/duplicate', [AdminRoleController::class, 'duplicate'])->name('duplicate');
+        });
 
         Route::middleware('can:organizers.view')->get('organizers', [AdminOrganizerController::class, 'index'])->name('organizers.index');
         Route::middleware('can:organizers.manage')->post('organizers', [AdminOrganizerController::class, 'store'])->name('organizers.store');

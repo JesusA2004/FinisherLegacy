@@ -238,7 +238,11 @@ function submitClaim() {
                             variant="outline"
                             class="fl-hover-lift w-full border-white/15 text-white hover:bg-white/5"
                         >
-                            <a :href="continueMethod({ code, provider: 'login' }).url"
+                            <a
+                                :href="
+                                    continueMethod({ code, provider: 'login' })
+                                        .url
+                                "
                                 >Iniciar sesión</a
                             >
                         </Button>
@@ -248,8 +252,10 @@ function submitClaim() {
                         >
                             <a
                                 :href="
-                                    continueMethod({ code, provider: 'register' })
-                                        .url
+                                    continueMethod({
+                                        code,
+                                        provider: 'register',
+                                    }).url
                                 "
                                 >Crear mi Legacy</a
                             >

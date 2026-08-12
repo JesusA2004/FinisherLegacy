@@ -79,14 +79,26 @@ function updateFilter(key: string, value: string | number | null) {
         <div class="mb-4 flex flex-wrap gap-3">
             <Select
                 :model-value="filters.user_id ? String(filters.user_id) : ' '"
-                @update:model-value="(v) => updateFilter('user_id', v && String(v).trim() ? Number(v) : null)"
+                @update:model-value="
+                    (v) =>
+                        updateFilter(
+                            'user_id',
+                            v && String(v).trim() ? Number(v) : null,
+                        )
+                "
             >
-                <SelectTrigger class="w-48 border-white/10 bg-fl-graphite/60 text-white">
+                <SelectTrigger
+                    class="w-48 border-white/10 bg-fl-graphite/60 text-white"
+                >
                     <SelectValue placeholder="Todos los usuarios" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value=" ">Todos los usuarios</SelectItem>
-                    <SelectItem v-for="u in users" :key="u.id" :value="String(u.id)">
+                    <SelectItem
+                        v-for="u in users"
+                        :key="u.id"
+                        :value="String(u.id)"
+                    >
                         {{ u.name }}
                     </SelectItem>
                 </SelectContent>
@@ -94,27 +106,41 @@ function updateFilter(key: string, value: string | number | null) {
 
             <Select
                 :model-value="filters.event || ' '"
-                @update:model-value="(v) => updateFilter('event', String(v ?? '').trim())"
+                @update:model-value="
+                    (v) => updateFilter('event', String(v ?? '').trim())
+                "
             >
-                <SelectTrigger class="w-40 border-white/10 bg-fl-graphite/60 text-white">
+                <SelectTrigger
+                    class="w-40 border-white/10 bg-fl-graphite/60 text-white"
+                >
                     <SelectValue placeholder="Toda acción" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value=" ">Toda acción</SelectItem>
-                    <SelectItem v-for="e in events" :key="e" :value="e">{{ e }}</SelectItem>
+                    <SelectItem v-for="e in events" :key="e" :value="e">{{
+                        e
+                    }}</SelectItem>
                 </SelectContent>
             </Select>
 
             <Select
                 :model-value="filters.subject_type || ' '"
-                @update:model-value="(v) => updateFilter('subject_type', String(v ?? '').trim())"
+                @update:model-value="
+                    (v) => updateFilter('subject_type', String(v ?? '').trim())
+                "
             >
-                <SelectTrigger class="w-44 border-white/10 bg-fl-graphite/60 text-white">
+                <SelectTrigger
+                    class="w-44 border-white/10 bg-fl-graphite/60 text-white"
+                >
                     <SelectValue placeholder="Todo tipo" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value=" ">Todo tipo</SelectItem>
-                    <SelectItem v-for="t in subjectTypes" :key="t.value" :value="t.value">
+                    <SelectItem
+                        v-for="t in subjectTypes"
+                        :key="t.value"
+                        :value="t.value"
+                    >
                         {{ t.label }}
                     </SelectItem>
                 </SelectContent>
@@ -124,13 +150,22 @@ function updateFilter(key: string, value: string | number | null) {
                 type="date"
                 :model-value="filters.from"
                 class="w-40 border-white/10 bg-fl-graphite/60 text-white"
-                @change="(e: Event) => updateFilter('from', (e.target as HTMLInputElement).value)"
+                @change="
+                    (e: Event) =>
+                        updateFilter(
+                            'from',
+                            (e.target as HTMLInputElement).value,
+                        )
+                "
             />
             <Input
                 type="date"
                 :model-value="filters.to"
                 class="w-40 border-white/10 bg-fl-graphite/60 text-white"
-                @change="(e: Event) => updateFilter('to', (e.target as HTMLInputElement).value)"
+                @change="
+                    (e: Event) =>
+                        updateFilter('to', (e.target as HTMLInputElement).value)
+                "
             />
         </div>
 
@@ -138,14 +173,20 @@ function updateFilter(key: string, value: string | number | null) {
             <template #cell-event="{ row }">
                 <Badge
                     variant="outline"
-                    :class="eventBadgeClass[row.event as string] ?? 'border-white/20 text-white/50'"
+                    :class="
+                        eventBadgeClass[row.event as string] ??
+                        'border-white/20 text-white/50'
+                    "
                 >
                     {{ row.event }}
                 </Badge>
             </template>
             <template #cell-subject_type="{ row }">
                 <span class="text-white/60">
-                    {{ row.subject_type }}<span v-if="row.subject_id" class="text-white/30"> #{{ row.subject_id }}</span>
+                    {{ row.subject_type
+                    }}<span v-if="row.subject_id" class="text-white/30">
+                        #{{ row.subject_id }}</span
+                    >
                 </span>
             </template>
         </AdminTable>

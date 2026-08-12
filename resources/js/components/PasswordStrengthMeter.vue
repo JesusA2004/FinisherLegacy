@@ -5,30 +5,30 @@ const { password } = defineProps<{ password: string }>();
 
 function scorePassword(value: string): number {
     if (!value) {
-return 0;
-}
+        return 0;
+    }
 
     let score = 0;
 
     if (value.length >= 8) {
-score++;
-}
+        score++;
+    }
 
     if (value.length >= 12) {
-score++;
-}
+        score++;
+    }
 
     if (/[a-z]/.test(value) && /[A-Z]/.test(value)) {
-score++;
-}
+        score++;
+    }
 
     if (/\d/.test(value)) {
-score++;
-}
+        score++;
+    }
 
     if (/[^A-Za-z0-9]/.test(value)) {
-score++;
-}
+        score++;
+    }
 
     return Math.min(score, 4);
 }
@@ -58,9 +58,7 @@ const current = computed(() => levels[score.value]);
         </div>
         <p class="text-xs text-white/40">
             Seguridad de la contraseña:
-            <span class="font-medium text-white/70">{{
-                current.label
-            }}</span>
+            <span class="font-medium text-white/70">{{ current.label }}</span>
         </p>
     </div>
 </template>

@@ -9,7 +9,11 @@ import { getLocalTimeZone, parseDate } from '@internationalized/date';
 import { CalendarIcon } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 const props = withDefaults(
@@ -33,8 +37,8 @@ const open = ref(false);
 
 const dateValue = computed<DateValue | undefined>(() => {
     if (!props.modelValue) {
-return undefined;
-}
+        return undefined;
+    }
 
     try {
         return parseDate(props.modelValue);
@@ -45,8 +49,8 @@ return undefined;
 
 const formatted = computed(() => {
     if (!dateValue.value) {
-return null;
-}
+        return null;
+    }
 
     return new Intl.DateTimeFormat('es-MX', {
         day: 'numeric',

@@ -71,7 +71,11 @@ const statusCopy: Record<string, string> = {
             </div>
 
             <div class="mx-auto mt-6 w-40 rounded-xl bg-white p-2">
-                <img :src="qrUrl" alt="Código QR de tu prerregistro" class="size-full" />
+                <img
+                    :src="qrUrl"
+                    alt="Código QR de tu prerregistro"
+                    class="size-full"
+                />
             </div>
 
             <p

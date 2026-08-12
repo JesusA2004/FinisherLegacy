@@ -27,7 +27,9 @@ async function fetchPreview() {
     loading.value = true;
 
     try {
-        const response = await fetch(`/admin/plates/${plate.id}/export/${face.value}/svg?mode=${mode.value}`);
+        const response = await fetch(
+            `/admin/plates/${plate.id}/export/${face.value}/svg?mode=${mode.value}`,
+        );
         svg.value = response.ok ? await response.text() : null;
     } finally {
         loading.value = false;
@@ -51,17 +53,31 @@ watch([face, mode], fetchPreview, { immediate: true });
 
             <div class="mt-6 grid gap-8 sm:grid-cols-[1fr_360px]">
                 <div>
-                    <h1 class="flex items-center gap-2 text-2xl font-bold text-white">
+                    <h1
+                        class="flex items-center gap-2 text-2xl font-bold text-white"
+                    >
                         <Zap class="size-5 text-fl-gold" />
                         {{ plate.athlete_name }}
                     </h1>
-                    <p class="mt-1 text-sm text-white/50">Placa rápida — sin cuenta vinculada todavía.</p>
+                    <p class="mt-1 text-sm text-white/50">
+                        Placa rápida — sin cuenta vinculada todavía.
+                    </p>
 
-                    <PlateResultPanel class="mt-6" :plate="plate" :generate-another-href="index().url" />
+                    <PlateResultPanel
+                        class="mt-6"
+                        :plate="plate"
+                        :generate-another-href="index().url"
+                    />
                 </div>
 
                 <div class="flex justify-center">
-                    <PlatePreviewCard v-model:face="face" v-model:mode="mode" :svg="svg" :warnings="[]" :loading="loading" />
+                    <PlatePreviewCard
+                        v-model:face="face"
+                        v-model:mode="mode"
+                        :svg="svg"
+                        :warnings="[]"
+                        :loading="loading"
+                    />
                 </div>
             </div>
         </div>

@@ -1,9 +1,7 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import { initializeTheme } from '@/composables/useAppearance';
-import AdminLayout from '@/layouts/AdminLayout.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
-import OperatorLayout from '@/layouts/OperatorLayout.vue';
 import PublicLayout from '@/layouts/PublicLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
@@ -30,13 +28,12 @@ createInertiaApp({
                 return AuthLayout;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
-            case name.startsWith('operator/'):
-            case name.startsWith('production/'):
-                return OperatorLayout;
-            case name.startsWith('admin/'):
-            case name.startsWith('imports/'):
-                return AdminLayout;
             default:
+                // Every authenticated surface — dashboard, admin, Event OS,
+                // producción, importaciones — shares the exact same App Shell,
+                // so there is only ever one sidebar for a logged-in user. See
+                // resources/js/config/navigation.ts for the single list every
+                // part of that shell reads from.
                 return AppLayout;
         }
     },

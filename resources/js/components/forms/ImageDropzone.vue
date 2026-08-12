@@ -63,14 +63,12 @@ const fileSizeLabel = computed(() => {
     const file = props.modelValue;
 
     if (!file) {
-return null;
-}
+        return null;
+    }
 
     const kb = file.size / 1024;
 
-    return kb < 1024
-        ? `${kb.toFixed(0)} KB`
-        : `${(kb / 1024).toFixed(1)} MB`;
+    return kb < 1024 ? `${kb.toFixed(0)} KB` : `${(kb / 1024).toFixed(1)} MB`;
 });
 
 const acceptedTypes = computed(() =>
@@ -95,8 +93,8 @@ function handleFiles(files: File[] | FileList | null) {
     const file = files?.[0] ?? null;
 
     if (!file) {
-return;
-}
+        return;
+    }
 
     const validationError = validate(file);
 

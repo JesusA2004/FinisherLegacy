@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Plus } from '@lucide/vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { importStatus, statusClass, statusLabel } from '@/lib/statusLabels';
 import { create, show } from '@/routes/imports';
 
 const { imports } = defineProps<{
@@ -18,14 +19,6 @@ const { imports } = defineProps<{
         created_at: string | null;
     }[];
 }>();
-
-const statusBadge: Record<string, string> = {
-    pending: 'border-white/20 text-white/60',
-    processing: 'border-fl-gold/30 text-fl-gold',
-    completed: 'border-emerald-500/30 text-emerald-400',
-    completed_with_errors: 'border-amber-500/30 text-amber-400',
-    failed: 'border-red-500/30 text-red-400',
-};
 </script>
 
 <template>
@@ -34,7 +27,10 @@ const statusBadge: Record<string, string> = {
     <div class="p-4 md:p-6">
         <div class="mb-6 flex items-center justify-between">
             <h1 class="text-xl font-bold text-white">Importaciones</h1>
-            <Button as-child class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft">
+            <Button
+                as-child
+                class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+            >
                 <Link :href="create().url">
                     <Plus class="size-4" />
                     Nueva importación
@@ -52,21 +48,30 @@ const statusBadge: Record<string, string> = {
                 <div>
                     <p class="font-medium text-white">{{ item.filename }}</p>
                     <p class="text-xs text-white/50">
-                        {{ item.event }} — {{ item.edition }} · {{ item.created_at }}
+                        {{ item.event }} — {{ item.edition }} ·
+                        {{ item.created_at }}
                     </p>
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="text-xs text-white/40">
                         {{ item.successful_rows }} ok
-                        <span v-if="item.failed_rows"> · {{ item.failed_rows }} con error</span>
+                        <span v-if="item.failed_rows">
+                            · {{ item.failed_rows }} con error</span
+                        >
                     </span>
-                    <Badge variant="outline" :class="statusBadge[item.status]">
-                        {{ item.status }}
+                    <Badge
+                        variant="outline"
+                        :class="statusClass(importStatus, item.status)"
+                    >
+                        {{ statusLabel(importStatus, item.status) }}
                     </Badge>
                 </div>
             </Link>
 
-            <p v-if="!imports.length" class="py-16 text-center text-sm text-white/40">
+            <p
+                v-if="!imports.length"
+                class="py-16 text-center text-sm text-white/40"
+            >
                 Aún no has hecho ninguna importación.
             </p>
         </div>

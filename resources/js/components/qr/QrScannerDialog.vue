@@ -59,8 +59,8 @@ async function start() {
     await nextTick();
 
     if (!videoRef.value) {
-return;
-}
+        return;
+    }
 
     scanner = new QrScanner(videoRef.value, handleDecode, {
         highlightScanRegion: true,

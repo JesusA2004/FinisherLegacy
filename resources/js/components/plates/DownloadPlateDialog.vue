@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { Download } from '@lucide/vue';
 import { ref } from 'vue';
-import { exportMethod as exportFace, exportPackage } from '@/actions/App/Http/Controllers/Admin/PlateController';
+import {
+    exportMethod as exportFace,
+    exportPackage,
+} from '@/actions/App/Http/Controllers/Admin/PlateController';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -53,14 +56,23 @@ function download() {
                 <div class="grid gap-2">
                     <Label>Formato</Label>
                     <Select v-model="format">
-                        <SelectTrigger class="w-full border-white/10 bg-fl-black text-white">
+                        <SelectTrigger
+                            class="w-full border-white/10 bg-fl-black text-white"
+                        >
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="svg">SVG (vector, recomendado para láser)</SelectItem>
+                            <SelectItem value="svg"
+                                >SVG (vector, recomendado para
+                                láser)</SelectItem
+                            >
                             <SelectItem value="png">PNG (imagen)</SelectItem>
-                            <SelectItem value="pdf">PDF (tamaño físico exacto)</SelectItem>
-                            <SelectItem value="zip">Paquete completo (ZIP)</SelectItem>
+                            <SelectItem value="pdf"
+                                >PDF (tamaño físico exacto)</SelectItem
+                            >
+                            <SelectItem value="zip"
+                                >Paquete completo (ZIP)</SelectItem
+                            >
                         </SelectContent>
                     </Select>
                 </div>
@@ -68,7 +80,9 @@ function download() {
                 <div v-if="format !== 'zip'" class="grid gap-2">
                     <Label>Cara</Label>
                     <Select v-model="face">
-                        <SelectTrigger class="w-full border-white/10 bg-fl-black text-white">
+                        <SelectTrigger
+                            class="w-full border-white/10 bg-fl-black text-white"
+                        >
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -81,7 +95,9 @@ function download() {
                 <div v-if="format === 'png'" class="grid gap-2">
                     <Label>Resolución</Label>
                     <Select v-model="dpi">
-                        <SelectTrigger class="w-full border-white/10 bg-fl-black text-white">
+                        <SelectTrigger
+                            class="w-full border-white/10 bg-fl-black text-white"
+                        >
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -92,12 +108,16 @@ function download() {
                 </div>
 
                 <p v-if="format === 'zip'" class="text-xs text-white/50">
-                    Incluye frente, reverso y QR en SVG, más metadata.json con serial, Legacy Code y evento.
+                    Incluye frente, reverso y QR en SVG, más metadata.json con
+                    serial, Legacy Code y evento.
                 </p>
             </div>
 
             <DialogFooter>
-                <Button class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft" @click="download">
+                <Button
+                    class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                    @click="download"
+                >
                     <Download class="size-4" />
                     Descargar
                 </Button>

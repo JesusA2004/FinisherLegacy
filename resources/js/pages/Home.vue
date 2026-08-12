@@ -172,7 +172,10 @@ TODA UNA HISTORIA."
                 title="Próximos eventos"
                 class="mb-14"
             />
-            <StaggerGroup as="div" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <StaggerGroup
+                as="div"
+                class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            >
                 <EventCard
                     v-for="edition in featuredEditions"
                     :key="edition.id"

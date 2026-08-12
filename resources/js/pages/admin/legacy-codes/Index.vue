@@ -2,6 +2,7 @@
 import { Head } from '@inertiajs/vue3';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { Badge } from '@/components/ui/badge';
+import { legacyCodeStatus, statusClass, statusLabel } from '@/lib/statusLabels';
 
 defineProps<{
     legacyCodes: {
@@ -33,13 +34,21 @@ const columns = [
     <div class="p-4 md:p-8">
         <h1 class="mb-6 text-xl font-bold text-white">Legacy Codes</h1>
 
-        <AdminTable :columns="columns" :rows="legacyCodes" searchable :initial-query="filters.q">
+        <AdminTable
+            :columns="columns"
+            :rows="legacyCodes"
+            searchable
+            :initial-query="filters.q"
+        >
             <template #cell-code="{ row }">
                 <span class="font-mono text-fl-gold">{{ row.code }}</span>
             </template>
             <template #cell-status="{ row }">
-                <Badge variant="outline" class="border-white/15 text-white/60">
-                    {{ row.status }}
+                <Badge
+                    variant="outline"
+                    :class="statusClass(legacyCodeStatus, row.status as string)"
+                >
+                    {{ statusLabel(legacyCodeStatus, row.status as string) }}
                 </Badge>
             </template>
         </AdminTable>

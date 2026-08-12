@@ -73,7 +73,14 @@ function openCreate() {
     editing.value = null;
     logoFile.value = null;
     editingLogoUrl.value = null;
-    form.value = { name: '', legal_name: '', email: '', phone: '', website: '', status: 'active' };
+    form.value = {
+        name: '',
+        legal_name: '',
+        email: '',
+        phone: '',
+        website: '',
+        status: 'active',
+    };
     dialogOpen.value = true;
 }
 
@@ -107,7 +114,11 @@ function submit() {
             { preserveScroll: true, forceFormData: true, onFinish },
         );
     } else {
-        router.post('/admin/organizers', payload, { preserveScroll: true, forceFormData: true, onFinish });
+        router.post('/admin/organizers', payload, {
+            preserveScroll: true,
+            forceFormData: true,
+            onFinish,
+        });
     }
 }
 </script>
@@ -123,15 +134,25 @@ function submit() {
                     Entidades que producen eventos en Finisher Legacy.
                 </p>
             </div>
-            <Button class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft" @click="openCreate">
+            <Button
+                class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                @click="openCreate"
+            >
                 <Plus class="size-4" />
                 Nuevo organizador
             </Button>
         </div>
 
-        <AdminTable :columns="columns" :rows="organizers" searchable :initial-query="filters.q">
+        <AdminTable
+            :columns="columns"
+            :rows="organizers"
+            searchable
+            :initial-query="filters.q"
+        >
             <template #cell-logo_url="{ row }">
-                <div class="flex size-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-fl-black">
+                <div
+                    class="flex size-9 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-fl-black"
+                >
                     <img
                         v-if="row.logo_url"
                         :src="row.logo_url as string"
@@ -167,61 +188,96 @@ function submit() {
         </AdminTable>
 
         <Dialog v-model:open="dialogOpen">
-            <DialogContent class="dark border-white/10 bg-fl-graphite text-white">
+            <DialogContent
+                class="dark border-white/10 bg-fl-graphite text-white sm:max-w-2xl"
+            >
                 <DialogHeader>
-                    <DialogTitle>{{ editing ? 'Editar organizador' : 'Nuevo organizador' }}</DialogTitle>
+                    <DialogTitle>{{
+                        editing ? 'Editar organizador' : 'Nuevo organizador'
+                    }}</DialogTitle>
                 </DialogHeader>
                 <form class="space-y-4" @submit.prevent="submit">
-                    <ImageDropzone
-                        v-model="logoFile"
-                        :initial-url="editingLogoUrl"
-                        label="Logo (opcional)"
-                        help-text="Cuadrado, mínimo 256×256px."
-                        aspect="square"
-                        class="mx-auto max-w-32"
-                    />
-                    <div class="grid gap-2">
-                        <Label>Nombre</Label>
-                        <Input v-model="form.name" required class="bg-fl-black" />
+                    <div class="grid gap-4 sm:grid-cols-[auto_1fr]">
+                        <ImageDropzone
+                            v-model="logoFile"
+                            :initial-url="editingLogoUrl"
+                            label="Logo (opcional)"
+                            help-text="Cuadrado, mínimo 256×256px."
+                            aspect="square"
+                            class="mx-auto max-w-32 sm:mx-0"
+                        />
+                        <div class="grid gap-4">
+                            <div class="grid gap-2">
+                                <Label>Nombre</Label>
+                                <Input
+                                    v-model="form.name"
+                                    required
+                                    class="bg-fl-black"
+                                />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label>Razón social (opcional)</Label>
+                                <Input
+                                    v-model="form.legal_name"
+                                    class="bg-fl-black"
+                                />
+                            </div>
+                        </div>
                     </div>
-                    <div class="grid gap-2">
-                        <Label>Razón social (opcional)</Label>
-                        <Input v-model="form.legal_name" class="bg-fl-black" />
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <div class="grid gap-2">
                             <Label>Correo de contacto</Label>
-                            <Input v-model="form.email" type="email" class="bg-fl-black" />
+                            <Input
+                                v-model="form.email"
+                                type="email"
+                                class="bg-fl-black"
+                            />
                         </div>
                         <div class="grid gap-2">
                             <Label>Teléfono</Label>
                             <Input v-model="form.phone" class="bg-fl-black" />
                         </div>
                     </div>
-                    <div class="grid gap-2">
-                        <Label>Sitio web</Label>
-                        <Input v-model="form.website" placeholder="https://" class="bg-fl-black" />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label>Estado</Label>
-                        <Select v-model="form.status">
-                            <SelectTrigger class="border-white/10 bg-fl-black text-white">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="active">Activo</SelectItem>
-                                <SelectItem value="inactive">Inactivo</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label>Sitio web</Label>
+                            <Input
+                                v-model="form.website"
+                                placeholder="https://"
+                                class="bg-fl-black"
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label>Estado</Label>
+                            <Select v-model="form.status">
+                                <SelectTrigger
+                                    class="border-white/10 bg-fl-black text-white"
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="active"
+                                        >Activo</SelectItem
+                                    >
+                                    <SelectItem value="inactive"
+                                        >Inactivo</SelectItem
+                                    >
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button
                             type="submit"
-                            class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                            class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft sm:w-auto"
                             :disabled="submitting"
                         >
                             <Spinner v-if="submitting" />
-                            {{ editing ? 'Guardar cambios' : 'Crear organizador' }}
+                            {{
+                                editing
+                                    ? 'Guardar cambios'
+                                    : 'Crear organizador'
+                            }}
                         </Button>
                     </DialogFooter>
                 </form>

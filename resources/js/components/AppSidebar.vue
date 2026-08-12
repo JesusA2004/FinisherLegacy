@@ -1,46 +1,33 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { Award, Compass, LayoutGrid, UserCircle } from '@lucide/vue';
-import NavMain from '@/components/NavMain.vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import NavUser from '@/components/NavUser.vue';
 import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import { index as medalsIndex } from '@/routes/dashboard/medals';
-import { edit as editProfile } from '@/routes/dashboard/profile';
-import { index as eventsIndex } from '@/routes/events';
-import type { NavItem } from '@/types';
+import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import { groupedNavigation } from '@/config/navigation';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Mi Legacy Profile',
-        href: editProfile(),
-        icon: UserCircle,
-    },
-    {
-        title: 'Mis Medallas',
-        href: medalsIndex(),
-        icon: Award,
-    },
-    {
-        title: 'Explorar Eventos',
-        href: eventsIndex(),
-        icon: Compass,
-    },
-];
+const page = usePage();
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const groups = computed(() => groupedNavigation(permissions.value));
+
+const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
+
+function isItemActive(item: { href: string; exact?: boolean }): boolean {
+    return item.exact
+        ? isCurrentUrl(item.href)
+        : isCurrentOrParentUrl(item.href);
+}
 </script>
 
 <template>
@@ -49,7 +36,7 @@ const mainNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link href="/dashboard">
                             <FinisherLegacyLogo size="sm" />
                         </Link>
                     </SidebarMenuButton>
@@ -58,7 +45,30 @@ const mainNavItems: NavItem[] = [
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <SidebarGroup
+                v-for="group in groups"
+                :key="group.group"
+                class="px-2 py-0"
+            >
+                <SidebarGroupLabel>{{ group.label }}</SidebarGroupLabel>
+                <SidebarMenu>
+                    <SidebarMenuItem
+                        v-for="item in group.items"
+                        :key="item.href"
+                    >
+                        <SidebarMenuButton
+                            as-child
+                            :is-active="isItemActive(item)"
+                            :tooltip="item.label"
+                        >
+                            <Link :href="item.href">
+                                <component :is="item.icon" />
+                                <span>{{ item.label }}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
         </SidebarContent>
 
         <SidebarFooter>

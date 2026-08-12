@@ -35,7 +35,8 @@ const copy: Record<number, { title: string; description: string }> = {
     },
     503: {
         title: 'En mantenimiento.',
-        description: 'Finisher Legacy vuelve en un momento. Gracias por tu paciencia.',
+        description:
+            'Finisher Legacy vuelve en un momento. Gracias por tu paciencia.',
     },
 };
 

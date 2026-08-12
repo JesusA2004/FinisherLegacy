@@ -72,7 +72,11 @@ const previewError = ref<string | null>(null);
 const previewLoading = ref(false);
 
 function csrfToken(): string {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    return (
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    );
 }
 
 async function fetchQuickPreview() {
@@ -85,7 +89,11 @@ async function fetchQuickPreview() {
     try {
         const response = await fetch(previewAction().url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+            },
             body: JSON.stringify({
                 quick: {
                     athlete_name: quickForm.athlete_name.value,
@@ -113,9 +121,8 @@ async function fetchQuickPreview() {
 
 const debouncedPreview = useDebounceFn(fetchQuickPreview, 300);
 
-watch(
-    [...Object.values(quickForm), face, mode, quickPlateOpen],
-    () => debouncedPreview(),
+watch([...Object.values(quickForm), face, mode, quickPlateOpen], () =>
+    debouncedPreview(),
 );
 
 async function runSearch() {
@@ -126,7 +133,9 @@ async function runSearch() {
     }
 
     searching.value = true;
-    const response = await fetch(`${searchAction().url}?q=${encodeURIComponent(query.value)}`);
+    const response = await fetch(
+        `${searchAction().url}?q=${encodeURIComponent(query.value)}`,
+    );
     results.value = (await response.json()).data ?? [];
     searching.value = false;
 }
@@ -135,10 +144,14 @@ watch(query, useDebounceFn(runSearch, 250));
 
 function onSelectEvent(value: unknown) {
     if (!value) {
-return;
-}
+        return;
+    }
 
-    router.post(selectEvent().url, { event_edition_id: String(value) }, { preserveScroll: true });
+    router.post(
+        selectEvent().url,
+        { event_edition_id: String(value) },
+        { preserveScroll: true },
+    );
 }
 
 function submitQuickPlate() {
@@ -173,13 +186,20 @@ function submitQuickPlate() {
         <div class="mx-auto max-w-2xl">
             <div class="mb-6 flex items-center justify-between gap-4">
                 <div>
-                    <p class="text-xs font-semibold tracking-[0.2em] text-fl-gold uppercase">
+                    <p
+                        class="text-xs font-semibold tracking-[0.2em] text-fl-gold uppercase"
+                    >
                         Event OS
                     </p>
                     <h1 class="text-2xl font-bold text-white">Operador</h1>
                 </div>
-                <Select :model-value="String(activeEdition?.id ?? '')" @update:model-value="onSelectEvent">
-                    <SelectTrigger class="fl-focus-glow h-12 w-64 border-white/10 bg-fl-graphite/60 text-white transition-colors hover:border-fl-gold/40">
+                <Select
+                    :model-value="String(activeEdition?.id ?? '')"
+                    @update:model-value="onSelectEvent"
+                >
+                    <SelectTrigger
+                        class="fl-focus-glow h-12 w-64 border-white/10 bg-fl-graphite/60 text-white transition-colors hover:border-fl-gold/40"
+                    >
                         <SelectValue placeholder="Selecciona un evento" />
                     </SelectTrigger>
                     <SelectContent>
@@ -213,11 +233,18 @@ function submitQuickPlate() {
             </template>
 
             <template v-else>
-                <p v-if="!activeEdition.hasTemplate" class="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-400">
-                    Este evento no tiene un molde de placa asignado. Configúralo en "Preparar evento para producción" antes de generar placas.
+                <p
+                    v-if="!activeEdition.hasTemplate"
+                    class="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-400"
+                >
+                    Este evento no tiene un molde de placa asignado. Configúralo
+                    en "Preparar evento para producción" antes de generar
+                    placas.
                 </p>
 
-                <p class="mb-2 text-xs font-semibold tracking-[0.2em] text-white/40 uppercase">
+                <p
+                    class="mb-2 text-xs font-semibold tracking-[0.2em] text-white/40 uppercase"
+                >
                     Buscar corredor
                 </p>
                 <div class="relative mb-3">
@@ -241,9 +268,11 @@ function submitQuickPlate() {
                     <Zap class="size-4" />
                     Generar placa rápida
                 </Button>
-                <p class="mb-6 mt-1.5 text-xs text-white/30">
-                    Para corredores sin cuenta o sin resultado en el sistema todavía. La placa se genera igual, con
-                    su propio Legacy Code permanente — la persona puede reclamarla después escaneando el QR.
+                <p class="mt-1.5 mb-6 text-xs text-white/30">
+                    Para corredores sin cuenta o sin resultado en el sistema
+                    todavía. La placa se genera igual, con su propio Legacy Code
+                    permanente — la persona puede reclamarla después escaneando
+                    el QR.
                 </p>
 
                 <div
@@ -289,13 +318,16 @@ function submitQuickPlate() {
                     v-else-if="query.trim().length > 0"
                     class="py-6 text-center text-sm text-white/30"
                 >
-                    Sin corredores para «{{ query }}». Prueba con otro nombre o número, o genera una placa rápida.
+                    Sin corredores para «{{ query }}». Prueba con otro nombre o
+                    número, o genera una placa rápida.
                 </p>
             </template>
         </div>
 
         <Dialog v-model:open="quickPlateOpen">
-            <DialogContent class="dark max-w-3xl border-white/10 bg-fl-graphite text-white">
+            <DialogContent
+                class="dark max-w-3xl border-white/10 bg-fl-graphite text-white"
+            >
                 <DialogHeader>
                     <DialogTitle class="flex items-center gap-2">
                         <QrCode class="size-5 text-fl-gold" /> Placa rápida
@@ -305,45 +337,77 @@ function submitQuickPlate() {
                     <form class="space-y-4" @submit.prevent="submitQuickPlate">
                         <div class="grid gap-2">
                             <Label>Nombre</Label>
-                            <Input v-model="quickForm.athlete_name.value" required class="bg-fl-black" />
+                            <Input
+                                v-model="quickForm.athlete_name.value"
+                                required
+                                class="bg-fl-black"
+                            />
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="grid gap-2">
                                 <Label>Número (opcional)</Label>
-                                <Input v-model="quickForm.bib_number.value" class="bg-fl-black" />
+                                <Input
+                                    v-model="quickForm.bib_number.value"
+                                    class="bg-fl-black"
+                                />
                             </div>
                             <div class="grid gap-2">
                                 <Label>Distancia (opcional)</Label>
-                                <Input v-model="quickForm.race_name.value" class="bg-fl-black" />
+                                <Input
+                                    v-model="quickForm.race_name.value"
+                                    class="bg-fl-black"
+                                />
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div class="grid gap-2">
                                 <Label>Tiempo (si se tiene)</Label>
-                                <Input v-model="quickForm.official_time.value" class="bg-fl-black" />
+                                <Input
+                                    v-model="quickForm.official_time.value"
+                                    class="bg-fl-black"
+                                />
                             </div>
                             <div class="grid gap-2">
                                 <Label>Ritmo (si se tiene)</Label>
-                                <Input v-model="quickForm.pace.value" class="bg-fl-black" />
+                                <Input
+                                    v-model="quickForm.pace.value"
+                                    class="bg-fl-black"
+                                />
                             </div>
                         </div>
                         <div class="grid grid-cols-3 gap-3">
                             <div class="grid gap-2">
                                 <Label class="text-xs">Natación</Label>
-                                <Input v-model="quickForm.swim_time.value" class="bg-fl-black" />
+                                <Input
+                                    v-model="quickForm.swim_time.value"
+                                    class="bg-fl-black"
+                                />
                             </div>
                             <div class="grid gap-2">
                                 <Label class="text-xs">Ciclismo</Label>
-                                <Input v-model="quickForm.bike_time.value" class="bg-fl-black" />
+                                <Input
+                                    v-model="quickForm.bike_time.value"
+                                    class="bg-fl-black"
+                                />
                             </div>
                             <div class="grid gap-2">
                                 <Label class="text-xs">Carrera</Label>
-                                <Input v-model="quickForm.run_time.value" class="bg-fl-black" />
+                                <Input
+                                    v-model="quickForm.run_time.value"
+                                    class="bg-fl-black"
+                                />
                             </div>
                         </div>
                         <div class="grid gap-2">
-                            <Label>Frase personal (opcional, va en el reverso)</Label>
-                            <Input v-model="quickForm.personal_phrase.value" class="bg-fl-black" maxlength="150" />
+                            <Label
+                                >Frase personal (opcional, va en el
+                                reverso)</Label
+                            >
+                            <Input
+                                v-model="quickForm.personal_phrase.value"
+                                class="bg-fl-black"
+                                maxlength="150"
+                            />
                         </div>
                         <DialogFooter>
                             <Button

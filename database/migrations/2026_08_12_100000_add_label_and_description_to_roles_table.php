@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('roles', function (Blueprint $table) {
+            // Purely cosmetic display fields for /admin/roles — the technical
+            // `name` column (spatie/permission's own) stays the real identifier
+            // used everywhere permissions/roles are checked, untouched.
+            $table->string('label')->nullable()->after('name');
+            $table->text('description')->nullable()->after('label');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('roles', function (Blueprint $table) {
+            $table->dropColumn(['label', 'description']);
+        });
+    }
+};

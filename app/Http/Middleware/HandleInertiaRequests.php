@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\PermissionCatalog;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,11 +36,31 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $isSuperAdmin = $user?->hasRole('super_admin') ?? false;
+
+        // super_admin never has permissions assigned in the database (Gate::before
+        // in AppServiceProvider grants everything unconditionally) — the menu lives
+        // in the browser and can't evaluate Gate::before, so it needs the full
+        // catalog explicitly here. Real route protection still only ever happens
+        // server-side via the `can:` middleware, this is purely for rendering nav.
+        $permissions = $user
+            ? ($isSuperAdmin ? PermissionCatalog::allKeys() : $user->getAllPermissions()->pluck('name')->all())
+            : [];
+
+        if ($isSuperAdmin) {
+            // Not a real spatie permission — only super_admin ever sees this string,
+            // via the Gate::before bypass, gating /admin/roles (see RolesController).
+            $permissions[] = 'roles.manage';
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
+                'permissions' => array_values(array_unique($permissions)),
+                'isSuperAdmin' => $isSuperAdmin,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

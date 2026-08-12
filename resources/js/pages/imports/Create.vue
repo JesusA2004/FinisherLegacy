@@ -32,7 +32,11 @@ const fields: { key: string; label: string; required: boolean }[] = [
     { key: 'bib_number', label: 'Número de corredor', required: true },
     { key: 'first_name', label: 'Nombre', required: true },
     { key: 'last_name', label: 'Apellidos', required: true },
-    { key: 'race_name', label: 'Distancia (debe coincidir con el nombre exacto de la carrera)', required: true },
+    {
+        key: 'race_name',
+        label: 'Distancia (debe coincidir con el nombre exacto de la carrera)',
+        required: true,
+    },
     { key: 'email', label: 'Correo electrónico', required: false },
     { key: 'phone', label: 'Teléfono', required: false },
 ];
@@ -43,8 +47,8 @@ async function onFileChange(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
 
     if (!file || !eventEditionId.value) {
-return;
-}
+        return;
+    }
 
     uploading.value = true;
     const formData = new FormData();
@@ -66,8 +70,8 @@ return;
     uploading.value = false;
 
     if (!response.ok) {
-return;
-}
+        return;
+    }
 
     tempPath.value = json.data.temp_path;
     originalFilename.value = json.data.original_filename;
@@ -144,14 +148,12 @@ function submit() {
                 {{ originalFilename }} — asigna cada columna de tu archivo:
             </p>
 
-            <div
-                v-for="field in fields"
-                :key="field.key"
-                class="grid gap-2"
-            >
+            <div v-for="field in fields" :key="field.key" class="grid gap-2">
                 <Label
                     >{{ field.label }}
-                    <span v-if="field.required" class="text-fl-gold">*</span></Label
+                    <span v-if="field.required" class="text-fl-gold"
+                        >*</span
+                    ></Label
                 >
                 <Select v-model="mapping[field.key]">
                     <SelectTrigger class="w-full">

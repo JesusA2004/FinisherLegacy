@@ -48,10 +48,7 @@ const chain = [
 
             <div class="relative z-10 flex items-end justify-between gap-6">
                 <div class="flex flex-col gap-3">
-                    <template
-                        v-for="(step, index) in chain"
-                        :key="step.label"
-                    >
+                    <template v-for="(step, index) in chain" :key="step.label">
                         <div class="flex items-center gap-3">
                             <div
                                 class="fl-hover-glow flex size-9 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold transition-colors duration-300"

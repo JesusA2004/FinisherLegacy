@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
-import { ShieldCheck } from '@lucide/vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { KeyRound, Pencil, Plus, ShieldCheck } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 import AdminTable from '@/components/admin/AdminTable.vue';
+import GeneratedPasswordField from '@/components/admin/GeneratedPasswordField.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -13,6 +14,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -23,23 +26,27 @@ import {
 
 type UserRow = {
     id: number;
+    first_name: string;
+    last_name: string;
     name: string;
     email: string;
+    phone: string | null;
     status: string;
     roles: string;
     last_login_at: string;
 };
 
-const { users, roles, filters, currentUserId, currentUserIsSuperAdmin } = defineProps<{
-    users: {
-        data: UserRow[];
-        links: { url: string | null; label: string; active: boolean }[];
-    };
-    roles: string[];
-    currentUserId: number;
-    currentUserIsSuperAdmin: boolean;
-    filters: { q: string; status: string; role: string };
-}>();
+const { users, roles, filters, currentUserId, currentUserIsSuperAdmin } =
+    defineProps<{
+        users: {
+            data: UserRow[];
+            links: { url: string | null; label: string; active: boolean }[];
+        };
+        roles: string[];
+        currentUserId: number;
+        currentUserIsSuperAdmin: boolean;
+        filters: { q: string; status: string; role: string };
+    }>();
 
 const roleLabels: Record<string, string> = {
     super_admin: 'Super administrador',
@@ -95,7 +102,10 @@ function changeStatus(userId: number, status: string) {
         { status },
         {
             preserveScroll: true,
-            onError: (errors) => toast.error(errors.status ?? 'No se pudo actualizar el estado.'),
+            onError: (errors) =>
+                toast.error(
+                    errors.status ?? 'No se pudo actualizar el estado.',
+                ),
         },
     );
 }
@@ -118,8 +128,8 @@ function toggleRole(role: string, checked: boolean) {
 
 function saveRoles() {
     if (!rolesDialogUser.value) {
-return;
-}
+        return;
+    }
 
     router.patch(
         `/admin/users/${rolesDialogUser.value.id}/roles`,
@@ -127,7 +137,91 @@ return;
         {
             preserveScroll: true,
             onSuccess: () => (rolesDialogOpen.value = false),
-            onError: (errors) => toast.error(errors.roles ?? 'No se pudieron actualizar los roles.'),
+            onError: (errors) =>
+                toast.error(
+                    errors.roles ?? 'No se pudieron actualizar los roles.',
+                ),
+        },
+    );
+}
+
+const editDialogOpen = ref(false);
+const editForm = ref({
+    id: 0,
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+});
+const savingEdit = ref(false);
+
+function openEditDialog(row: UserRow) {
+    editForm.value = {
+        id: row.id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        email: row.email,
+        phone: row.phone ?? '',
+    };
+    editDialogOpen.value = true;
+}
+
+function saveEdit() {
+    savingEdit.value = true;
+    router.patch(
+        `/admin/users/${editForm.value.id}`,
+        {
+            first_name: editForm.value.first_name,
+            last_name: editForm.value.last_name,
+            email: editForm.value.email,
+            phone: editForm.value.phone || null,
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => (editDialogOpen.value = false),
+            onError: (errors) =>
+                toast.error(
+                    Object.values(errors)[0] ??
+                        'No se pudo actualizar el usuario.',
+                ),
+            onFinish: () => (savingEdit.value = false),
+        },
+    );
+}
+
+const resetDialogOpen = ref(false);
+const resetUser = ref<UserRow | null>(null);
+const resetPassword = ref('');
+const resetPasswordConfirmation = ref('');
+const savingReset = ref(false);
+
+function openResetDialog(row: UserRow) {
+    resetUser.value = row;
+    resetPassword.value = '';
+    resetPasswordConfirmation.value = '';
+    resetDialogOpen.value = true;
+}
+
+function saveReset() {
+    if (!resetUser.value) {
+        return;
+    }
+
+    savingReset.value = true;
+    router.post(
+        `/admin/users/${resetUser.value.id}/reset-password`,
+        {
+            password: resetPassword.value,
+            password_confirmation: resetPasswordConfirmation.value,
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => (resetDialogOpen.value = false),
+            onError: (errors) =>
+                toast.error(
+                    errors.password ?? 'No se pudo restablecer la contraseña.',
+                ),
+            onFinish: () => (savingReset.value = false),
         },
     );
 }
@@ -137,28 +231,56 @@ return;
     <Head title="Usuarios" />
 
     <div class="p-4 md:p-8">
-        <h1 class="mb-1 text-xl font-bold text-white">Usuarios</h1>
+        <div class="mb-1 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-white">Usuarios</h1>
+            <Button
+                as-child
+                class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+            >
+                <Link href="/admin/users/create">
+                    <Plus class="size-4" />
+                    Nuevo usuario
+                </Link>
+            </Button>
+        </div>
         <p class="mb-6 text-sm text-white/50">
-            Busca, filtra y administra el acceso de cada cuenta. No se
-            eliminan usuarios desde aquí — solo se suspende o bloquea el
-            acceso.
+            Busca, filtra y administra el acceso de cada cuenta. No se eliminan
+            usuarios desde aquí — solo se suspende o bloquea el acceso.
         </p>
 
         <div class="mb-4 flex flex-wrap gap-3">
-            <Select :model-value="filters.status" @update:model-value="(v) => applyFilter('status', String(v ?? ''))">
-                <SelectTrigger class="w-44 border-white/10 bg-fl-graphite/60 text-white">
+            <Select
+                :model-value="filters.status"
+                @update:model-value="
+                    (v) => applyFilter('status', String(v ?? ''))
+                "
+            >
+                <SelectTrigger
+                    class="w-44 border-white/10 bg-fl-graphite/60 text-white"
+                >
                     <SelectValue placeholder="Todos los estados" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value=" ">Todos los estados</SelectItem>
-                    <SelectItem v-for="s in statusOptions" :key="s.value" :value="s.value">
+                    <SelectItem
+                        v-for="s in statusOptions"
+                        :key="s.value"
+                        :value="s.value"
+                    >
                         {{ s.label }}
                     </SelectItem>
                 </SelectContent>
             </Select>
 
-            <Select :model-value="filters.role" @update:model-value="(v) => applyFilter('role', String(v ?? ''))">
-                <SelectTrigger class="w-44 border-white/10 bg-fl-graphite/60 text-white">
+            <Select
+                :model-value="filters.role"
+                @update:model-value="
+                    (v) => applyFilter('role', String(v ?? ''))
+                "
+            >
+                <SelectTrigger
+                    class="w-44 border-white/10 bg-fl-graphite/60 text-white"
+                >
                     <SelectValue placeholder="Todos los roles" />
                 </SelectTrigger>
                 <SelectContent>
@@ -170,15 +292,24 @@ return;
             </Select>
         </div>
 
-        <AdminTable :columns="columns" :rows="users" searchable :initial-query="filters.q">
+        <AdminTable
+            :columns="columns"
+            :rows="users"
+            searchable
+            :initial-query="filters.q"
+        >
             <template #cell-roles="{ row }">
-                <span>{{ (row.roles as string).split(', ').map(roleLabel).join(', ') }}</span>
+                <span>{{
+                    (row.roles as string).split(', ').map(roleLabel).join(', ')
+                }}</span>
             </template>
             <template #cell-status="{ row }">
                 <Select
                     :model-value="String(row.status)"
                     :disabled="row.id === currentUserId"
-                    @update:model-value="(v) => changeStatus(row.id as number, String(v))"
+                    @update:model-value="
+                        (v) => changeStatus(row.id as number, String(v))
+                    "
                 >
                     <SelectTrigger
                         class="h-8 w-36 border-white/10 bg-transparent text-xs disabled:opacity-40"
@@ -187,29 +318,57 @@ return;
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem v-for="s in statusOptions" :key="s.value" :value="s.value">
+                        <SelectItem
+                            v-for="s in statusOptions"
+                            :key="s.value"
+                            :value="s.value"
+                        >
                             {{ s.label }}
                         </SelectItem>
                     </SelectContent>
                 </Select>
             </template>
             <template #cell-actions="{ row }">
-                <Button
-                    size="sm"
-                    variant="outline"
-                    class="border-white/15 text-white hover:bg-white/10 hover:text-white"
-                    @click="openRolesDialog(row as unknown as UserRow)"
-                >
-                    <ShieldCheck class="size-3.5" />
-                    Roles
-                </Button>
+                <div class="flex gap-1.5">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        class="border-white/15 text-white hover:bg-white/10 hover:text-white"
+                        @click="openEditDialog(row as unknown as UserRow)"
+                    >
+                        <Pencil class="size-3.5" />
+                        Editar
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        class="border-white/15 text-white hover:bg-white/10 hover:text-white"
+                        @click="openRolesDialog(row as unknown as UserRow)"
+                    >
+                        <ShieldCheck class="size-3.5" />
+                        Roles
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        class="border-white/15 text-white hover:bg-white/10 hover:text-white"
+                        @click="openResetDialog(row as unknown as UserRow)"
+                    >
+                        <KeyRound class="size-3.5" />
+                        Contraseña
+                    </Button>
+                </div>
             </template>
         </AdminTable>
 
         <Dialog v-model:open="rolesDialogOpen">
-            <DialogContent class="dark border-white/10 bg-fl-graphite text-white">
+            <DialogContent
+                class="dark border-white/10 bg-fl-graphite text-white"
+            >
                 <DialogHeader>
-                    <DialogTitle>Roles de {{ rolesDialogUser?.name }}</DialogTitle>
+                    <DialogTitle
+                        >Roles de {{ rolesDialogUser?.name }}</DialogTitle
+                    >
                 </DialogHeader>
                 <div class="space-y-3">
                     <label
@@ -223,13 +382,108 @@ return;
                         />
                         {{ roleLabel(role) }}
                     </label>
-                    <p v-if="!currentUserIsSuperAdmin" class="text-xs text-white/30">
-                        Solo un super administrador puede otorgar el rol de super administrador.
+                    <p
+                        v-if="!currentUserIsSuperAdmin"
+                        class="text-xs text-white/30"
+                    >
+                        Solo un super administrador puede otorgar el rol de
+                        super administrador.
                     </p>
                 </div>
                 <DialogFooter>
-                    <Button class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft" @click="saveRoles">
+                    <Button
+                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        @click="saveRoles"
+                    >
                         Guardar roles
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="editDialogOpen">
+            <DialogContent
+                class="dark border-white/10 bg-fl-graphite text-white sm:max-w-xl"
+            >
+                <DialogHeader>
+                    <DialogTitle>Editar usuario</DialogTitle>
+                </DialogHeader>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="grid gap-2">
+                            <Label>Nombre</Label>
+                            <Input
+                                v-model="editForm.first_name"
+                                class="border-white/10 bg-fl-black text-white"
+                            />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label>Apellidos</Label>
+                            <Input
+                                v-model="editForm.last_name"
+                                class="border-white/10 bg-fl-black text-white"
+                            />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label>Correo</Label>
+                        <Input
+                            v-model="editForm.email"
+                            type="email"
+                            class="border-white/10 bg-fl-black text-white"
+                        />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label>Teléfono (opcional)</Label>
+                        <Input
+                            v-model="editForm.phone"
+                            class="border-white/10 bg-fl-black text-white"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button
+                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        :disabled="savingEdit"
+                        @click="saveEdit"
+                    >
+                        Guardar cambios
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="resetDialogOpen">
+            <DialogContent
+                class="dark border-white/10 bg-fl-graphite text-white"
+            >
+                <DialogHeader>
+                    <DialogTitle
+                        >Restablecer contraseña de
+                        {{ resetUser?.name }}</DialogTitle
+                    >
+                </DialogHeader>
+                <div class="space-y-4">
+                    <div class="grid gap-2">
+                        <Label>Nueva contraseña</Label>
+                        <GeneratedPasswordField v-model="resetPassword" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label>Confirmar contraseña</Label>
+                        <Input
+                            v-model="resetPasswordConfirmation"
+                            type="password"
+                            class="border-white/10 bg-fl-black text-white"
+                        />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button
+                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        :disabled="savingReset"
+                        @click="saveReset"
+                    >
+                        Restablecer contraseña
                     </Button>
                 </DialogFooter>
             </DialogContent>

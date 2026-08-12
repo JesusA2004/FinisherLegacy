@@ -198,7 +198,11 @@ const statCards = computed(() => [
         </div>
 
         <!-- Stat cards -->
-        <StaggerGroup as="div" class="grid grid-cols-2 gap-4 lg:grid-cols-4" :stagger-ms="70">
+        <StaggerGroup
+            as="div"
+            class="grid grid-cols-2 gap-4 lg:grid-cols-4"
+            :stagger-ms="70"
+        >
             <component
                 :is="card.href ? Link : 'div'"
                 v-for="card in statCards"
@@ -222,7 +226,11 @@ const statCards = computed(() => [
             >
                 Acciones rápidas
             </h2>
-            <StaggerGroup as="div" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" :stagger-ms="50">
+            <StaggerGroup
+                as="div"
+                class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                :stagger-ms="50"
+            >
                 <Button
                     as-child
                     variant="outline"

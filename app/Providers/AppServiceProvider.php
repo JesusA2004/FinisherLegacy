@@ -33,6 +33,11 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
 
         Gate::before(fn ($user) => $user->hasRole('super_admin') ? true : null);
+
+        // Managing roles/permissions is deliberately not a spatie permission any
+        // role can be granted — this always denies, so only the Gate::before
+        // bypass above lets anyone through, i.e. only super_admin.
+        Gate::define('roles.manage', fn () => false);
     }
 
     /**

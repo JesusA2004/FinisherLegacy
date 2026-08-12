@@ -58,8 +58,8 @@ function submit() {
             </h1>
             <p class="mx-auto mt-4 max-w-md text-center text-white/60">
                 El prerregistro para
-                <span class="text-white">{{ event.name }}</span> no está
-                abierto en este momento.
+                <span class="text-white">{{ event.name }}</span> no está abierto
+                en este momento.
             </p>
         </template>
 
@@ -107,7 +107,11 @@ function submit() {
                 <div class="grid grid-cols-2 gap-4">
                     <div class="grid gap-2">
                         <Label for="first_name">Nombre</Label>
-                        <Input id="first_name" v-model="form.first_name" required />
+                        <Input
+                            id="first_name"
+                            v-model="form.first_name"
+                            required
+                        />
                         <p
                             v-if="form.errors.first_name"
                             class="text-sm text-red-500"
@@ -117,7 +121,11 @@ function submit() {
                     </div>
                     <div class="grid gap-2">
                         <Label for="last_name">Apellidos</Label>
-                        <Input id="last_name" v-model="form.last_name" required />
+                        <Input
+                            id="last_name"
+                            v-model="form.last_name"
+                            required
+                        />
                         <p
                             v-if="form.errors.last_name"
                             class="text-sm text-red-500"
@@ -146,7 +154,9 @@ function submit() {
                         <Input id="phone" v-model="form.phone" />
                     </div>
                     <div class="grid gap-2">
-                        <Label for="bib_number">Número de corredor (si lo tienes)</Label>
+                        <Label for="bib_number"
+                            >Número de corredor (si lo tienes)</Label
+                        >
                         <Input id="bib_number" v-model="form.bib_number" />
                     </div>
                 </div>

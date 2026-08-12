@@ -30,8 +30,8 @@ useIntersectionObserver(
     el,
     ([entry]) => {
         if (!entry?.isIntersecting || !el.value || prefersReducedMotion.value) {
-return;
-}
+            return;
+        }
 
         const items = el.value.querySelectorAll<HTMLElement>(
             props.itemSelector,

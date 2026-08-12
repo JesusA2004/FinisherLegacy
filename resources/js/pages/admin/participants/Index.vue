@@ -34,6 +34,11 @@ const columns = [
     <div class="p-4 md:p-8">
         <h1 class="mb-6 text-xl font-bold text-white">Participantes</h1>
 
-        <AdminTable :columns="columns" :rows="participants" searchable :initial-query="filters.q" />
+        <AdminTable
+            :columns="columns"
+            :rows="participants"
+            searchable
+            :initial-query="filters.q"
+        />
     </div>
 </template>

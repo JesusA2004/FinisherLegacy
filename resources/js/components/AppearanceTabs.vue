@@ -8,8 +8,8 @@ import { Moon } from '@lucide/vue';
     >
         <Moon class="h-4 w-4 text-primary" />
         <span
-            >Finisher Legacy usa un único tema premium — negro, grafito y
-            dorado — en todo el sitio.</span
+            >Finisher Legacy usa un único tema premium — negro, grafito y dorado
+            — en todo el sitio.</span
         >
     </div>
 </template>

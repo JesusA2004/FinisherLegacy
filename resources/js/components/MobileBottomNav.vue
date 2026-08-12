@@ -1,12 +1,21 @@
 <script setup lang="ts">
 /**
- * Bottom tab bar shown only below `lg` — the shadcn Sidebar already covers
- * desktop/tablet via its collapsible+offcanvas modes, but on phones an
- * app-style bottom nav reads far more like a native app than a drawer.
+ * Bottom tab bar shown only below `lg` — one nav for every authenticated
+ * user, athlete and staff alike, driven by the same permission-filtered
+ * config as the desktop sidebar (see config/navigation.ts). The "+" FAB stays
+ * athlete-specific (scan a plate QR / add a medal by hand) since that shortcut
+ * is useful no matter which other modules a given account can also reach.
  */
-import { Link } from '@inertiajs/vue3';
-import { Award, Compass, LayoutGrid, Plus, QrCode, UserCircle } from '@lucide/vue';
-import { ref } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import {
+    Award,
+    LogOut,
+    MoreHorizontal,
+    Plus,
+    QrCode,
+    Settings,
+} from '@lucide/vue';
+import { computed, ref } from 'vue';
 import QrScannerDialog from '@/components/qr/QrScannerDialog.vue';
 import {
     Sheet,
@@ -16,12 +25,36 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { dashboard } from '@/routes';
-import { create as createMedal, index as medalsIndex } from '@/routes/dashboard/medals';
-import { edit as editProfile } from '@/routes/dashboard/profile';
-import { index as eventsIndex } from '@/routes/events';
+import { visibleNavigation } from '@/config/navigation';
+import { logout } from '@/routes';
+import { create as createMedal } from '@/routes/dashboard/medals';
+import { edit as editSettingsProfile } from '@/routes/profile';
 
-const { isCurrentUrl } = useCurrentUrl();
+const page = usePage();
+const permissions = computed(() => page.props.auth?.permissions ?? []);
+const visible = computed(() => visibleNavigation(permissions.value));
+
+const home = computed(() =>
+    visible.value.find((item) => item.href === '/dashboard'),
+);
+const priorityTabs = computed(() =>
+    visible.value.filter(
+        (item) => item.mobilePriority && item.href !== '/dashboard',
+    ),
+);
+const moreItems = computed(() =>
+    visible.value.filter(
+        (item) => item.href !== '/dashboard' && !item.mobilePriority,
+    ),
+);
+
+const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
+
+function isActive(item: { href: string; exact?: boolean }): boolean {
+    return item.exact
+        ? isCurrentUrl(item.href)
+        : isCurrentOrParentUrl(item.href);
+}
 
 const sheetOpen = ref(false);
 const scannerOpen = ref(false);
@@ -30,16 +63,6 @@ function openScanner() {
     sheetOpen.value = false;
     scannerOpen.value = true;
 }
-
-const tabs = [
-    { label: 'Inicio', href: dashboard(), icon: LayoutGrid },
-    { label: 'Eventos', href: eventsIndex(), icon: Compass },
-];
-
-const tabsRight = [
-    { label: 'Medallas', href: medalsIndex(), icon: Award },
-    { label: 'Perfil', href: editProfile(), icon: UserCircle },
-];
 </script>
 
 <template>
@@ -49,14 +72,24 @@ const tabsRight = [
         class="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-white/10 bg-fl-black/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden"
     >
         <Link
-            v-for="tab in tabs"
-            :key="tab.label"
-            :href="tab.href"
+            v-if="home"
+            :href="home.href"
             class="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] transition-colors"
-            :class="isCurrentUrl(tab.href) ? 'text-fl-gold' : 'text-white/40'"
+            :class="isActive(home) ? 'text-fl-gold' : 'text-white/40'"
         >
-            <component :is="tab.icon" class="size-5" />
-            {{ tab.label }}
+            <component :is="home.icon" class="size-5" />
+            {{ home.label }}
+        </Link>
+
+        <Link
+            v-for="item in priorityTabs.slice(0, 1)"
+            :key="item.href"
+            :href="item.href"
+            class="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] transition-colors"
+            :class="isActive(item) ? 'text-fl-gold' : 'text-white/40'"
+        >
+            <component :is="item.icon" class="size-5" />
+            {{ item.label }}
         </Link>
 
         <button
@@ -69,19 +102,31 @@ const tabsRight = [
         </button>
 
         <Link
-            v-for="tab in tabsRight"
-            :key="tab.label"
-            :href="tab.href"
+            v-for="item in priorityTabs.slice(1, 2)"
+            :key="item.href"
+            :href="item.href"
             class="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] transition-colors"
-            :class="isCurrentUrl(tab.href) ? 'text-fl-gold' : 'text-white/40'"
+            :class="isActive(item) ? 'text-fl-gold' : 'text-white/40'"
         >
-            <component :is="tab.icon" class="size-5" />
-            {{ tab.label }}
+            <component :is="item.icon" class="size-5" />
+            {{ item.label }}
         </Link>
+
+        <button
+            type="button"
+            class="flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] text-white/40 transition-colors"
+            @click="sheetOpen = true"
+        >
+            <MoreHorizontal class="size-5" />
+            Más
+        </button>
     </nav>
 
     <Sheet v-model:open="sheetOpen">
-        <SheetContent side="bottom" class="dark border-white/10 bg-fl-graphite">
+        <SheetContent
+            side="bottom"
+            class="dark max-h-[80svh] overflow-y-auto border-white/10 bg-fl-graphite"
+        >
             <SheetHeader>
                 <SheetTitle class="text-white">¿Qué quieres hacer?</SheetTitle>
             </SheetHeader>
@@ -127,6 +172,44 @@ const tabsRight = [
                         </div>
                     </Link>
                 </SheetClose>
+
+                <div class="my-1 border-t border-white/10" />
+
+                <Link
+                    v-for="item in moreItems"
+                    :key="item.href"
+                    :href="item.href"
+                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors"
+                    :class="
+                        isActive(item)
+                            ? 'bg-fl-gold/10 text-fl-gold'
+                            : 'text-white/70 hover:bg-white/5'
+                    "
+                    @click="sheetOpen = false"
+                >
+                    <component :is="item.icon" class="size-4" />
+                    {{ item.label }}
+                </Link>
+
+                <div class="my-1 border-t border-white/10" />
+
+                <Link
+                    :href="editSettingsProfile()"
+                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-white/70 hover:bg-white/5"
+                    @click="sheetOpen = false"
+                >
+                    <Settings class="size-4" />
+                    Configuración
+                </Link>
+                <Link
+                    :href="logout()"
+                    method="post"
+                    as="button"
+                    class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-white/70 hover:bg-white/5"
+                >
+                    <LogOut class="size-4" />
+                    Cerrar sesión
+                </Link>
             </div>
         </SheetContent>
     </Sheet>

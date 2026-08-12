@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/vue3';
 import AdminTable from '@/components/admin/AdminTable.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { incidentStatus, statusClass, statusLabel } from '@/lib/statusLabels';
 
 defineProps<{
     incidents: {
@@ -29,7 +30,11 @@ const columns = [
 ];
 
 function resolve(id: number) {
-    router.patch(`/admin/incidents/${id}/resolve`, {}, { preserveScroll: true });
+    router.patch(
+        `/admin/incidents/${id}/resolve`,
+        {},
+        { preserveScroll: true },
+    );
 }
 </script>
 
@@ -39,19 +44,18 @@ function resolve(id: number) {
     <div class="p-4 md:p-8">
         <h1 class="mb-6 text-xl font-bold text-white">Incidencias</h1>
 
-        <AdminTable :columns="columns" :rows="incidents" searchable :initial-query="filters.q">
+        <AdminTable
+            :columns="columns"
+            :rows="incidents"
+            searchable
+            :initial-query="filters.q"
+        >
             <template #cell-status="{ row }">
                 <Badge
                     variant="outline"
-                    :class="
-                        row.status === 'open'
-                            ? 'border-red-500/30 text-red-400'
-                            : row.status === 'in_progress'
-                              ? 'border-amber-500/30 text-amber-400'
-                              : 'border-emerald-500/30 text-emerald-400'
-                    "
+                    :class="statusClass(incidentStatus, row.status as string)"
                 >
-                    {{ row.status }}
+                    {{ statusLabel(incidentStatus, row.status as string) }}
                 </Badge>
             </template>
             <template #cell-actions="{ row }">

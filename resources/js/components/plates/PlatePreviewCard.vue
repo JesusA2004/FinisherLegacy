@@ -37,17 +37,29 @@ defineProps<{
                     <TabsTrigger value="production">Grabado</TabsTrigger>
                 </TabsList>
             </Tabs>
-            <Badge v-if="isDemo" variant="outline" class="border-fl-gold/30 text-fl-gold">
+            <Badge
+                v-if="isDemo"
+                variant="outline"
+                class="border-fl-gold/30 text-fl-gold"
+            >
                 Vista previa — QR demo
             </Badge>
         </div>
 
-        <div class="relative aspect-[3/2] w-full max-w-sm overflow-hidden rounded-xl border border-white/10 bg-white shadow-2xl [&_svg]:block [&_svg]:h-full [&_svg]:w-full">
+        <div
+            class="relative aspect-[3/2] w-full max-w-sm overflow-hidden rounded-xl border border-white/10 bg-white shadow-2xl [&_svg]:block [&_svg]:h-full [&_svg]:w-full"
+        >
             <div v-if="svg" v-html="svg" />
-            <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-black/30">
+            <div
+                v-if="loading"
+                class="absolute inset-0 flex items-center justify-center bg-black/30"
+            >
                 <Spinner class="text-white" />
             </div>
-            <div v-if="!svg && !loading" class="flex h-full items-center justify-center text-sm text-fl-black/40">
+            <div
+                v-if="!svg && !loading"
+                class="flex h-full items-center justify-center text-sm text-fl-black/40"
+            >
                 {{ error ?? 'Sin datos suficientes para mostrar la placa.' }}
             </div>
         </div>
@@ -56,8 +68,15 @@ defineProps<{
             <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
             {{ error }}
         </p>
-        <ul v-else-if="warnings.length" class="space-y-1 text-xs text-amber-400/90">
-            <li v-for="(warning, i) in warnings" :key="i" class="flex items-start gap-1.5">
+        <ul
+            v-else-if="warnings.length"
+            class="space-y-1 text-xs text-amber-400/90"
+        >
+            <li
+                v-for="(warning, i) in warnings"
+                :key="i"
+                class="flex items-start gap-1.5"
+            >
                 <AlertTriangle class="mt-0.5 size-3.5 shrink-0" />
                 {{ warning }}
             </li>

@@ -41,14 +41,14 @@ useIntersectionObserver(
     el,
     ([entry]) => {
         if (!entry) {
-return;
-}
+            return;
+        }
 
         const node = el.value;
 
         if (!node) {
-return;
-}
+            return;
+        }
 
         if (entry.isIntersecting) {
             node.style.opacity = '1';

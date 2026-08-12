@@ -60,11 +60,11 @@ const passwordInput = useTemplateRef('passwordInput');
                                 cuenta?</DialogTitle
                             >
                             <DialogDescription>
-                                Una vez eliminada tu cuenta, todos sus
-                                recursos y datos también se eliminarán de
-                                forma permanente. Ingresa tu contraseña para
-                                confirmar que deseas eliminar tu cuenta de
-                                forma definitiva.
+                                Una vez eliminada tu cuenta, todos sus recursos
+                                y datos también se eliminarán de forma
+                                permanente. Ingresa tu contraseña para confirmar
+                                que deseas eliminar tu cuenta de forma
+                                definitiva.
                             </DialogDescription>
                         </DialogHeader>
 

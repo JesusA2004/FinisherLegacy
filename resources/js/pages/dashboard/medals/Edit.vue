@@ -88,9 +88,13 @@ async function removeGalleryImage(medalImageId: number) {
     });
 
     if (result.isConfirmed) {
-        router.delete(destroyGalleryImage({ medal: medal.id, medalImage: medalImageId }).url, {
-            preserveScroll: true,
-        });
+        router.delete(
+            destroyGalleryImage({ medal: medal.id, medalImage: medalImageId })
+                .url,
+            {
+                preserveScroll: true,
+            },
+        );
     }
 }
 </script>

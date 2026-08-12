@@ -49,7 +49,9 @@ const applySearch = useDebounceFn(() => {
         <div class="overflow-x-auto rounded-xl border border-white/10">
             <table class="w-full text-sm">
                 <thead>
-                    <tr class="border-b border-white/10 bg-fl-graphite/40 text-left text-xs text-white/50 uppercase">
+                    <tr
+                        class="border-b border-white/10 bg-fl-graphite/40 text-left text-xs text-white/50 uppercase"
+                    >
                         <th
                             v-for="column in columns"
                             :key="column.key"
@@ -76,7 +78,10 @@ const applySearch = useDebounceFn(() => {
                         </td>
                     </tr>
                     <tr v-if="!rows.data.length">
-                        <td :colspan="columns.length" class="px-4 py-10 text-center text-white/30">
+                        <td
+                            :colspan="columns.length"
+                            class="px-4 py-10 text-center text-white/30"
+                        >
                             Sin resultados.
                         </td>
                     </tr>
