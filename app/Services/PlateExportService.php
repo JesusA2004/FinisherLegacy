@@ -27,14 +27,14 @@ class PlateExportService
     /**
      * @return array{content: string, mime: string, extension: string}
      */
-    public function exportFace(Plate $plate, string $face, string $format, string $mode = PlateTemplateRenderService::MODE_PRODUCTION, int $dpi = 300): array
+    public function exportFace(Plate $plate, string $face, string $format, string $mode = PlateTemplateRenderService::MODE_PRODUCTION, int $dpi = 300, bool $textAsPaths = false): array
     {
         $version = $this->requireVersion($plate);
         $data = PlateRenderData::fromPlate($plate);
 
         return match ($format) {
             'svg' => [
-                'content' => $this->svgRenderer->renderSvg($version, $face, $data, $mode),
+                'content' => $this->svgRenderer->renderSvg($version, $face, $data, $mode, $textAsPaths),
                 'mime' => 'image/svg+xml',
                 'extension' => 'svg',
             ],

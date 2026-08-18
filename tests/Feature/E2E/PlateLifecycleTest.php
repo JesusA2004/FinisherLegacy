@@ -138,6 +138,9 @@ test('full integrated lifecycle: template to legacy profile', function () {
 
     // 6. Production: queued -> processing -> ready -> delivered.
     $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'processing']);
+    foreach (['front', 'back', 'qr'] as $item) {
+        $this->actingAs($this->admin)->patch(route('production.plates.checklist', $plate), ['item' => $item, 'checked' => true]);
+    }
     $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'ready']);
     $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'delivered']);
     expect($plate->fresh()->status)->toBe(PlateStatus::Delivered);

@@ -16,7 +16,9 @@ type ActivityRow = {
     id: number;
     causer: string;
     event: string;
+    event_label: string;
     subject_type: string;
+    subject_type_label: string;
     subject_id: number | null;
     description: string;
     created_at: string;
@@ -27,7 +29,7 @@ const { activities, events, subjectTypes, users, filters } = defineProps<{
         data: ActivityRow[];
         links: { url: string | null; label: string; active: boolean }[];
     };
-    events: string[];
+    events: { value: string; label: string }[];
     subjectTypes: { value: string; label: string }[];
     users: { id: number; name: string }[];
     filters: {
@@ -117,9 +119,13 @@ function updateFilter(key: string, value: string | number | null) {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value=" ">Toda acción</SelectItem>
-                    <SelectItem v-for="e in events" :key="e" :value="e">{{
-                        e
-                    }}</SelectItem>
+                    <SelectItem
+                        v-for="e in events"
+                        :key="e.value"
+                        :value="e.value"
+                    >
+                        {{ e.label }}
+                    </SelectItem>
                 </SelectContent>
             </Select>
 
@@ -178,12 +184,12 @@ function updateFilter(key: string, value: string | number | null) {
                         'border-white/20 text-white/50'
                     "
                 >
-                    {{ row.event }}
+                    {{ row.event_label }}
                 </Badge>
             </template>
             <template #cell-subject_type="{ row }">
                 <span class="text-white/60">
-                    {{ row.subject_type
+                    {{ row.subject_type_label
                     }}<span v-if="row.subject_id" class="text-white/30">
                         #{{ row.subject_id }}</span
                     >

@@ -14,6 +14,8 @@ use Spatie\Activitylog\Support\LogOptions;
 #[Fillable([
     'plate_id', 'event_edition_id', 'priority', 'status', 'assigned_user_id',
     'queued_at', 'started_at', 'completed_at', 'attempts', 'error_message',
+    'front_engraved_at', 'front_engraved_by', 'back_engraved_at', 'back_engraved_by',
+    'qr_verified_at', 'qr_verified_by',
 ])]
 class ProductionJob extends Model
 {
@@ -27,6 +29,9 @@ class ProductionJob extends Model
             'queued_at' => 'datetime',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'front_engraved_at' => 'datetime',
+            'back_engraved_at' => 'datetime',
+            'qr_verified_at' => 'datetime',
         ];
     }
 
@@ -46,6 +51,31 @@ class ProductionJob extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function frontEngravedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'front_engraved_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function backEngravedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'back_engraved_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function qrVerifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'qr_verified_by');
+    }
+
+    public function checklistComplete(): bool
+    {
+        return $this->front_engraved_at !== null
+            && $this->back_engraved_at !== null
+            && $this->qr_verified_at !== null;
     }
 
     public function getActivitylogOptions(): LogOptions

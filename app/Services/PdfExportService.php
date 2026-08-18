@@ -20,6 +20,7 @@ class PdfExportService
         private readonly PlateTemplateRenderService $renderer,
         private readonly PlateMeasurementService $measure,
         private readonly QrCodeService $qr,
+        private readonly GdPlateRenderer $gd,
     ) {}
 
     public function renderPdf(
@@ -34,7 +35,7 @@ class PdfExportService
         $isProduction = $mode === PlateTemplateRenderService::MODE_PRODUCTION;
 
         $resolved = $this->renderer->resolveElements($version, $face, $data);
-        $elements = array_map(fn (array $element) => $this->prepareElement($element), $resolved['elements']);
+        $elements = array_map(fn (array $element) => $this->prepareElement($element, $isProduction), $resolved['elements']);
 
         $html = view('plates.face-pdf', [
             'widthMm' => $widthMm,
@@ -61,7 +62,7 @@ class PdfExportService
      * @param  array<string, mixed>  $element
      * @return array<string, mixed>
      */
-    private function prepareElement(array $element): array
+    private function prepareElement(array $element, bool $isProduction): array
     {
         $type = $element['type'] ?? 'static_text';
 
@@ -76,6 +77,16 @@ class PdfExportService
                 $mime = Storage::disk('public')->mimeType($element['src']) ?: 'image/png';
                 $element['data_uri'] = "data:{$mime};base64,".base64_encode((string) $contents);
             }
+        }
+
+        // dompdf has no native support for the polylines/circles vector_icon
+        // needs, so rasterize it once (same catalog GdPlateRenderer draws
+        // for the PNG export) and embed it as a plain <img>.
+        if ($type === 'vector_icon' && ! empty($element['icon'])) {
+            $widthPx = max(1, (int) round((float) ($element['width_mm'] ?? 0) * 8));
+            $heightPx = max(1, (int) round((float) ($element['height_mm'] ?? 0) * 8));
+            $png = $this->gd->renderVectorIconPng($element, $widthPx, $heightPx, $isProduction);
+            $element['data_uri'] = 'data:image/png;base64,'.base64_encode($png);
         }
 
         return $element;

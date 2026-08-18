@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\PlateBackTransform;
 use App\Models\PlateTemplate;
 use App\Models\PlateTemplateVersion;
 use App\Support\PlateMeasurementService;
 use App\Support\PlateRenderData;
+use App\Support\PlateVectorIcons;
 use App\Support\TextFitService;
 use DOMDocument;
 use DOMElement;
@@ -28,6 +30,7 @@ class PlateTemplateRenderService
         private readonly PlateMeasurementService $measure,
         private readonly TextFitService $textFit,
         private readonly QrCodeService $qr,
+        private readonly FontOutlineService $fontOutline,
     ) {}
 
     /**
@@ -175,12 +178,24 @@ class PlateTemplateRenderService
         return $this->resolveElements($version, $face, $data);
     }
 
-    public function renderSvg(PlateTemplateVersion $version, string $face, PlateRenderData $data, string $mode = self::MODE_PRODUCT): string
+    /**
+     * The back face's physical orientation in the jig (§25-28) only ever
+     * applies to the actual production file — MODE_PRODUCTION — never to
+     * the "how I designed it" preview Plate Studio shows by default. That
+     * preview/production split doubles as "BACK ORIGINAL" vs "BACK PARA
+     * PRODUCCIÓN": there's no separate toggle to build or keep in sync.
+     */
+    public function renderSvg(PlateTemplateVersion $version, string $face, PlateRenderData $data, string $mode = self::MODE_PRODUCT, bool $textAsPaths = false): string
     {
         $template = $version->plateTemplate;
         $tw = (float) $template->width_mm;
         $th = (float) $template->height_mm;
         $resolved = $this->resolveElements($version, $face, $data);
+        $isProduction = $mode === self::MODE_PRODUCTION;
+        // Text-as-paths only ever applies to the real production file — the
+        // web preview always shows live <text> so it stays editable-looking
+        // and never silently disagrees with the on-screen font.
+        $outlineText = $isProduction && $textAsPaths && $this->fontOutline->isAvailable();
 
         $doc = new DOMDocument('1.0', 'UTF-8');
         $svg = $doc->createElementNS(self::SVG_NS, 'svg');
@@ -189,7 +204,7 @@ class PlateTemplateRenderService
         $svg->setAttribute('viewBox', "0 0 {$tw} {$th}");
         $doc->appendChild($svg);
 
-        if ($mode === self::MODE_PRODUCTION) {
+        if ($isProduction) {
             $bg = $doc->createElement('rect');
             $bg->setAttribute('x', '0');
             $bg->setAttribute('y', '0');
@@ -199,11 +214,24 @@ class PlateTemplateRenderService
             $svg->appendChild($bg);
         }
 
+        $container = $svg;
+
+        // In-memory templates built for a live preview (not yet persisted —
+        // e.g. PlateStudioController::preview()) never set back_transform,
+        // so this defaults to None rather than erroring on a null enum.
+        $backTransform = $template->back_transform ?? PlateBackTransform::None;
+
+        if ($isProduction && $face === 'back' && $backTransform !== PlateBackTransform::None) {
+            $container = $doc->createElementNS(self::SVG_NS, 'g');
+            $container->setAttribute('transform', $this->backTransformMatrix($backTransform, $tw, $th));
+            $svg->appendChild($container);
+        }
+
         foreach ($resolved['elements'] as $element) {
-            $node = $this->buildSvgElement($doc, $element, $mode === self::MODE_PRODUCTION);
+            $node = $this->buildSvgElement($doc, $element, $isProduction, $outlineText);
 
             if ($node !== null) {
-                $svg->appendChild($node);
+                $container->appendChild($node);
             }
         }
 
@@ -211,16 +239,33 @@ class PlateTemplateRenderService
     }
 
     /**
+     * SVG transform, not a CSS one — applies in the same user-space units
+     * (mm) the rest of the document is drawn in, and keeps width/height
+     * untouched (§27: the physical plate size never changes, only what's
+     * drawn on it flips/rotates).
+     */
+    private function backTransformMatrix(PlateBackTransform $transform, float $width, float $height): string
+    {
+        return match ($transform) {
+            PlateBackTransform::MirrorX => "translate({$this->fmt($width)},0) scale(-1,1)",
+            PlateBackTransform::MirrorY => "translate(0,{$this->fmt($height)}) scale(1,-1)",
+            PlateBackTransform::Rotate180 => "rotate(180,{$this->fmt($width / 2)},{$this->fmt($height / 2)})",
+            PlateBackTransform::None => '',
+        };
+    }
+
+    /**
      * @param  array<string, mixed>  $element
      */
-    private function buildSvgElement(DOMDocument $doc, array $element, bool $isProduction): ?DOMElement
+    private function buildSvgElement(DOMDocument $doc, array $element, bool $isProduction, bool $outlineText = false): ?DOMElement
     {
         return match ($element['type'] ?? 'static_text') {
-            'static_text', 'dynamic_text', 'serial' => $this->buildTextNode($doc, $element, $isProduction),
+            'static_text', 'dynamic_text', 'serial' => $this->buildTextNode($doc, $element, $isProduction, $outlineText),
             'line' => $this->buildLineNode($doc, $element, $isProduction),
             'rect' => $this->buildRectNode($doc, $element, $isProduction),
             'qr' => $this->buildQrNode($doc, $element),
             'image', 'logo', 'icon' => $this->buildImageNode($doc, $element, $isProduction),
+            'vector_icon' => $this->buildVectorIconNode($doc, $element, $isProduction),
             default => null,
         };
     }
@@ -228,7 +273,56 @@ class PlateTemplateRenderService
     /**
      * @param  array<string, mixed>  $element
      */
-    private function buildTextNode(DOMDocument $doc, array $element, bool $isProduction): DOMElement
+    private function buildVectorIconNode(DOMDocument $doc, array $element, bool $isProduction): ?DOMElement
+    {
+        $iconId = (string) ($element['icon'] ?? '');
+        $shapes = PlateVectorIcons::shapesFor($iconId);
+
+        if ($shapes === []) {
+            return null;
+        }
+
+        $x = (float) ($element['x_mm'] ?? 0);
+        $y = (float) ($element['y_mm'] ?? 0);
+        $w = (float) ($element['width_mm'] ?? 0);
+        $h = (float) ($element['height_mm'] ?? 0);
+        $color = $isProduction ? '#000000' : (string) ($element['stroke'] ?? '#000000');
+        $strokeWidth = (float) ($element['stroke_width_mm'] ?? 0.4);
+
+        $group = $doc->createElementNS(self::SVG_NS, 'g');
+        $group->setAttribute('stroke', $color);
+        $group->setAttribute('stroke-width', $this->fmt($strokeWidth));
+        $group->setAttribute('fill', 'none');
+        $group->setAttribute('stroke-linecap', 'round');
+        $group->setAttribute('stroke-linejoin', 'round');
+
+        foreach ($shapes as $shape) {
+            if ($shape['type'] === 'circle') {
+                $circle = $doc->createElement('circle');
+                $circle->setAttribute('cx', $this->fmt($x + $shape['cx'] * $w));
+                $circle->setAttribute('cy', $this->fmt($y + $shape['cy'] * $h));
+                $circle->setAttribute('r', $this->fmt($shape['r'] * min($w, $h)));
+                $group->appendChild($circle);
+
+                continue;
+            }
+
+            $points = array_map(
+                fn (array $p) => $this->fmt($x + $p[0] * $w).','.$this->fmt($y + $p[1] * $h),
+                $shape['points'],
+            );
+            $polyline = $doc->createElement('polyline');
+            $polyline->setAttribute('points', implode(' ', $points));
+            $group->appendChild($polyline);
+        }
+
+        return $group;
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function buildTextNode(DOMDocument $doc, array $element, bool $isProduction, bool $outlineText = false): DOMElement
     {
         $x = (float) ($element['x_mm'] ?? 0);
         $y = (float) ($element['y_mm'] ?? 0);
@@ -247,6 +341,34 @@ class PlateTemplateRenderService
         };
         $ty = $y + $h / 2;
 
+        $resolvedText = (string) ($element['resolved_text'] ?? '');
+        $fontSizePt = (float) ($element['computed_font_size_pt'] ?? $element['font_size_pt'] ?? 10);
+        $fontWeight = (int) ($element['font_weight'] ?? 400);
+        $fill = $isProduction ? '#000000' : (string) ($element['color'] ?? '#000000');
+
+        if ($outlineText) {
+            $group = $this->fontOutline->buildTextPaths(
+                $doc,
+                $resolvedText,
+                $x,
+                $y,
+                $w,
+                $h,
+                $anchor,
+                $this->measure->ptToMm($fontSizePt),
+                $fontWeight >= 600,
+                $fill,
+            );
+
+            if ($group !== null) {
+                return $group;
+            }
+
+            // A glyph this font genuinely doesn't have (e.g. an unusual
+            // symbol) — fall through to a normal <text> node rather than
+            // silently dropping the element from the export.
+        }
+
         $text = $doc->createElement('text');
         $text->setAttribute('x', $this->fmt($tx));
         $text->setAttribute('y', $this->fmt($ty));
@@ -254,11 +376,10 @@ class PlateTemplateRenderService
         $text->setAttribute('dominant-baseline', 'central');
         $fontFamily = $element['font_family'] ?? 'Inter';
         $text->setAttribute('font-family', "{$fontFamily}, Arial, sans-serif");
-        $fontSizePt = (float) ($element['computed_font_size_pt'] ?? $element['font_size_pt'] ?? 10);
         $text->setAttribute('font-size', $this->fmt($this->measure->ptToMm($fontSizePt)));
-        $text->setAttribute('font-weight', (string) (int) ($element['font_weight'] ?? 400));
-        $text->setAttribute('fill', $isProduction ? '#000000' : ($element['color'] ?? '#000000'));
-        $text->appendChild($doc->createTextNode((string) ($element['resolved_text'] ?? '')));
+        $text->setAttribute('font-weight', (string) $fontWeight);
+        $text->setAttribute('fill', $fill);
+        $text->appendChild($doc->createTextNode($resolvedText));
 
         return $text;
     }

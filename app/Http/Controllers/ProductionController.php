@@ -19,7 +19,7 @@ class ProductionController extends Controller
     {
         $plates = Plate::query()
             ->whereNotNull('legacy_code_id')
-            ->with(['legacyCode', 'eventEdition.event'])
+            ->with(['legacyCode', 'eventEdition.event', 'latestProductionJob'])
             ->orderByDesc('updated_at')
             ->limit(300)
             ->get();
@@ -51,6 +51,18 @@ class ProductionController extends Controller
         return back();
     }
 
+    public function updateChecklist(Request $request, Plate $plate): RedirectResponse
+    {
+        $data = $request->validate([
+            'item' => ['required', Rule::in(['front', 'back', 'qr'])],
+            'checked' => ['required', 'boolean'],
+        ]);
+
+        $this->production->toggleChecklistItem($plate, $data['item'], $data['checked'], $request->user());
+
+        return back();
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -68,6 +80,11 @@ class ProductionController extends Controller
             'updated_at' => $plate->updated_at?->diffForHumans(),
             'download_format' => $plate->eventEdition->production_export_format ?? 'svg',
             'download_dpi' => $plate->eventEdition->default_dpi ?? 300,
+            'checklist' => [
+                'front' => $plate->latestProductionJob?->front_engraved_at !== null,
+                'back' => $plate->latestProductionJob?->back_engraved_at !== null,
+                'qr' => $plate->latestProductionJob?->qr_verified_at !== null,
+            ],
         ];
     }
 }

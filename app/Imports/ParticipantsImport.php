@@ -12,6 +12,7 @@ use App\Models\EventImportError;
 use App\Models\EventParticipant;
 use App\Models\EventPreregistration;
 use App\Models\EventRace;
+use App\Models\EventResult;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -101,7 +102,7 @@ class ParticipantsImport implements ShouldQueue, ToCollection, WithChunkReading,
 
     /**
      * @param  Collection<int, mixed>  $row
-     * @param  array<string, int|null>  $mapping
+     * @param  array<string, mixed>  $mapping
      * @param  Collection<string, EventRace>  $racesByName
      * @return array{0: bool, 1: ?array{code: string, message: string}}
      */
@@ -152,8 +153,67 @@ class ParticipantsImport implements ShouldQueue, ToCollection, WithChunkReading,
         }
 
         $this->matchPreregistration($participant, $editionId, $bibNumber, $email, $firstName, $lastName);
+        $this->importResultAndSplits($participant, $row, $mapping, $field);
 
         return [true, null];
+    }
+
+    /**
+     * Results/splits are entirely optional per §5 — a roster-only file with
+     * none of these columns mapped must import exactly as it always has.
+     * The split label comes straight from what the admin typed for that
+     * column in the mapping step (e.g. "5K", "Swim"), since a generic
+     * import can't otherwise guess whether a race is running or triathlon.
+     *
+     * @param  Collection<int, mixed>  $row
+     * @param  array<string, mixed>  $mapping
+     * @param  callable(string): ?string  $field
+     */
+    private function importResultAndSplits(EventParticipant $participant, Collection $row, array $mapping, callable $field): void
+    {
+        $officialTime = $field('official_time') ?: null;
+        $pace = $field('pace') ?: null;
+
+        $splitRows = [];
+        foreach (array_values($mapping['splits'] ?? []) as $index => $splitDef) {
+            $column = $splitDef['column'] ?? null;
+            $label = trim((string) ($splitDef['label'] ?? ''));
+
+            if ($column === null || $label === '') {
+                continue;
+            }
+
+            $value = trim((string) ($row[$column] ?? ''));
+
+            if ($value === '') {
+                continue;
+            }
+
+            $splitRows[] = ['label' => $label, 'sequence' => $index + 1, 'elapsed_time' => $value];
+        }
+
+        if ($officialTime === null && $pace === null && $splitRows === []) {
+            return;
+        }
+
+        $result = EventResult::firstOrNew(['event_participant_id' => $participant->id]);
+
+        if ($officialTime !== null) {
+            $result->official_time = $officialTime;
+        }
+
+        if ($pace !== null) {
+            $result->pace = $pace;
+        }
+
+        $result->save();
+
+        foreach ($splitRows as $split) {
+            $result->splits()->updateOrCreate(
+                ['label' => $split['label']],
+                ['type' => 'split', 'sequence' => $split['sequence'], 'elapsed_time' => $split['elapsed_time']],
+            );
+        }
     }
 
     private function matchPreregistration(EventParticipant $participant, int $editionId, string $bibNumber, ?string $email, string $firstName, string $lastName): void

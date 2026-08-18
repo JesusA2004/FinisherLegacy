@@ -54,6 +54,12 @@ function csrfToken(): string {
 }
 
 async function fetchPreview() {
+    // See admin/plates/Show.vue — a relative-URL fetch() during Inertia SSR
+    // has no browser location to resolve against and crashes the render.
+    if (import.meta.env.SSR) {
+        return;
+    }
+
     loading.value = true;
 
     try {

@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { Archive, Copy, Layers, Palette, Pencil, Plus } from '@lucide/vue';
+import {
+    Archive,
+    Copy,
+    Layers,
+    Palette,
+    Pencil,
+    Plus,
+    Ruler,
+} from '@lucide/vue';
 import { ref } from 'vue';
 import {
     archiveTemplate,
@@ -115,13 +123,43 @@ const statusLabel: Record<string, string> = {
                     ellos.
                 </p>
             </div>
-            <Button
-                class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
-                @click="dialogOpen = true"
-            >
-                <Plus class="size-4" />
-                Nuevo molde
-            </Button>
+            <div class="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    class="border-white/15 text-white hover:bg-white/10"
+                    as-child
+                >
+                    <a
+                        href="/admin/plate-studio/calibration/front"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <Ruler class="size-4" />
+                        Prueba láser (frente)
+                    </a>
+                </Button>
+                <Button
+                    variant="outline"
+                    class="border-white/15 text-white hover:bg-white/10"
+                    as-child
+                >
+                    <a
+                        href="/admin/plate-studio/calibration/back"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <Ruler class="size-4" />
+                        Prueba láser (reverso)
+                    </a>
+                </Button>
+                <Button
+                    class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                    @click="dialogOpen = true"
+                >
+                    <Plus class="size-4" />
+                    Nuevo molde
+                </Button>
+            </div>
         </div>
 
         <div

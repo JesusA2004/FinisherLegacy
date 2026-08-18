@@ -189,6 +189,42 @@ test('the pre-generation preview never creates a legacy code and reflects the dr
         ->and(LegacyCode::count())->toBe(0);
 });
 
+test('the pre-generation preview shows distance and result splits, not just the athlete name', function () {
+    $edition = publishedEditionForOperator();
+    $race = EventRace::factory()->create([
+        'event_edition_id' => $edition->id,
+        'distance_value' => 70.3,
+        'distance_unit' => 'mi',
+    ]);
+    $template = PlateTemplate::factory()->create();
+    $version = PlateTemplateVersion::factory()->create([
+        'plate_template_id' => $template->id,
+        'status' => PlateTemplateVersionStatus::Published,
+        'front_configuration' => ['elements' => [
+            ['id' => 'name', 'type' => 'dynamic_text', 'field' => 'athlete_name', 'x_mm' => 3, 'y_mm' => 3, 'width_mm' => 40, 'height_mm' => 6, 'font_size_pt' => 8],
+            ['id' => 'distance', 'type' => 'dynamic_text', 'field' => 'distance', 'visible_when' => 'distance', 'x_mm' => 3, 'y_mm' => 10, 'width_mm' => 20, 'height_mm' => 4, 'font_size_pt' => 6],
+            ['id' => 'swim', 'type' => 'static_text', 'text' => 'SWIM {{swim_time}}', 'visible_when' => 'swim_time', 'x_mm' => 3, 'y_mm' => 16, 'width_mm' => 20, 'height_mm' => 4, 'font_size_pt' => 6],
+        ]],
+    ]);
+    EventPlateTemplate::create(['event_edition_id' => $edition->id, 'plate_template_version_id' => $version->id, 'is_default' => true, 'active' => true]);
+
+    $participant = EventParticipant::factory()->create(['event_edition_id' => $edition->id, 'event_race_id' => $race->id, 'full_name' => 'Mariana Cordero']);
+    $result = EventResult::factory()->create(['event_participant_id' => $participant->id]);
+    $result->splits()->create(['type' => 'swim', 'label' => 'Swim', 'sequence' => 1, 'segment_time' => '48:20']);
+
+    $this->actingAs($this->operator)->post(route('operator.select-event'), ['event_edition_id' => $edition->id]);
+
+    $preview = $this->actingAs($this->operator)->postJson(route('operator.preview'), [
+        'event_participant_id' => $participant->id,
+        'face' => 'front',
+        'mode' => 'product',
+    ]);
+
+    $preview->assertOk();
+    expect($preview->json('svg'))->toContain('70.3 mi')
+        ->toContain('SWIM 48:20');
+});
+
 test('a quick plate redirects to a dedicated result page showing the real plate', function () {
     $edition = publishedEditionForOperator();
     assignDefaultTemplateFor($edition);

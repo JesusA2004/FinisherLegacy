@@ -34,7 +34,7 @@ import {
 } from '@/lib/statusLabels';
 import type { PlateFace, PlateRenderMode } from '@/types/plate-studio';
 
-const { plate, resultComparison, reprints, activities } = defineProps<{
+const { plate, resultComparison, splits, reprints, activities } = defineProps<{
     plate: {
         id: number;
         serial_number: string;
@@ -57,6 +57,13 @@ const { plate, resultComparison, reprints, activities } = defineProps<{
         original: { official_time: string | null; pace: string | null };
         current: { official_time: string | null; pace: string | null };
     } | null;
+    splits: {
+        label: string;
+        distance: string | null;
+        segment_time: string | null;
+        elapsed_time: string | null;
+        pace: string | null;
+    }[];
     reprints: {
         id: number;
         reason: string;
@@ -88,6 +95,14 @@ const useOriginal = ref(true);
 const submittingReprint = ref(false);
 
 async function fetchPreview() {
+    // Inertia SSR renders this page's first paint on the server, where
+    // `fetch()` can't resolve a relative URL (no browser location to
+    // resolve against) — skip there and let the client fetch it after
+    // hydration instead of crashing the SSR render.
+    if (import.meta.env.SSR) {
+        return;
+    }
+
     loading.value = true;
 
     try {
@@ -122,7 +137,7 @@ function submitReprint() {
 <template>
     <Head :title="`Placa ${plate.serial_number}`" />
 
-    <div class="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
+    <div class="space-y-6 p-4 md:p-8">
         <Link
             href="/admin/plates"
             class="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white"
@@ -149,7 +164,7 @@ function submitReprint() {
                 </div>
 
                 <div
-                    class="mt-6 grid grid-cols-2 gap-4 rounded-xl border border-white/10 bg-fl-graphite/40 p-5 text-sm"
+                    class="mt-6 grid grid-cols-2 gap-4 rounded-xl border border-white/10 bg-fl-graphite/40 p-5 text-sm lg:grid-cols-4"
                 >
                     <div>
                         <p class="text-xs text-white/40 uppercase">Evento</p>
@@ -246,6 +261,56 @@ function submitReprint() {
                         reimprimes, puedes elegir mantener los datos originales
                         o actualizar con el resultado actual.
                     </p>
+                </div>
+
+                <div v-if="splits.length" class="mt-4 space-y-2">
+                    <h2 class="text-sm font-semibold text-white">Parciales</h2>
+                    <div
+                        class="overflow-x-auto rounded-xl border border-white/10 bg-fl-graphite/40"
+                    >
+                        <table class="w-full min-w-[420px] text-left text-sm">
+                            <thead>
+                                <tr class="text-xs text-white/40 uppercase">
+                                    <th class="px-4 py-2 font-normal">
+                                        Parcial
+                                    </th>
+                                    <th class="px-4 py-2 font-normal">
+                                        Distancia
+                                    </th>
+                                    <th class="px-4 py-2 font-normal">
+                                        Tiempo
+                                    </th>
+                                    <th class="px-4 py-2 font-normal">Ritmo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="split in splits"
+                                    :key="split.label"
+                                    class="border-t border-white/5"
+                                >
+                                    <td class="px-4 py-2 text-white">
+                                        {{ split.label }}
+                                    </td>
+                                    <td class="px-4 py-2 text-white/60">
+                                        {{ split.distance ?? '—' }}
+                                    </td>
+                                    <td
+                                        class="px-4 py-2 font-mono text-fl-gold"
+                                    >
+                                        {{
+                                            split.segment_time ??
+                                            split.elapsed_time ??
+                                            '—'
+                                        }}
+                                    </td>
+                                    <td class="px-4 py-2 text-white/60">
+                                        {{ split.pace ?? '—' }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="mt-6 flex flex-wrap gap-2">

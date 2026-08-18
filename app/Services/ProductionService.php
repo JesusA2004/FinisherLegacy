@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\PlateStatus;
 use App\Enums\ProductionJobStatus;
 use App\Models\Plate;
+use App\Models\ProductionJob;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -57,6 +58,19 @@ class ProductionService
             ]);
         }
 
+        // §33-34: front/back grabados + QR verificado deben confirmarse antes
+        // de marcar la placa Lista — tres toggles rápidos, no un checklist
+        // burocrático, pero sí obligatorio.
+        if ($to === PlateStatus::Ready) {
+            $job = $plate->latestProductionJob;
+
+            if ($job !== null && ! $job->checklistComplete()) {
+                throw ValidationException::withMessages([
+                    'status' => ['Confirma frente grabado, reverso grabado y QR verificado antes de marcar la placa como lista.'],
+                ]);
+            }
+        }
+
         return DB::transaction(function () use ($plate, $to, $actor) {
             $attributes = ['status' => $to];
 
@@ -74,6 +88,29 @@ class ProductionService
 
             return $plate->fresh(['latestProductionJob']);
         });
+    }
+
+    /**
+     * @param  'front'|'back'|'qr'  $item
+     */
+    public function toggleChecklistItem(Plate $plate, string $item, bool $checked, User $actor): ProductionJob
+    {
+        $job = $plate->latestProductionJob;
+
+        abort_if($job === null, 422, 'Esta placa no tiene un trabajo de producción activo.');
+
+        [$atColumn, $byColumn] = match ($item) {
+            'front' => ['front_engraved_at', 'front_engraved_by'],
+            'back' => ['back_engraved_at', 'back_engraved_by'],
+            'qr' => ['qr_verified_at', 'qr_verified_by'],
+        };
+
+        $job->update([
+            $atColumn => $checked ? now() : null,
+            $byColumn => $checked ? $actor->id : null,
+        ]);
+
+        return $job->fresh();
     }
 
     private function syncLatestJob(Plate $plate, PlateStatus $to, User $actor): void

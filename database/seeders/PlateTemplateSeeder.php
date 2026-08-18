@@ -138,11 +138,12 @@ class PlateTemplateSeeder extends Seeder
     {
         return [
             ...$this->backSkeleton(),
-            // Thematic element, part of the molde design itself — not
-            // generated per plate. Kept as plain letter-spaced type rather
-            // than pictorial icons: the renderer only draws text/line/rect/qr
-            // vector primitives today (see docs/plate-production.md).
-            ['id' => 'discipline_row', 'type' => 'static_text', 'text' => 'SWIM · BIKE · RUN', 'x_mm' => 3, 'y_mm' => 6.3, 'width_mm' => 54, 'height_mm' => 2.2, 'font_family' => 'Inter', 'font_size_pt' => 3, 'font_weight' => 600, 'text_align' => 'center', 'color' => '#8a7530'],
+            // Thematic vector icons, part of the molde design itself — not
+            // generated per plate. Sit in the margins beside the QR, the
+            // only free real estate left on a 60x40mm back face.
+            ['id' => 'icon_swim', 'type' => 'vector_icon', 'icon' => 'swimming', 'x_mm' => 5, 'y_mm' => 10.3, 'width_mm' => 8, 'height_mm' => 8, 'stroke' => '#8a7530', 'stroke_width_mm' => 0.35],
+            ['id' => 'icon_bike', 'type' => 'vector_icon', 'icon' => 'cycling', 'x_mm' => 5, 'y_mm' => 19.3, 'width_mm' => 8, 'height_mm' => 8, 'stroke' => '#8a7530', 'stroke_width_mm' => 0.35],
+            ['id' => 'icon_run', 'type' => 'vector_icon', 'icon' => 'running', 'x_mm' => 47, 'y_mm' => 14.8, 'width_mm' => 8, 'height_mm' => 8, 'stroke' => '#8a7530', 'stroke_width_mm' => 0.35],
         ];
     }
 
@@ -169,11 +170,8 @@ class PlateTemplateSeeder extends Seeder
     {
         return [
             ...$this->backSkeleton(),
-            ['id' => 'discipline_row', 'type' => 'static_text', 'text' => 'R U N N I N G', 'x_mm' => 3, 'y_mm' => 6.3, 'width_mm' => 54, 'height_mm' => 2.2, 'font_family' => 'Inter', 'font_size_pt' => 3, 'font_weight' => 600, 'text_align' => 'center', 'color' => '#8a7530'],
-            // Simple track-line motif either side of the QR — vector, part of
-            // the molde design, not generated per plate.
-            ['id' => 'track_line_left', 'type' => 'line', 'x_mm' => 6, 'y_mm' => 18.3, 'width_mm' => 10, 'height_mm' => 0, 'stroke' => '#cfab59', 'stroke_width_mm' => 0.3],
-            ['id' => 'track_line_right', 'type' => 'line', 'x_mm' => 44, 'y_mm' => 18.3, 'width_mm' => 10, 'height_mm' => 0, 'stroke' => '#cfab59', 'stroke_width_mm' => 0.3],
+            ['id' => 'icon_running', 'type' => 'vector_icon', 'icon' => 'running', 'x_mm' => 5, 'y_mm' => 13.3, 'width_mm' => 11, 'height_mm' => 11, 'stroke' => '#8a7530', 'stroke_width_mm' => 0.4],
+            ['id' => 'icon_finish', 'type' => 'vector_icon', 'icon' => 'finish', 'x_mm' => 44, 'y_mm' => 13.3, 'width_mm' => 11, 'height_mm' => 11, 'stroke' => '#8a7530', 'stroke_width_mm' => 0.4],
         ];
     }
 
@@ -200,10 +198,8 @@ class PlateTemplateSeeder extends Seeder
     {
         return [
             ...$this->backSkeleton(),
-            ['id' => 'discipline_row', 'type' => 'static_text', 'text' => 'C Y C L I N G', 'x_mm' => 3, 'y_mm' => 6.3, 'width_mm' => 54, 'height_mm' => 2.2, 'font_family' => 'Inter', 'font_size_pt' => 3, 'font_weight' => 600, 'text_align' => 'center', 'color' => '#8a7530'],
-            // Angled "speed lines" motif — vector, part of the molde design.
-            ['id' => 'speed_line_1', 'type' => 'line', 'x_mm' => 5, 'y_mm' => 15, 'width_mm' => 8, 'height_mm' => 3, 'stroke' => '#cfab59', 'stroke_width_mm' => 0.3],
-            ['id' => 'speed_line_2', 'type' => 'line', 'x_mm' => 47, 'y_mm' => 15, 'width_mm' => 8, 'height_mm' => 3, 'stroke' => '#cfab59', 'stroke_width_mm' => 0.3],
+            ['id' => 'icon_cycling', 'type' => 'vector_icon', 'icon' => 'cycling', 'x_mm' => 4, 'y_mm' => 13.3, 'width_mm' => 12, 'height_mm' => 11, 'stroke' => '#8a7530', 'stroke_width_mm' => 0.4],
+            ['id' => 'icon_trophy', 'type' => 'vector_icon', 'icon' => 'trophy', 'x_mm' => 45, 'y_mm' => 13.3, 'width_mm' => 11, 'height_mm' => 11, 'stroke' => '#8a7530', 'stroke_width_mm' => 0.4],
         ];
     }
 }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { Upload } from '@lucide/vue';
+import { Plus, Trash2, Upload } from '@lucide/vue';
 import { ref } from 'vue';
+import HelpPopover from '@/components/HelpPopover.vue';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -39,9 +41,35 @@ const fields: { key: string; label: string; required: boolean }[] = [
     },
     { key: 'email', label: 'Correo electrónico', required: false },
     { key: 'phone', label: 'Teléfono', required: false },
+    {
+        key: 'official_time',
+        label: 'Tiempo oficial (opcional)',
+        required: false,
+    },
+    { key: 'pace', label: 'Ritmo (opcional)', required: false },
 ];
 
 const mapping = ref<Record<string, string>>({});
+
+type SplitRow = { label: string; column: string };
+const splitRows = ref<SplitRow[]>([]);
+
+function addSplitRow() {
+    splitRows.value.push({ label: '', column: '' });
+}
+
+function removeSplitRow(index: number) {
+    splitRows.value.splice(index, 1);
+}
+
+function onSplitColumnChange(row: SplitRow) {
+    if (row.label.trim() !== '') {
+        return;
+    }
+
+    const header = headers.value.find((h) => String(h.index) === row.column);
+    row.label = header?.label ?? '';
+}
 
 async function onFileChange(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -81,18 +109,29 @@ async function onFileChange(event: Event) {
 
 function submit() {
     submitting.value = true;
+
+    const splits = splitRows.value
+        .filter((row) => row.label.trim() !== '' && row.column !== '')
+        .map((row) => ({
+            label: row.label.trim(),
+            column: Number(row.column),
+        }));
+
     router.post(
         store().url,
         {
             event_edition_id: eventEditionId.value,
             temp_path: tempPath.value,
             original_filename: originalFilename.value,
-            mapping: Object.fromEntries(
-                Object.entries(mapping.value).map(([key, value]) => [
-                    key,
-                    value === '' ? null : Number(value),
-                ]),
-            ),
+            mapping: {
+                ...Object.fromEntries(
+                    Object.entries(mapping.value).map(([key, value]) => [
+                        key,
+                        value === '' ? null : Number(value),
+                    ]),
+                ),
+                ...(splits.length ? { splits } : {}),
+            },
         },
         { onFinish: () => (submitting.value = false) },
     );
@@ -169,6 +208,63 @@ function submit() {
                         </SelectItem>
                     </SelectContent>
                 </Select>
+            </div>
+
+            <div class="grid gap-2">
+                <Label class="flex items-center gap-1.5"
+                    >Parciales (opcional)
+                    <HelpPopover
+                        title="Parciales"
+                        text="Solo si tu archivo trae columnas de tiempos intermedios (5K, Swim, T1...). La etiqueta se toma del encabezado de la columna y puedes editarla. No es obligatorio."
+                    />
+                </Label>
+                <div
+                    v-for="(row, index) in splitRows"
+                    :key="index"
+                    class="flex items-center gap-2"
+                >
+                    <Select
+                        v-model="row.column"
+                        @update:model-value="onSplitColumnChange(row)"
+                    >
+                        <SelectTrigger class="w-full">
+                            <SelectValue placeholder="Columna" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem
+                                v-for="header in headers"
+                                :key="header.index"
+                                :value="String(header.index)"
+                            >
+                                {{ header.label }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Input
+                        v-model="row.label"
+                        placeholder="Etiqueta (ej. 5K)"
+                        class="w-40 shrink-0"
+                    />
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="shrink-0 text-white/40 hover:text-red-400"
+                        @click="removeSplitRow(index)"
+                    >
+                        <Trash2 class="size-4" />
+                    </Button>
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="border-white/15 text-white hover:bg-white/10"
+                    @click="addSplitRow"
+                >
+                    <Plus class="size-4" />
+                    Agregar parcial
+                </Button>
             </div>
 
             <Button

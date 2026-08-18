@@ -155,6 +155,13 @@ export const navigation: NavItem[] = [
         group: 'placas',
     },
     {
+        label: 'Máquinas',
+        icon: resolveIcon('Settings2'),
+        href: '/admin/machine-profiles',
+        permission: 'platetemplates.view',
+        group: 'placas',
+    },
+    {
         label: 'Legacy Codes',
         icon: resolveIcon('QrCode'),
         href: '/admin/legacy-codes',

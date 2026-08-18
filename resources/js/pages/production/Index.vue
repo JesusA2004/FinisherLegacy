@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { ArrowRight, Ban, Download, PackageOpen } from '@lucide/vue';
+import { ArrowRight, Ban, Check, Download, PackageOpen } from '@lucide/vue';
 import { ref } from 'vue';
 import { exportMethod as exportFace } from '@/actions/App/Http/Controllers/Admin/PlateController';
-import { updateStatus } from '@/actions/App/Http/Controllers/ProductionController';
+import {
+    updateChecklist,
+    updateStatus,
+} from '@/actions/App/Http/Controllers/ProductionController';
 import HelpPopover from '@/components/HelpPopover.vue';
 import { Spinner } from '@/components/ui/spinner';
+
+type ChecklistItem = 'front' | 'back' | 'qr';
 
 type Card = {
     id: number;
@@ -19,6 +24,13 @@ type Card = {
     updated_at: string | null;
     download_format: string;
     download_dpi: number;
+    checklist: Record<ChecklistItem, boolean>;
+};
+
+const checklistLabels: Record<ChecklistItem, string> = {
+    front: 'Frente',
+    back: 'Reverso',
+    qr: 'QR',
 };
 
 function quickDownloadUrl(card: Card): string {
@@ -93,6 +105,18 @@ function advance(plateId: number, next: string) {
 
 function cancel(plateId: number) {
     withPending(plateId, 'cancelled');
+}
+
+function toggleChecklist(card: Card, item: ChecklistItem) {
+    router.patch(
+        updateChecklist(card.id).url,
+        { item, checked: !card.checklist[item] },
+        { preserveScroll: true },
+    );
+}
+
+function checklistComplete(card: Card): boolean {
+    return card.checklist.front && card.checklist.back && card.checklist.qr;
 }
 </script>
 
@@ -180,13 +204,47 @@ function cancel(plateId: number) {
                         </div>
 
                         <div
+                            v-if="key === 'processing'"
+                            class="mt-2 flex gap-1"
+                        >
+                            <button
+                                v-for="item in ['front', 'back', 'qr'] as const"
+                                :key="item"
+                                type="button"
+                                class="fl-focus-glow flex flex-1 items-center justify-center gap-1 rounded-md border px-1 py-1 text-[10px] font-medium transition-colors active:scale-95"
+                                :class="
+                                    card.checklist[item]
+                                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                                        : 'border-white/10 text-white/40 hover:border-white/25'
+                                "
+                                @click="toggleChecklist(card, item)"
+                            >
+                                <Check
+                                    v-if="card.checklist[item]"
+                                    class="size-3"
+                                />
+                                {{ checklistLabels[item] }}
+                            </button>
+                        </div>
+
+                        <div
                             v-if="columnMeta[key].next"
                             class="mt-2 flex gap-1.5"
                         >
                             <button
                                 type="button"
                                 class="fl-focus-glow flex flex-1 items-center justify-center gap-1 rounded-md bg-fl-gold px-2 py-1.5 text-[11px] font-medium text-fl-black transition-transform active:scale-95 disabled:pointer-events-none disabled:opacity-60"
-                                :disabled="pendingIds.has(card.id)"
+                                :disabled="
+                                    pendingIds.has(card.id) ||
+                                    (key === 'processing' &&
+                                        !checklistComplete(card))
+                                "
+                                :title="
+                                    key === 'processing' &&
+                                    !checklistComplete(card)
+                                        ? 'Confirma frente, reverso y QR antes de marcar lista'
+                                        : undefined
+                                "
                                 @click="advance(card.id, columnMeta[key].next!)"
                             >
                                 <Spinner

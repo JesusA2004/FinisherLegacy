@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -32,6 +33,12 @@ class EventResult extends Model
     public function eventParticipant(): BelongsTo
     {
         return $this->belongsTo(EventParticipant::class);
+    }
+
+    /** @return HasMany<EventResultSplit, $this> */
+    public function splits(): HasMany
+    {
+        return $this->hasMany(EventResultSplit::class)->orderBy('sequence');
     }
 
     public function getActivitylogOptions(): LogOptions

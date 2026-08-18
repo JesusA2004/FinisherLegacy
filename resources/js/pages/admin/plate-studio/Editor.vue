@@ -32,6 +32,7 @@ const props = defineProps<{
         safe_margin_mm: number;
         orientation: string;
         material: string | null;
+        back_transform: 'none' | 'mirror_x' | 'mirror_y' | 'rotate_180';
     };
     version: {
         id: number;
@@ -47,6 +48,13 @@ const props = defineProps<{
 function clone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value));
 }
+
+const backTransformLabels: Record<string, string> = {
+    none: 'Normal',
+    mirror_x: 'Espejo horizontal',
+    mirror_y: 'Espejo vertical',
+    rotate_180: 'Rotado 180°',
+};
 
 const elementsFront = ref<PlateElement[]>(
     clone(props.version.front_configuration.elements ?? []),
@@ -88,6 +96,13 @@ function csrfToken(): string {
 }
 
 async function fetchPreview() {
+    // See admin/plates/Show.vue — a relative-URL fetch() (and the
+    // document.querySelector() csrfToken() needs) can't run during Inertia
+    // SSR, which has no browser location or DOM to resolve against.
+    if (import.meta.env.SSR) {
+        return;
+    }
+
     previewLoading.value = true;
 
     try {
@@ -288,6 +303,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
                     <TabsTrigger value="production">Vista grabado</TabsTrigger>
                 </TabsList>
             </Tabs>
+
+            <Badge
+                v-if="
+                    face === 'back' &&
+                    mode === 'production' &&
+                    template.back_transform !== 'none'
+                "
+                variant="outline"
+                class="border-fl-gold/30 text-fl-gold"
+                title="Orientación aplicada solo al archivo de producción — el diseño original no cambia"
+            >
+                {{ backTransformLabels[template.back_transform] }}
+            </Badge>
+            <Badge
+                v-else-if="face === 'back'"
+                variant="outline"
+                class="border-white/15 text-white/40"
+            >
+                {{ mode === 'production' ? 'Normal' : 'Diseño original' }}
+            </Badge>
 
             <StudioHelpSheet />
 

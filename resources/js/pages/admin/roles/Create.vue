@@ -39,7 +39,7 @@ function submit() {
 <template>
     <Head title="Nuevo rol" />
 
-    <div class="mx-auto max-w-6xl p-4 md:p-8">
+    <div class="p-4 md:p-8">
         <Link
             href="/admin/roles"
             class="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white"

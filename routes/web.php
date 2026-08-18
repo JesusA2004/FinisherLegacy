@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EditionController as AdminEditionController;
 use App\Http\Controllers\Admin\IncidentController as AdminIncidentController;
 use App\Http\Controllers\Admin\LegacyCodeController as AdminLegacyCodeController;
+use App\Http\Controllers\Admin\MachineProfileController as AdminMachineProfileController;
 use App\Http\Controllers\Admin\OrganizerController as AdminOrganizerController;
 use App\Http\Controllers\Admin\ParticipantController as AdminParticipantController;
 use App\Http\Controllers\Admin\PlateController as AdminPlateController;
@@ -83,6 +84,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('plates/{plate}/status', [ProductionController::class, 'updateStatus'])
             ->middleware('can:production.manage')
             ->name('plates.status');
+        Route::patch('plates/{plate}/checklist', [ProductionController::class, 'updateChecklist'])
+            ->middleware('can:production.manage')
+            ->name('plates.checklist');
     });
 
     // Production file downloads: gated by plates.view alone (not the wider
@@ -127,6 +131,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('templates/{plateTemplate}/versions/{plateTemplateVersion}', [AdminPlateStudioController::class, 'edit'])->name('edit');
             Route::post('preview', [AdminPlateStudioController::class, 'preview'])->name('preview');
             Route::get('versions/{plateTemplateVersion}/test-export/{face}', [AdminPlateStudioController::class, 'testExport'])->name('versions.test-export');
+            Route::get('calibration/{face}', [AdminPlateStudioController::class, 'calibrationCard'])->name('calibration');
 
             Route::middleware('can:platetemplates.manage')->group(function () {
                 Route::post('templates', [AdminPlateStudioController::class, 'store'])->name('templates.store');
@@ -137,6 +142,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::patch('versions/{plateTemplateVersion}', [AdminPlateStudioController::class, 'updateVersion'])->name('versions.update');
                 Route::post('versions/{plateTemplateVersion}/publish', [AdminPlateStudioController::class, 'publish'])->name('versions.publish');
                 Route::post('versions/{plateTemplateVersion}/archive', [AdminPlateStudioController::class, 'archiveVersion'])->name('versions.archive');
+            });
+        });
+
+        // Machine profiles: a workflow label ("Fiber 30W — LightBurn"), not
+        // a driver — gated the same as plate templates since it's part of
+        // the same production-configuration surface.
+        Route::middleware('can:platetemplates.view')->prefix('machine-profiles')->name('machine-profiles.')->group(function () {
+            Route::get('/', [AdminMachineProfileController::class, 'index'])->name('index');
+
+            Route::middleware('can:platetemplates.manage')->group(function () {
+                Route::post('/', [AdminMachineProfileController::class, 'store'])->name('store');
+                Route::patch('{machineProfile}', [AdminMachineProfileController::class, 'update'])->name('update');
             });
         });
 

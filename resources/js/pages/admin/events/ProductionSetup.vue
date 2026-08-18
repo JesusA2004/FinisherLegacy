@@ -94,7 +94,7 @@ function submitQrTest() {
 <template>
     <Head :title="`Producción — ${edition.name}`" />
 
-    <div class="mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+    <div class="space-y-6 p-4 md:p-8">
         <div>
             <p class="text-xs tracking-wide text-white/40 uppercase">
                 Preparar evento para producción

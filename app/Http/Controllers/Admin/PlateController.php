@@ -6,11 +6,13 @@ use App\Enums\PlateStatus;
 use App\Enums\ProductionJobStatus;
 use App\Enums\ReprintStatus;
 use App\Http\Controllers\Controller;
+use App\Models\EventResultSplit;
 use App\Models\Plate;
 use App\Models\PlateReprint;
 use App\Models\ProductionJob;
 use App\Models\User;
 use App\Services\PlateExportService;
+use App\Services\PlateSnapshotBuilder;
 use App\Services\PlateTemplateRenderService;
 use App\Services\ProductionService;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +29,7 @@ class PlateController extends Controller
     public function __construct(
         private readonly PlateExportService $exports,
         private readonly ProductionService $production,
+        private readonly PlateSnapshotBuilder $snapshotBuilder,
     ) {}
 
     public function index(Request $request): Response
@@ -63,7 +66,7 @@ class PlateController extends Controller
     public function show(Plate $plate): Response
     {
         $plate->load([
-            'legacyCode', 'eventEdition.event', 'eventParticipant.result', 'user',
+            'legacyCode', 'eventEdition.event', 'eventParticipant.result.splits', 'user',
             'plateTemplate', 'plateTemplateVersion', 'latestProductionJob',
             'reprints' => fn ($q) => $q->latest()->with(['requestedBy', 'approvedBy']),
         ]);
@@ -81,7 +84,13 @@ class PlateController extends Controller
             ->get()
             ->map(fn (Activity $activity) => [
                 'id' => $activity->id,
-                'event' => $activity->event,
+                'event' => match ($activity->event) {
+                    'created' => 'Creado',
+                    'updated' => 'Actualizado',
+                    'deleted' => 'Eliminado',
+                    'restored' => 'Restaurado',
+                    default => $activity->event ?? '—',
+                },
                 'causer' => $activity->causer instanceof User ? $activity->causer->name : 'Sistema',
                 'created_at' => $activity->created_at?->format('d/m/Y H:i'),
             ]);
@@ -115,6 +124,18 @@ class PlateController extends Controller
                 'original' => ['official_time' => $plate->official_time, 'pace' => $plate->pace],
                 'current' => ['official_time' => $currentResult->official_time, 'pace' => $currentResult->pace],
             ] : null,
+            'splits' => $currentResult?->splits
+                ->sortBy('sequence')
+                ->map(fn (EventResultSplit $split) => [
+                    'label' => $split->label,
+                    'distance' => $split->distance_value !== null
+                        ? rtrim(rtrim((string) $split->distance_value, '0'), '.').' '.($split->distance_unit ?? 'km')
+                        : null,
+                    'segment_time' => $split->segment_time,
+                    'elapsed_time' => $split->elapsed_time,
+                    'pace' => $split->pace,
+                ])
+                ->values() ?? [],
             'reprints' => $plate->reprints->map(fn (PlateReprint $reprint) => [
                 'id' => $reprint->id,
                 'reason' => $reprint->reason,
@@ -181,6 +202,7 @@ class PlateController extends Controller
         $data = $request->validate([
             'mode' => ['nullable', Rule::in(['product', 'production'])],
             'dpi' => ['nullable', 'integer', Rule::in([300, 600])],
+            'text_as_paths' => ['nullable', 'boolean'],
         ]);
 
         $file = $this->exports->exportFace(
@@ -189,6 +211,7 @@ class PlateController extends Controller
             $format,
             $data['mode'] ?? PlateTemplateRenderService::MODE_PRODUCTION,
             $data['dpi'] ?? 300,
+            (bool) ($data['text_as_paths'] ?? false),
         );
 
         return $this->download($file['content'], $file['mime'], "{$plate->serial_number}-{$face}.{$file['extension']}");
@@ -225,7 +248,7 @@ class PlateController extends Controller
 
     private function refreshSnapshotFromSource(Plate $plate): void
     {
-        $plate->loadMissing('eventParticipant.result');
+        $plate->loadMissing('eventParticipant.result.splits');
         $participant = $plate->eventParticipant;
 
         if (! $participant) {
@@ -237,11 +260,7 @@ class PlateController extends Controller
         $plate->update([
             'official_time' => $result?->official_time,
             'pace' => $result?->pace,
-            'dynamic_fields' => array_merge($plate->dynamic_fields ?? [], [
-                'category' => $participant->category,
-                'overall_position' => $result?->overall_position,
-                'category_position' => $result?->category_position,
-            ]),
+            'dynamic_fields' => array_merge($plate->dynamic_fields ?? [], $this->snapshotBuilder->build($participant)),
         ]);
     }
 

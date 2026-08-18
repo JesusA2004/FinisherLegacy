@@ -81,6 +81,11 @@ class ImportController extends Controller
             'mapping.race_name' => ['required', 'integer'],
             'mapping.email' => ['nullable', 'integer'],
             'mapping.phone' => ['nullable', 'integer'],
+            'mapping.official_time' => ['nullable', 'integer'],
+            'mapping.pace' => ['nullable', 'integer'],
+            'mapping.splits' => ['nullable', 'array'],
+            'mapping.splits.*.label' => ['required_with:mapping.splits', 'string', 'max:50'],
+            'mapping.splits.*.column' => ['required_with:mapping.splits', 'integer'],
         ]);
 
         abort_unless(Storage::disk('local')->exists($data['temp_path']), 422, 'El archivo expiró, vuelve a subirlo.');

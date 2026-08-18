@@ -25,9 +25,13 @@ use Illuminate\Support\Str;
  */
 class PlateGenerationService
 {
+    public function __construct(
+        private readonly PlateSnapshotBuilder $snapshotBuilder,
+    ) {}
+
     public function generateIntegrated(EventParticipant $participant, ?PlateTemplateVersion $version = null): Plate
     {
-        $participant->loadMissing(['eventEdition.event', 'eventRace', 'result']);
+        $participant->loadMissing(['eventEdition.event', 'eventRace', 'result.splits']);
         $edition = $participant->eventEdition;
         $result = $participant->result;
         $version ??= $edition->defaultPlateTemplateVersion($participant->event_race_id);
@@ -36,7 +40,9 @@ class PlateGenerationService
             throw new PlateTemplateMissingException;
         }
 
-        return DB::transaction(function () use ($participant, $edition, $result, $version) {
+        $dynamicFields = $this->snapshotBuilder->build($participant);
+
+        return DB::transaction(function () use ($participant, $edition, $result, $version, $dynamicFields) {
             $plate = Plate::create([
                 'user_id' => $participant->user_id,
                 'event_edition_id' => $edition->id,
@@ -52,11 +58,7 @@ class PlateGenerationService
                 'official_time' => $result?->official_time,
                 'pace' => $result?->pace,
                 'event_date' => $edition->event_date,
-                'dynamic_fields' => [
-                    'category' => $participant->category,
-                    'overall_position' => $result?->overall_position,
-                    'category_position' => $result?->category_position,
-                ],
+                'dynamic_fields' => $dynamicFields,
                 'status' => PlateStatus::Draft,
                 'linked_at' => $participant->user_id ? now() : null,
             ]);

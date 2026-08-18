@@ -6,6 +6,7 @@ use App\Enums\PlateTemplateVersionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\PlateTemplate;
 use App\Models\PlateTemplateVersion;
+use App\Services\CalibrationCardService;
 use App\Services\PlateTemplateRenderService;
 use App\Support\PlateDynamicFields;
 use App\Support\PlateRenderData;
@@ -67,6 +68,7 @@ class PlateStudioController extends Controller
                 'safe_margin_mm' => $plateTemplate->safe_margin_mm !== null ? (float) $plateTemplate->safe_margin_mm : 0,
                 'orientation' => $plateTemplate->orientation,
                 'material' => $plateTemplate->material,
+                'back_transform' => $plateTemplate->back_transform->value,
             ],
             'version' => [
                 'id' => $plateTemplateVersion->id,
@@ -297,6 +299,24 @@ class PlateStudioController extends Controller
         return response($svg, 200, [
             'Content-Type' => 'image/svg+xml',
             'Content-Disposition' => "attachment; filename=\"test-grabado-{$plateTemplateVersion->id}-{$face}.svg\"",
+        ]);
+    }
+
+    /**
+     * Fixed 60x40mm laser calibration fixture — several QR sizes, text
+     * sizes, and line weights on one sacrificial print. Not tied to any
+     * molde, Plate, or Legacy Code; the QR content is a clearly-labeled
+     * test path, never a real /l/{code}.
+     */
+    public function calibrationCard(string $face, CalibrationCardService $calibration): HttpResponse
+    {
+        abort_unless(in_array($face, ['front', 'back'], true), 404);
+
+        $svg = $face === 'front' ? $calibration->renderFront() : $calibration->renderBack();
+
+        return response($svg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Content-Disposition' => "attachment; filename=\"calibracion-laser-{$face}.svg\"",
         ]);
     }
 }

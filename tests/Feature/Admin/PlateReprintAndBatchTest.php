@@ -1,16 +1,24 @@
 <?php
 
+use App\Enums\EditionStatus;
+use App\Enums\EventStatus;
 use App\Enums\LegacyCodeStatus;
 use App\Enums\PlateGenerationMode;
 use App\Enums\PlateStatus;
 use App\Enums\PlateTemplateVersionStatus;
 use App\Enums\ProductionJobStatus;
+use App\Models\EventEdition;
+use App\Models\EventParticipant;
+use App\Models\EventPlateTemplate;
+use App\Models\EventRace;
+use App\Models\EventResult;
 use App\Models\LegacyCode;
 use App\Models\Plate;
 use App\Models\PlateTemplate;
 use App\Models\PlateTemplateVersion;
 use App\Models\ProductionJob;
 use App\Models\User;
+use App\Services\PlateGenerationService;
 use App\Support\CodeGenerator;
 use App\Support\PlateFilename;
 use Database\Seeders\RolePermissionSeeder;
@@ -72,6 +80,58 @@ test('admin can view plate detail with template, legacy code and production stat
     );
 });
 
+test('plate detail exposes result splits sorted by sequence when the result has them', function () {
+    $edition = EventEdition::factory()->create(['status' => EditionStatus::Published]);
+    $edition->event()->update(['status' => EventStatus::Published]);
+
+    EventPlateTemplate::create([
+        'event_edition_id' => $edition->id,
+        'plate_template_version_id' => $this->version->id,
+        'is_default' => true,
+        'active' => true,
+    ]);
+
+    $race = EventRace::factory()->create([
+        'event_edition_id' => $edition->id,
+        'name' => '42K',
+        'distance_value' => 42.195,
+        'distance_unit' => 'km',
+    ]);
+    $participant = EventParticipant::factory()->create([
+        'event_edition_id' => $edition->id,
+        'event_race_id' => $race->id,
+    ]);
+    $result = EventResult::factory()->create([
+        'event_participant_id' => $participant->id,
+        'official_time' => '03:47:21',
+    ]);
+    $result->splits()->createMany([
+        ['type' => 'split', 'label' => '10K', 'sequence' => 2, 'distance_value' => 10, 'distance_unit' => 'km', 'elapsed_time' => '00:48:12'],
+        ['type' => 'split', 'label' => '5K', 'sequence' => 1, 'distance_value' => 5, 'distance_unit' => 'km', 'elapsed_time' => '00:23:40'],
+    ]);
+
+    $plate = app(PlateGenerationService::class)->generateIntegrated($participant->fresh(['eventRace', 'result.splits']));
+
+    $response = $this->actingAs($this->admin)->get(route('admin.plates.show', $plate));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('admin/plates/Show')
+        ->where('splits.0.label', '5K')
+        ->where('splits.0.elapsed_time', '00:23:40')
+        ->where('splits.1.label', '10K')
+    );
+});
+
+test('plate detail exposes an empty splits list when the result has none', function () {
+    $plate = makeReadyPlate($this->version);
+
+    $response = $this->actingAs($this->admin)->get(route('admin.plates.show', $plate));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page->where('splits', []));
+});
+
 test('reprinting a ready plate keeps the same legacy code and creates a new production job', function () {
     $plate = makeReadyPlate($this->version);
     $originalCode = $plate->legacyCode->code;
@@ -89,6 +149,28 @@ test('reprinting a ready plate keeps the same legacy code and creates a new prod
         ->and($plate->status->value)->toBe('queued')
         ->and($plate->reprints()->count())->toBe(1)
         ->and($plate->productionJobs()->count())->toBe(2);
+});
+
+test('reprinting starts a fresh production job with an empty checklist', function () {
+    $plate = makeReadyPlate($this->version);
+    $originalJob = $plate->latestProductionJob;
+    $originalJob->update([
+        'front_engraved_at' => now(), 'front_engraved_by' => $this->admin->id,
+        'back_engraved_at' => now(), 'back_engraved_by' => $this->admin->id,
+        'qr_verified_at' => now(), 'qr_verified_by' => $this->admin->id,
+    ]);
+
+    $this->actingAs($this->admin)->post(route('admin.plates.reprint', $plate), [
+        'reason' => 'Placa dañada en tránsito',
+        'use_original' => true,
+    ])->assertRedirect();
+
+    $newJob = $plate->fresh()->latestProductionJob;
+    expect($newJob->id)->not->toBe($originalJob->id)
+        ->and($newJob->checklistComplete())->toBeFalse()
+        ->and($newJob->front_engraved_at)->toBeNull()
+        ->and($newJob->back_engraved_at)->toBeNull()
+        ->and($newJob->qr_verified_at)->toBeNull();
 });
 
 test('a draft plate cannot be reprinted', function () {

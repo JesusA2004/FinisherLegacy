@@ -8,6 +8,7 @@ use App\Models\EventEdition;
 use App\Models\EventParticipant;
 use App\Models\Plate;
 use App\Services\PlateGenerationService;
+use App\Services\PlateSnapshotBuilder;
 use App\Services\PlateTemplateRenderService;
 use App\Support\PlateRenderData;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,7 @@ class OperatorController extends Controller
     public function __construct(
         private readonly PlateGenerationService $plates,
         private readonly PlateTemplateRenderService $renderer,
+        private readonly PlateSnapshotBuilder $snapshotBuilder,
     ) {}
 
     public function index(Request $request): Response
@@ -186,10 +188,14 @@ class OperatorController extends Controller
         ]);
 
         if (! empty($data['event_participant_id'])) {
-            $participant = EventParticipant::with(['eventEdition.event', 'eventRace', 'result'])
+            $participant = EventParticipant::with(['eventEdition.event', 'eventRace', 'result.splits'])
                 ->where('id', $data['event_participant_id'])
                 ->firstOrFail();
             $version = $edition->defaultPlateTemplateVersion($participant->event_race_id);
+            // Reuses the same snapshot builder Integrated generation freezes onto
+            // the plate, so the operator's preview (distance, splits) never
+            // disagrees with what actually gets generated a moment later.
+            $snapshot = $this->snapshotBuilder->build($participant);
             $renderData = PlateRenderData::fromArray([
                 'athlete_name' => $participant->full_name,
                 'bib_number' => $participant->bib_number,
@@ -198,11 +204,15 @@ class OperatorController extends Controller
                 'race_name' => $participant->eventRace?->name,
                 'official_time' => $participant->result?->official_time,
                 'pace' => $participant->result?->pace,
-                'category' => $participant->category,
-                'overall_position' => $participant->result?->overall_position !== null ? (string) $participant->result->overall_position : null,
-                'category_position' => $participant->result?->category_position !== null ? (string) $participant->result->category_position : null,
                 'legacy_code' => 'FL-PREVIEW',
                 'plate_serial' => 'FL-PREVIEW',
+                'distance' => $snapshot['distance'],
+                'swim_time' => $snapshot['swim_time'],
+                'bike_time' => $snapshot['bike_time'],
+                'run_time' => $snapshot['run_time'],
+                'category' => $snapshot['category'],
+                'overall_position' => $snapshot['overall_position'] !== null ? (string) $snapshot['overall_position'] : null,
+                'category_position' => $snapshot['category_position'] !== null ? (string) $snapshot['category_position'] : null,
             ], true);
         } else {
             $quick = $data['quick'] ?? [];

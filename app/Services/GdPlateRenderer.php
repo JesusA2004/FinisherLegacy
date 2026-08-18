@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\PlateBackTransform;
 use App\Models\PlateTemplateVersion;
 use App\Support\PlateMeasurementService;
 use App\Support\PlateRenderData;
+use App\Support\PlateVectorIcons;
 use GdImage;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
@@ -56,12 +58,30 @@ class GdPlateRenderer
             $this->drawElement($image, $element, $dpi, $isProduction);
         }
 
+        $backTransform = $template->back_transform ?? PlateBackTransform::None;
+
+        if ($isProduction && $face === 'back' && $backTransform !== PlateBackTransform::None) {
+            $image = $this->applyBackTransform($image, $backTransform);
+        }
+
         ob_start();
         imagepng($image);
         $blob = (string) ob_get_clean();
         imagedestroy($image);
 
         return $blob;
+    }
+
+    private function applyBackTransform(GdImage $image, PlateBackTransform $transform): GdImage
+    {
+        $result = match ($transform) {
+            PlateBackTransform::MirrorX => imageflip($image, IMG_FLIP_HORIZONTAL) ? $image : null,
+            PlateBackTransform::MirrorY => imageflip($image, IMG_FLIP_VERTICAL) ? $image : null,
+            PlateBackTransform::Rotate180 => imagerotate($image, 180, 0),
+            PlateBackTransform::None => $image,
+        };
+
+        return $result instanceof GdImage ? $result : $image;
     }
 
     /**
@@ -77,8 +97,92 @@ class GdPlateRenderer
             'rect' => $this->drawRect($image, $element, $dpi, $isProduction),
             'qr' => $this->drawQr($image, $element, $dpi),
             'image', 'logo', 'icon' => $this->drawImage($image, $element, $dpi),
+            'vector_icon' => $this->drawVectorIcon($image, $element, $dpi, $isProduction),
             default => null,
         };
+    }
+
+    /**
+     * Standalone transparent raster of one vector_icon element, for embedding
+     * as an <img> in the PDF renderer (dompdf has no native SVG polyline
+     * support) — positioned at the origin, the caller places it via CSS.
+     *
+     * @param  array<string, mixed>  $element
+     */
+    public function renderVectorIconPng(array $element, int $widthPx, int $heightPx, bool $isProduction): string
+    {
+        $image = imagecreatetruecolor(max(1, $widthPx), max(1, $heightPx));
+
+        if ($image === false) {
+            throw new RuntimeException('Unable to allocate vector icon canvas.');
+        }
+
+        imagesavealpha($image, true);
+        imagealphablending($image, true);
+        $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+        imagefill($image, 0, 0, $transparent === false ? 0 : $transparent);
+
+        $color = $isProduction ? '#000000' : (string) ($element['stroke'] ?? '#000000');
+        $gdColor = $this->allocateColor($image, $color);
+        $thickness = max(1, (int) round($widthPx * 0.03));
+        $this->paintVectorIconShapes($image, (string) ($element['icon'] ?? ''), 0, 0, $widthPx, $heightPx, $gdColor, $thickness);
+
+        ob_start();
+        imagepng($image);
+        $blob = (string) ob_get_clean();
+        imagedestroy($image);
+
+        return $blob;
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
+     */
+    private function drawVectorIcon(GdImage $image, array $element, int $dpi, bool $isProduction): void
+    {
+        $x = $this->px((float) ($element['x_mm'] ?? 0), $dpi);
+        $y = $this->px((float) ($element['y_mm'] ?? 0), $dpi);
+        $w = $this->px((float) ($element['width_mm'] ?? 0), $dpi);
+        $h = $this->px((float) ($element['height_mm'] ?? 0), $dpi);
+
+        $color = $isProduction ? '#000000' : (string) ($element['stroke'] ?? '#000000');
+        $gdColor = $this->allocateColor($image, $color);
+        $thickness = max(1, $this->px((float) ($element['stroke_width_mm'] ?? 0.4), $dpi));
+
+        $this->paintVectorIconShapes($image, (string) ($element['icon'] ?? ''), $x, $y, $w, $h, $gdColor, $thickness);
+    }
+
+    private function paintVectorIconShapes(GdImage $image, string $iconId, int $x, int $y, int $w, int $h, int $gdColor, int $thickness): void
+    {
+        $shapes = PlateVectorIcons::shapesFor($iconId);
+
+        if ($shapes === []) {
+            return;
+        }
+
+        imagesetthickness($image, $thickness);
+
+        foreach ($shapes as $shape) {
+            if ($shape['type'] === 'circle') {
+                $cx = $x + (int) round($shape['cx'] * $w);
+                $cy = $y + (int) round($shape['cy'] * $h);
+                $r = (int) round($shape['r'] * min($w, $h)) * 2;
+                imageellipse($image, $cx, $cy, max(1, $r), max(1, $r), $gdColor);
+
+                continue;
+            }
+
+            $points = $shape['points'];
+            for ($i = 0; $i < count($points) - 1; $i++) {
+                $x1 = $x + (int) round($points[$i][0] * $w);
+                $y1 = $y + (int) round($points[$i][1] * $h);
+                $x2 = $x + (int) round($points[$i + 1][0] * $w);
+                $y2 = $y + (int) round($points[$i + 1][1] * $h);
+                imageline($image, $x1, $y1, $x2, $y2, $gdColor);
+            }
+        }
+
+        imagesetthickness($image, 1);
     }
 
     private function px(float $mm, int $dpi): int

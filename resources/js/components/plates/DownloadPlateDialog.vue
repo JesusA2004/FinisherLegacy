@@ -6,6 +6,7 @@ import {
     exportPackage,
 } from '@/actions/App/Http/Controllers/Admin/PlateController';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -28,6 +29,7 @@ const open = defineModel<boolean>('open', { default: false });
 const format = ref<'svg' | 'png' | 'pdf' | 'zip'>('svg');
 const dpi = ref('300');
 const face = ref<'front' | 'back'>('front');
+const textAsPaths = ref(false);
 const guideOpen = ref(false);
 
 const guideSteps = [
@@ -53,9 +55,19 @@ function download() {
     if (format.value === 'zip') {
         window.open(exportPackage.url(props.plateId), '_blank');
     } else {
+        const query: Record<string, string> = {};
+
+        if (format.value === 'png') {
+            query.dpi = dpi.value;
+        }
+
+        if (format.value === 'svg' && textAsPaths.value) {
+            query.text_as_paths = '1';
+        }
+
         window.open(
             exportFace.url([props.plateId, face.value, format.value], {
-                query: format.value === 'png' ? { dpi: dpi.value } : {},
+                query,
             }),
             '_blank',
         );
@@ -126,6 +138,27 @@ function download() {
                         </SelectContent>
                     </Select>
                 </div>
+
+                <label
+                    v-if="format === 'svg'"
+                    class="flex items-start gap-2.5 text-sm text-white/80"
+                >
+                    <Checkbox
+                        :model-value="textAsPaths"
+                        class="mt-0.5"
+                        @update:model-value="(v) => (textAsPaths = !!v)"
+                    />
+                    <span>
+                        Convertir texto a trazos (paths)
+                        <span class="block text-xs text-white/40">
+                            El archivo deja de depender de tener una fuente
+                            instalada en la PC de producción — cada letra se
+                            convierte a su contorno vectorial exacto, aunque el
+                            trazo puede diferir ligeramente de la fuente Inter
+                            que ves en pantalla.
+                        </span>
+                    </span>
+                </label>
 
                 <p v-if="format === 'zip'" class="text-xs text-white/50">
                     Incluye frente y reverso como archivos SVG, PNG y PDF por

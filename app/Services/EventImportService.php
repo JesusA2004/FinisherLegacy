@@ -45,7 +45,10 @@ class EventImportService
     }
 
     /**
-     * @param  array<string, int|null>  $mapping
+     * @param  array<string, mixed>  $mapping  Field key => column index, plus
+     *                                         an optional 'splits' key: list<array{label: string, column: int}>
+     *                                         for freeform result splits (e.g. "5K", "Swim") when the source file
+     *                                         has them — never required.
      */
     public function startImport(EventEdition $edition, string $tempPath, string $originalFilename, array $mapping, User $user): EventImport
     {

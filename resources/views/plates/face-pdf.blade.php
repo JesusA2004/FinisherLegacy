@@ -72,7 +72,7 @@
                 @if (! empty($element['data_uri']))
                     <img class="el" style="left:{{ $x }}mm; top:{{ $y }}mm; width:{{ $w }}mm; height:{{ $h }}mm;" src="{{ $element['data_uri'] }}" alt="QR">
                 @endif
-            @elseif (in_array($type, ['image', 'logo', 'icon'], true))
+            @elseif (in_array($type, ['image', 'logo', 'icon', 'vector_icon'], true))
                 @if (! empty($element['data_uri']))
                     <img class="el" style="left:{{ $x }}mm; top:{{ $y }}mm; width:{{ $w }}mm; height:{{ $h }}mm;" src="{{ $element['data_uri'] }}" alt="">
                 @endif

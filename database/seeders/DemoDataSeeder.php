@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\LegacyCodeStatus;
-use App\Enums\PlateGenerationMode;
 use App\Enums\PlateStatus;
 use App\Enums\PlateTemplateVersionStatus;
 use App\Enums\ProductionJobStatus;
@@ -16,62 +15,83 @@ use App\Models\EventIncident;
 use App\Models\EventParticipant;
 use App\Models\EventPlateTemplate;
 use App\Models\EventRace;
+use App\Models\EventResult;
 use App\Models\EventStaffAssignment;
-use App\Models\LegacyCode;
 use App\Models\Medal;
 use App\Models\Organizer;
 use App\Models\Plate;
 use App\Models\PlateTemplateVersion;
-use App\Models\ProductionJob;
 use App\Models\Sport;
 use App\Models\User;
 use App\Services\LegacyIdService;
-use App\Support\CodeGenerator;
+use App\Services\PlateGenerationService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+/**
+ * Every demo Plate — integrated, quick, triathlon — is created through
+ * PlateGenerationService, the same single entry point the real app uses
+ * (see App\Services\PlateGenerationService docblock). This seeder never
+ * builds a Plate row by hand; it only mutates status/timestamps
+ * afterward to make old demo data look historical (delivered days ago,
+ * claimed, etc.) — that's just simulating time passing, not a second way
+ * to create a plate.
+ */
 class DemoDataSeeder extends Seeder
 {
     use WithoutModelEvents;
 
     private LegacyIdService $legacyIdService;
 
+    private PlateGenerationService $plates;
+
     public function run(): void
     {
         $this->legacyIdService = app(LegacyIdService::class);
+        $this->plates = app(PlateGenerationService::class);
 
         $staff = $this->createStaffUsers();
         $athlete = $this->createDemoAthlete();
 
         // PlateTemplateSeeder (runs before this one in DatabaseSeeder) is the
-        // only place a template + published version actually gets created —
-        // there is no "classic-black-gold" template. Every demo plate must
-        // carry a real plate_template_version_id or export/production tooling
-        // breaks on a NULL template downstream.
-        $version = PlateTemplateVersion::query()
-            ->whereHas('plateTemplate', fn ($q) => $q->where('slug', 'triathlon-premium-60x40'))
-            ->where('status', PlateTemplateVersionStatus::Published)
-            ->latest('version')
-            ->firstOrFail();
+        // only place a template + published version actually gets created.
+        // Every demo plate must carry a real plate_template_version_id or
+        // export/production tooling breaks on a NULL template downstream.
+        $runningVersion = $this->publishedVersion('running-classic-60x40');
 
         [$edition, $races] = $this->createDemoEvent($staff);
 
-        $this->assignDefaultTemplate($edition, $version);
+        $this->assignDefaultTemplate($edition, $runningVersion);
         $this->assignStaff($edition, $staff);
 
         $participants = $this->createParticipants($edition, $races, 500);
+        $marathonRace = $races->firstWhere('name', '42K') ?? $races->first();
+        $participants->first()->update(['event_race_id' => $marathonRace->id]);
         $this->linkAthleteToParticipant($participants->first(), $athlete);
         $this->createResults($participants);
 
-        $integratedParticipant = $participants->first();
-        $this->createIntegratedPlate($integratedParticipant, $athlete, $edition, $version);
-        $this->createQuickPlates($edition, $version, 6);
+        $integratedParticipant = $participants->first()->fresh(['eventRace', 'result']);
+        $this->finalizeMarathonResult($integratedParticipant);
+        $integratedParticipant->refresh();
+        $this->createIntegratedPlate($integratedParticipant, $athlete, $edition, $runningVersion);
+        $this->createQuickPlates($edition, $runningVersion, 6);
         $this->createPreregistrations($edition, $races, 30);
         $this->createSampleIncident($edition, $participants->skip(1)->first(), $staff['event_operator']);
         $this->createDemoMedals($athlete);
+
+        $this->createTriathlonDemoEvent($staff);
+    }
+
+    private function publishedVersion(string $slug): PlateTemplateVersion
+    {
+        return PlateTemplateVersion::query()
+            ->whereHas('plateTemplate', fn ($q) => $q->where('slug', $slug))
+            ->where('status', PlateTemplateVersionStatus::Published)
+            ->latest('version')
+            ->firstOrFail();
     }
 
     private function createDemoMedals(User $athlete): void
@@ -341,46 +361,176 @@ class DemoDataSeeder extends Seeder
         DB::table('event_results')->insert($rows);
     }
 
+    /**
+     * Gives the linked demo athlete's marathon result clean, demo-friendly
+     * numbers (rather than the random ones createResults() gave everyone
+     * else) and 5K/10K/21K/30K splits — coherent enough to prove the UI and
+     * the Integrated → Plate → SVG pipeline, not statistically real.
+     */
+    private function finalizeMarathonResult(EventParticipant $participant): void
+    {
+        $result = $participant->result ?? EventResult::create([
+            'event_participant_id' => $participant->id,
+            'status' => 'finished',
+        ]);
+
+        $result->update([
+            'official_time' => '03:47:21',
+            'chip_time' => '03:47:18',
+            'pace' => '5:23',
+            'overall_position' => 142,
+            'gender_position' => 98,
+            'category_position' => 18,
+            'status' => 'finished',
+            'result_source' => 'timing_import',
+            'verified_at' => now(),
+        ]);
+
+        $splits = [
+            ['type' => 'split', 'label' => '5K', 'sequence' => 1, 'distance_value' => 5, 'distance_unit' => 'km', 'segment_time' => '00:25:40', 'elapsed_time' => '00:25:40', 'pace' => '5:08'],
+            ['type' => 'split', 'label' => '10K', 'sequence' => 2, 'distance_value' => 10, 'distance_unit' => 'km', 'segment_time' => '00:26:55', 'elapsed_time' => '00:52:35', 'pace' => '5:23'],
+            ['type' => 'split', 'label' => '21K', 'sequence' => 3, 'distance_value' => 21.097, 'distance_unit' => 'km', 'segment_time' => '00:58:10', 'elapsed_time' => '01:50:45', 'pace' => '5:14'],
+            ['type' => 'split', 'label' => '30K', 'sequence' => 4, 'distance_value' => 30, 'distance_unit' => 'km', 'segment_time' => '00:49:32', 'elapsed_time' => '02:40:17', 'pace' => '5:31'],
+        ];
+
+        foreach ($splits as $split) {
+            $result->splits()->updateOrCreate(['label' => $split['label']], $split);
+        }
+    }
+
+    /**
+     * A second, dedicated demo event for the Triathlon preset — the running
+     * marathon above never exercises swim/bike/run at all. Generic name,
+     * no protected/real event branding.
+     *
+     * @param  array<string, User>  $staff
+     */
+    private function createTriathlonDemoEvent(array $staff): void
+    {
+        $version = $this->publishedVersion('triathlon-premium-60x40');
+
+        $organizer = Organizer::query()->firstOrCreate(
+            ['slug' => 'finisher-sports-group'],
+            ['name' => 'Finisher Sports Group'],
+        );
+        $sport = Sport::query()->where('slug', 'triatlon')->first()
+            ?? Sport::query()->where('slug', 'running')->firstOrFail();
+
+        $event = Event::query()->updateOrCreate(
+            ['slug' => 'finisher-legacy-triathlon-demo'],
+            [
+                'organizer_id' => $organizer->id,
+                'sport_id' => $sport->id,
+                'name' => 'Finisher Legacy Triathlon Demo',
+                'description' => 'Evento de demostración para validar el preset de Triatlón (swim/bike/run) — no es un evento real.',
+                'status' => 'published',
+            ],
+        );
+
+        $edition = EventEdition::query()->updateOrCreate(
+            ['event_id' => $event->id, 'year' => 2026],
+            [
+                'name' => 'Finisher Legacy Triathlon Demo 2026',
+                'event_date' => now()->addMonths(3)->toDateString(),
+                'city' => 'Cozumel',
+                'state' => 'Quintana Roo',
+                'country' => 'México',
+                'timezone' => 'America/Cancun',
+                'registration_open_at' => now()->subMonth(),
+                'registration_close_at' => now()->addWeeks(6),
+                'operation_mode' => 'hybrid',
+                'status' => 'published',
+                'results_status' => 'partial',
+            ],
+        );
+
+        $race = EventRace::query()->updateOrCreate(
+            ['event_edition_id' => $edition->id, 'name' => '70.3'],
+            [
+                'distance_value' => 70.3,
+                'distance_unit' => 'mi',
+                'race_type' => 'individual',
+                'start_time' => '07:00:00',
+                'active' => true,
+            ],
+        );
+
+        $this->assignDefaultTemplate($edition, $version);
+        $this->assignStaff($edition, $staff);
+
+        $athlete = User::query()->where('email', 'athlete@finisherlegacy.com')->first();
+
+        $participant = EventParticipant::query()->updateOrCreate(
+            ['event_edition_id' => $edition->id, 'bib_number' => '142'],
+            [
+                'event_race_id' => $race->id,
+                'user_id' => $athlete?->id,
+                'first_name' => 'Zuriel',
+                'last_name' => 'Ávila',
+                'full_name' => 'Zuriel Ávila',
+                'email' => 'athlete@finisherlegacy.com',
+                'registration_status' => 'registered',
+                'source' => 'csv',
+                'source_reference' => 'seed-import.csv',
+                'verification_status' => 'verified',
+                'category' => '25-29',
+            ],
+        );
+
+        $result = EventResult::query()->updateOrCreate(
+            ['event_participant_id' => $participant->id],
+            [
+                'official_time' => '05:21:18',
+                'chip_time' => '05:21:15',
+                'pace' => '4:33/km',
+                'overall_position' => 142,
+                'gender_position' => 89,
+                'category_position' => 18,
+                'status' => 'finished',
+                'result_source' => 'timing_import',
+                'verified_at' => now(),
+            ],
+        );
+
+        foreach ([
+            ['type' => 'swim', 'label' => 'Swim', 'sequence' => 1, 'distance_value' => 1.9, 'distance_unit' => 'km', 'segment_time' => '42:15', 'elapsed_time' => '42:15'],
+            ['type' => 'bike', 'label' => 'Bike', 'sequence' => 2, 'distance_value' => 90, 'distance_unit' => 'km', 'segment_time' => '2:49:33', 'elapsed_time' => '3:31:48'],
+            ['type' => 'run', 'label' => 'Run', 'sequence' => 3, 'distance_value' => 21.1, 'distance_unit' => 'km', 'segment_time' => '1:44:51', 'elapsed_time' => '5:21:18'],
+        ] as $split) {
+            $result->splits()->updateOrCreate(['type' => $split['type']], $split);
+        }
+
+        if ($athlete && ! Plate::where('event_participant_id', $participant->id)->exists()) {
+            $plate = $this->plates->generateIntegrated($participant->fresh(['eventRace', 'result.splits']), $version);
+            $plate->update([
+                'status' => PlateStatus::Delivered,
+                'produced_at' => now()->subDays(2),
+                'delivered_at' => now()->subDay(),
+            ]);
+            $plate->latestProductionJob?->update([
+                'status' => ProductionJobStatus::Completed,
+                'queued_at' => now()->subDays(2),
+                'started_at' => now()->subDays(2),
+                'completed_at' => now()->subDays(2),
+                'attempts' => 1,
+            ]);
+        }
+    }
+
     private function createIntegratedPlate(EventParticipant $participant, User $athlete, EventEdition $edition, PlateTemplateVersion $version): void
     {
-        $result = $participant->result;
+        $plate = $this->plates->generateIntegrated($participant, $version);
 
-        $plate = Plate::create([
-            'user_id' => $athlete->id,
-            'event_edition_id' => $edition->id,
-            'event_participant_id' => $participant->id,
-            'plate_template_id' => $version->plate_template_id,
-            'plate_template_version_id' => $version->id,
-            'serial_number' => CodeGenerator::generate('PLT', 8),
-            'generation_mode' => PlateGenerationMode::Integrated,
-            'athlete_name' => $athlete->name,
-            'bib_number' => $participant->bib_number,
-            'event_name' => 'Maratón CDMX 2026',
-            'race_name' => $participant->eventRace->name,
-            'official_time' => $result?->official_time,
-            'pace' => $result?->pace,
-            'event_date' => $edition->event_date,
+        // Simulating time passing on an already-real plate — not a second
+        // way to create one. The service already froze the correct
+        // dynamic_fields snapshot (distance, splits, position, category).
+        $plate->update([
             'status' => PlateStatus::Delivered,
-            'linked_at' => now(),
             'produced_at' => now()->subHour(),
             'delivered_at' => now(),
         ]);
 
-        $legacyCode = LegacyCode::create([
-            'code' => CodeGenerator::unique('FL', fn (string $c) => LegacyCode::query()->where('code', $c)->exists()),
-            'uuid' => Str::uuid(),
-            'plate_id' => $plate->id,
-            'user_id' => $athlete->id,
-            'status' => LegacyCodeStatus::Assigned,
-            'assigned_at' => now(),
-        ]);
-
-        $plate->update(['legacy_code_id' => $legacyCode->id]);
-
-        ProductionJob::create([
-            'plate_id' => $plate->id,
-            'event_edition_id' => $edition->id,
-            'priority' => 0,
+        $plate->latestProductionJob?->update([
             'status' => ProductionJobStatus::Completed,
             'queued_at' => now()->subHours(2),
             'started_at' => now()->subHour(),
@@ -394,34 +544,28 @@ class DemoDataSeeder extends Seeder
         for ($i = 1; $i <= $count; $i++) {
             $claimed = $i <= 2;
 
-            $plate = Plate::create([
-                'user_id' => null,
-                'event_edition_id' => $edition->id,
-                'plate_template_id' => $version->plate_template_id,
-                'plate_template_version_id' => $version->id,
-                'serial_number' => CodeGenerator::generate('PLT', 8),
-                'generation_mode' => PlateGenerationMode::Quick,
+            $plate = $this->plates->generateQuick($edition, [
                 'athlete_name' => fake()->name(),
-                'bib_number' => null,
-                'event_name' => 'Maratón CDMX 2026',
                 'race_name' => fake()->randomElement(['5K', '10K', '21K', '42K']),
-                'event_date' => $edition->event_date,
+            ], $version);
+
+            $plate->update([
                 'status' => PlateStatus::Delivered,
                 'produced_at' => now()->subHours(3),
                 'delivered_at' => now()->subHours(2),
             ]);
 
-            $legacyCode = LegacyCode::create([
-                'code' => CodeGenerator::unique('FL', fn (string $c) => LegacyCode::query()->where('code', $c)->exists()),
-                'uuid' => Str::uuid(),
-                'plate_id' => $plate->id,
-                'status' => LegacyCodeStatus::Assigned,
-                'assigned_at' => now()->subHours(3),
+            $plate->latestProductionJob?->update([
+                'status' => ProductionJobStatus::Completed,
+                'queued_at' => now()->subHours(4),
+                'started_at' => now()->subHours(3.5),
+                'completed_at' => now()->subHours(3),
+                'attempts' => 1,
             ]);
 
-            $plate->update(['legacy_code_id' => $legacyCode->id]);
+            $legacyCode = $plate->legacyCode;
 
-            if ($claimed) {
+            if ($claimed && $legacyCode) {
                 $claimant = User::factory()->create();
                 $claimant->syncRoles(['athlete']);
                 $this->legacyIdService->issueFor($claimant);
@@ -435,16 +579,6 @@ class DemoDataSeeder extends Seeder
 
                 $plate->update(['user_id' => $claimant->id, 'linked_at' => now()]);
             }
-
-            ProductionJob::create([
-                'plate_id' => $plate->id,
-                'event_edition_id' => $edition->id,
-                'status' => ProductionJobStatus::Completed,
-                'queued_at' => now()->subHours(4),
-                'started_at' => now()->subHours(3.5),
-                'completed_at' => now()->subHours(3),
-                'attempts' => 1,
-            ]);
         }
     }
 

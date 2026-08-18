@@ -56,7 +56,7 @@ function submit() {
 <template>
     <Head title="Nuevo usuario" />
 
-    <div class="mx-auto max-w-4xl p-4 md:p-8">
+    <div class="p-4 md:p-8">
         <Link
             href="/admin/users"
             class="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white"
@@ -67,7 +67,7 @@ function submit() {
         <h1 class="mt-4 mb-6 text-xl font-bold text-white">Nuevo usuario</h1>
 
         <div class="space-y-5">
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="grid gap-2">
                     <Label>Nombre</Label>
                     <Input
@@ -84,9 +84,6 @@ function submit() {
                         class="border-white/10 bg-fl-black text-white"
                     />
                 </div>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2">
                 <div class="grid gap-2">
                     <Label>Correo</Label>
                     <Input
@@ -140,7 +137,7 @@ function submit() {
             <div class="grid gap-2">
                 <Label>Roles</Label>
                 <div
-                    class="grid grid-cols-2 gap-2 rounded-lg border border-white/10 p-3 sm:grid-cols-3"
+                    class="grid grid-cols-2 gap-2 rounded-lg border border-white/10 p-3 sm:grid-cols-3 lg:grid-cols-4"
                 >
                     <label
                         v-for="role in roles"
