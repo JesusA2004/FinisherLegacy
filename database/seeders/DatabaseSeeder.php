@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             SportSeeder::class,
             PlateTemplateSeeder::class,
+            MachineProfileSeeder::class,
         ]);
 
         // Demo users ship with a known password ("password") — never seed

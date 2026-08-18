@@ -17,7 +17,14 @@
         <meta property="og:type" content="website">
         <meta property="og:title" content="Finisher Legacy">
         <meta property="og:description" content="Tu meta termina. Tu historia no. Conserva, revive y comparte cada logro deportivo.">
-        <meta property="og:image" content="/android-chrome-512x512.png">
+        <meta property="og:image" content="{{ asset('images/brand/og-finisher-legacy.jpg') }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:image:type" content="image/jpeg">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="Finisher Legacy">
+        <meta name="twitter:description" content="Tu meta termina. Tu historia no. Conserva, revive y comparte cada logro deportivo.">
+        <meta name="twitter:image" content="{{ asset('images/brand/og-finisher-legacy.jpg') }}">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>

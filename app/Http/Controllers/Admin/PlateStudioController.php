@@ -251,6 +251,23 @@ class PlateStudioController extends Controller
     {
         abort_unless($plateTemplateVersion->isEditable(), 422, 'Esta versión ya no está en borrador.');
 
+        $plateTemplateVersion->loadMissing('plateTemplate');
+        $minQr = $plateTemplateVersion->plateTemplate->minimum_validated_qr_size_mm;
+
+        if ($minQr !== null) {
+            /** @var list<array<string, mixed>> $backElements */
+            $backElements = $plateTemplateVersion->back_configuration['elements'] ?? [];
+            $tooSmall = collect($backElements)
+                ->where('type', 'qr')
+                ->first(fn (array $el) => (float) ($el['width_mm'] ?? 0) < (float) $minQr);
+
+            abort_if($tooSmall !== null, 422, sprintf(
+                'El QR del reverso mide %.1fmm — por debajo de los %.1fmm validados físicamente para este molde. Ajusta el tamaño antes de publicar.',
+                (float) ($tooSmall['width_mm'] ?? 0),
+                (float) $minQr,
+            ));
+        }
+
         $plateTemplateVersion->update(['status' => PlateTemplateVersionStatus::Published]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Versión {$plateTemplateVersion->version} publicada. Ya puede asignarse a un evento."]);

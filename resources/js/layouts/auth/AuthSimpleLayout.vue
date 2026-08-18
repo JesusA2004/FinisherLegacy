@@ -2,7 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import { Award, IdCard, Medal, QrCode } from '@lucide/vue';
 import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
-import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
+import FinisherMascot from '@/components/public/FinisherMascot.vue';
 import { home } from '@/routes';
 
 defineProps<{
@@ -32,7 +32,7 @@ const chain = [
             />
 
             <Link :href="home()" class="relative z-10">
-                <FinisherLegacyLogo />
+                <FinisherLegacyLogo variant="horizontal" size="xl" />
             </Link>
 
             <div class="relative z-10 max-w-sm">
@@ -66,8 +66,10 @@ const chain = [
                     </template>
                 </div>
 
-                <MascotPlaceholderIcon
-                    class="hidden size-14 shrink-0 opacity-40 xl:block"
+                <FinisherMascot
+                    variant="small"
+                    alt=""
+                    class="hidden shrink-0 opacity-70 xl:block"
                 />
             </div>
         </div>
@@ -77,7 +79,7 @@ const chain = [
         >
             <div class="w-full max-w-sm">
                 <Link :href="home()" class="mb-8 flex justify-center lg:hidden">
-                    <FinisherLegacyLogo />
+                    <FinisherLegacyLogo variant="mark" size="lg" />
                 </Link>
 
                 <div

@@ -72,6 +72,11 @@ const { plate, resultComparison, reprints, activities } = defineProps<{
     }[];
 }>();
 
+const generationModeLabel: Record<string, string> = {
+    integrated: 'Integrada',
+    quick: 'Rápida',
+};
+
 const face = ref<PlateFace>('front');
 const mode = ref<PlateRenderMode>('product');
 const svg = ref<string | null>(null);
@@ -162,7 +167,12 @@ function submitReprint() {
                     </div>
                     <div>
                         <p class="text-xs text-white/40 uppercase">Modo</p>
-                        <p class="text-white">{{ plate.generation_mode }}</p>
+                        <p class="text-white">
+                            {{
+                                generationModeLabel[plate.generation_mode] ??
+                                plate.generation_mode
+                            }}
+                        </p>
                     </div>
                     <div>
                         <p class="text-xs text-white/40 uppercase">

@@ -37,7 +37,7 @@ function isItemActive(item: { href: string; exact?: boolean }): boolean {
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
                         <Link href="/dashboard">
-                            <FinisherLegacyLogo size="sm" />
+                            <FinisherLegacyLogo variant="mark" size="sm" />
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

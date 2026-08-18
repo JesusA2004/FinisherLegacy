@@ -12,6 +12,7 @@ use App\Models\PlateTemplateVersion;
 use App\Models\ProductionJob;
 use App\Models\User;
 use App\Support\CodeGenerator;
+use App\Support\PlateFilename;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Str;
 
@@ -127,8 +128,11 @@ test('admin can batch-export a small set of plates as a single zip with a manife
     $zip = new ZipArchive;
     $zip->open($tmp);
 
-    expect($zip->locateName("{$plateA->serial_number}-front.svg"))->not->toBeFalse()
-        ->and($zip->locateName("{$plateB->serial_number}-front.svg"))->not->toBeFalse()
+    $prefixA = PlateFilename::batchPrefix($plateA->athlete_name, $plateA->bib_number, $plateA->serial_number);
+    $prefixB = PlateFilename::batchPrefix($plateB->athlete_name, $plateB->bib_number, $plateB->serial_number);
+
+    expect($zip->locateName("{$prefixA}_FRONT.svg"))->not->toBeFalse()
+        ->and($zip->locateName("{$prefixB}_FRONT.svg"))->not->toBeFalse()
         ->and($zip->locateName('manifest.json'))->not->toBeFalse();
 
     $manifest = json_decode((string) $zip->getFromName('manifest.json'), true);

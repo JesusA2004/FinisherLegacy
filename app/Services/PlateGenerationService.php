@@ -6,6 +6,7 @@ use App\Enums\LegacyCodeStatus;
 use App\Enums\PlateGenerationMode;
 use App\Enums\PlateStatus;
 use App\Enums\ProductionJobStatus;
+use App\Exceptions\PlateTemplateMissingException;
 use App\Models\EventEdition;
 use App\Models\EventParticipant;
 use App\Models\LegacyCode;
@@ -31,13 +32,17 @@ class PlateGenerationService
         $result = $participant->result;
         $version ??= $edition->defaultPlateTemplateVersion($participant->event_race_id);
 
+        if ($version === null) {
+            throw new PlateTemplateMissingException;
+        }
+
         return DB::transaction(function () use ($participant, $edition, $result, $version) {
             $plate = Plate::create([
                 'user_id' => $participant->user_id,
                 'event_edition_id' => $edition->id,
                 'event_participant_id' => $participant->id,
-                'plate_template_id' => $version?->plate_template_id,
-                'plate_template_version_id' => $version?->id,
+                'plate_template_id' => $version->plate_template_id,
+                'plate_template_version_id' => $version->id,
                 'serial_number' => CodeGenerator::generate('PLT', 8),
                 'generation_mode' => PlateGenerationMode::Integrated,
                 'athlete_name' => $participant->full_name ?: trim("{$participant->first_name} {$participant->last_name}"),
@@ -71,12 +76,16 @@ class PlateGenerationService
         $edition->loadMissing('event');
         $version ??= $edition->defaultPlateTemplateVersion($data['event_race_id'] ?? null);
 
+        if ($version === null) {
+            throw new PlateTemplateMissingException;
+        }
+
         return DB::transaction(function () use ($edition, $data, $version) {
             $plate = Plate::create([
                 'user_id' => null,
                 'event_edition_id' => $edition->id,
-                'plate_template_id' => $version?->plate_template_id,
-                'plate_template_version_id' => $version?->id,
+                'plate_template_id' => $version->plate_template_id,
+                'plate_template_version_id' => $version->id,
                 'serial_number' => CodeGenerator::generate('PLT', 8),
                 'generation_mode' => PlateGenerationMode::Quick,
                 'athlete_name' => $data['athlete_name'],

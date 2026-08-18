@@ -27,6 +27,46 @@ test('users.manage can create a user with roles', function () {
     expect($user->hasRole('event_operator'))->toBeTrue();
 });
 
+test('creating a user with the athlete role issues a Legacy ID, same as public registration', function () {
+    $response = $this->actingAs($this->admin)->post(route('admin.users.store'), [
+        'first_name' => 'Atleta',
+        'last_name' => 'Nuevo',
+        'email' => 'atleta.nuevo@example.com',
+        'phone' => null,
+        'password' => 'Cambia-Esto-123!',
+        'password_confirmation' => 'Cambia-Esto-123!',
+        'status' => 'active',
+        'roles' => ['athlete'],
+    ]);
+
+    $response->assertRedirect(route('admin.users.index'));
+    $user = User::where('email', 'atleta.nuevo@example.com')->firstOrFail();
+    expect($user->hasRole('athlete'))->toBeTrue()
+        ->and($user->legacyId()->exists())->toBeTrue();
+});
+
+test('creating a user without the athlete role issues no Legacy ID', function () {
+    $this->actingAs($this->admin)->post(route('admin.users.store'), [
+        'first_name' => 'Operador', 'last_name' => 'Nuevo', 'email' => 'operador.nuevo@example.com',
+        'password' => 'Cambia-Esto-123!', 'password_confirmation' => 'Cambia-Esto-123!', 'status' => 'active',
+        'roles' => ['event_operator'],
+    ]);
+
+    $user = User::where('email', 'operador.nuevo@example.com')->firstOrFail();
+    expect($user->legacyId()->exists())->toBeFalse();
+});
+
+test('granting the athlete role later, via role management, issues a Legacy ID', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($this->admin)->patch(route('admin.users.update-roles', $user), [
+        'roles' => ['athlete'],
+    ])->assertRedirect();
+
+    expect($user->fresh()->hasRole('athlete'))->toBeTrue()
+        ->and($user->legacyId()->exists())->toBeTrue();
+});
+
 test('without users.manage, creating a user is forbidden', function () {
     $operator = User::factory()->create();
     $operator->assignRole('event_operator');

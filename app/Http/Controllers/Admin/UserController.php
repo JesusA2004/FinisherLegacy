@@ -6,9 +6,11 @@ use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\LegacyIdService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +22,7 @@ class UserController extends Controller
     public function index(Request $request): Response
     {
         $users = User::query()
-            ->with('roles')
+            ->with(['roles', 'legacyId'])
             ->when($request->string('q')->toString(), fn ($q, $search) => $q->where(function ($query) use ($search) {
                 $query->where('first_name', 'like', "%{$search}%")
                     ->orWhere('last_name', 'like', "%{$search}%")
@@ -41,6 +43,7 @@ class UserController extends Controller
             'phone' => $user->phone,
             'status' => $user->status->value,
             'roles' => $user->roles->pluck('name')->implode(', ') ?: '—',
+            'legacy_id' => $user->legacyId?->code,
             'last_login_at' => $user->last_login_at?->diffForHumans() ?? 'Nunca',
         ]);
 
@@ -81,16 +84,26 @@ class UserController extends Controller
         $roles = $data['roles'] ?? [];
         $this->guardSuperAdminGrant($request, $roles);
 
-        $user = User::create([
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
-            'password' => $data['password'],
-            'status' => UserStatus::from($data['status']),
-            'email_verified_at' => now(),
-        ]);
-        $user->syncRoles($roles);
+        $user = DB::transaction(function () use ($data, $roles) {
+            $user = User::create([
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'] ?? null,
+                'password' => $data['password'],
+                'status' => UserStatus::from($data['status']),
+                'email_verified_at' => now(),
+            ]);
+            $user->syncRoles($roles);
+
+            // Same rule as public registration: any user with the athlete
+            // role has a Legacy ID, regardless of how the account was made.
+            if (in_array('athlete', $roles, true)) {
+                app(LegacyIdService::class)->issueFor($user);
+            }
+
+            return $user;
+        });
 
         activity()->causedBy($request->user())->performedOn($user)->event('created')
             ->log("Usuario {$user->name} creado");
@@ -186,6 +199,10 @@ class UserController extends Controller
 
         $previousRoles = $user->roles->pluck('name')->all();
         $user->syncRoles($newRoles);
+
+        if (in_array('athlete', $newRoles, true)) {
+            app(LegacyIdService::class)->issueFor($user);
+        }
 
         activity()
             ->causedBy($request->user())

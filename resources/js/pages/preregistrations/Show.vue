@@ -42,7 +42,7 @@ const statusCopy: Record<string, string> = {
 
     <section class="mx-auto max-w-lg px-4 py-16 sm:px-6 lg:px-8">
         <div class="mb-8 flex justify-center">
-            <FinisherLegacyLogo size="sm" />
+            <FinisherLegacyLogo variant="mark" size="md" />
         </div>
 
         <MascotSpotlight

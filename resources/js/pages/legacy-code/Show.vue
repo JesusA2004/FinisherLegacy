@@ -2,7 +2,9 @@
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { Award, Lock, MapPin } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import HelpPopover from '@/components/HelpPopover.vue';
 import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
+import FinisherMascot from '@/components/public/FinisherMascot.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -76,8 +78,12 @@ function submitClaim() {
     <Head :title="`Legacy Code ${code}`" />
 
     <section class="mx-auto max-w-lg px-4 py-16 sm:px-6 lg:px-8">
-        <div class="mb-8 flex justify-center">
-            <FinisherLegacyLogo size="sm" />
+        <div class="mb-8 flex items-center justify-center gap-1">
+            <FinisherLegacyLogo variant="mark" size="md" />
+            <HelpPopover
+                title="Legacy Code"
+                text="Este código es permanente. Una reimpresión de la placa conserva el mismo código — nunca cambia, sin importar cuántas veces se reimprima."
+            />
         </div>
 
         <template v-if="!available">
@@ -206,9 +212,17 @@ function submitClaim() {
                 class="mt-4 rounded-xl border border-dashed border-white/15 p-5 text-center"
             >
                 <template v-if="ownedByMe">
-                    <Award class="mx-auto size-5 text-fl-gold" />
-                    <p class="fl-success-pulse mt-2 text-sm text-white/70">
-                        Esta historia ya forma parte de tu Legacy.
+                    <FinisherMascot
+                        variant="success"
+                        alt=""
+                        class="fl-success-pulse mx-auto mb-1"
+                    />
+                    <p class="text-base font-semibold text-white">
+                        Esta historia ya es parte de tu Legacy.
+                    </p>
+                    <p class="mt-1 text-sm text-white/60">
+                        Podrás encontrarla en tu Legacy Profile en cualquier
+                        momento.
                     </p>
                 </template>
                 <template v-else-if="linked">

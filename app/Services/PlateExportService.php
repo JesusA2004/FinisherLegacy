@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Plate;
 use App\Models\PlateTemplateVersion;
+use App\Support\PlateFilename;
 use App\Support\PlateRenderData;
 use RuntimeException;
 use ZipArchive;
@@ -68,7 +69,9 @@ class PlateExportService
     }
 
     /**
-     * ZIP package: front.svg, back.svg, qr.svg, metadata.json — per plate/serial/.
+     * ZIP package for one plate — always both faces, every format, so a
+     * production operator never has to come back for a file they forgot:
+     * plate-{serial}/front.{svg,png,pdf}, back.{svg,png,pdf}, qr.svg, production.json.
      */
     public function exportPackage(Plate $plate): string
     {
@@ -84,23 +87,31 @@ class PlateExportService
 
         $zip = new ZipArchive;
         $zip->open($tempPath, ZipArchive::OVERWRITE);
+        $root = 'plate-'.$plate->serial_number.'/';
 
-        $zip->addFromString('front.svg', $this->svgRenderer->renderSvg($version, 'front', $data, PlateTemplateRenderService::MODE_PRODUCTION));
-        $zip->addFromString('back.svg', $this->svgRenderer->renderSvg($version, 'back', $data, PlateTemplateRenderService::MODE_PRODUCTION));
+        foreach (['front', 'back'] as $face) {
+            $zip->addFromString($root."{$face}.svg", $this->svgRenderer->renderSvg($version, $face, $data, PlateTemplateRenderService::MODE_PRODUCTION));
+            $zip->addFromString($root."{$face}.png", $this->pngRenderer->renderPng($version, $face, $data, PlateTemplateRenderService::MODE_PRODUCTION, 300));
+            $zip->addFromString($root."{$face}.pdf", $this->pdfRenderer->renderPdf($version, $face, $data, PlateTemplateRenderService::MODE_PRODUCTION));
+        }
 
         if ($plate->legacyCode) {
             $qrSvg = app(QrCodeService::class)->svg(route('legacy-code.show', $plate->legacyCode->code), 960);
-            $zip->addFromString('qr.svg', $qrSvg);
+            $zip->addFromString($root.'qr.svg', $qrSvg);
         }
 
-        $zip->addFromString('metadata.json', (string) json_encode([
+        $template = $plate->plateTemplate;
+
+        $zip->addFromString($root.'production.json', (string) json_encode([
             'serial' => $plate->serial_number,
             'legacy_code' => $plate->legacyCode?->code,
             'event' => $plate->eventEdition?->event->name ?? $plate->event_name,
-            'template' => $plate->plateTemplate?->name,
+            'template' => $template?->name,
             'template_version' => $version->version,
-            'athlete' => $plate->athlete_name,
-            'generated_at' => now()->toIso8601String(),
+            'width_mm' => $template !== null ? (float) $template->width_mm : null,
+            'height_mm' => $template !== null ? (float) $template->height_mm : null,
+            'back_transform' => $template?->back_transform->value,
+            'faces' => ['front', 'back'],
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
         $zip->close();
@@ -112,6 +123,10 @@ class PlateExportService
     }
 
     /**
+     * Batch ZIP for production — flat, sanitized `{bib-or-serial}_{NAME}_{FACE}.svg`
+     * filenames so an operator can tell plates apart at a glance on a shop-floor
+     * PC without opening each one; no email or other PII in the name.
+     *
      * @param  iterable<Plate>  $plates
      */
     public function exportBatch(iterable $plates): string
@@ -135,10 +150,16 @@ class PlateExportService
 
             $data = PlateRenderData::fromPlate($plate);
             $serial = $plate->serial_number;
+            $prefix = PlateFilename::batchPrefix($plate->athlete_name, $plate->bib_number, $serial);
 
-            $zip->addFromString("{$serial}-front.svg", $this->svgRenderer->renderSvg($version, 'front', $data, PlateTemplateRenderService::MODE_PRODUCTION));
-            $zip->addFromString("{$serial}-back.svg", $this->svgRenderer->renderSvg($version, 'back', $data, PlateTemplateRenderService::MODE_PRODUCTION));
-            $manifest[] = ['serial' => $serial, 'legacy_code' => $plate->legacyCode?->code, 'athlete' => $plate->athlete_name];
+            $zip->addFromString("{$prefix}_FRONT.svg", $this->svgRenderer->renderSvg($version, 'front', $data, PlateTemplateRenderService::MODE_PRODUCTION));
+            $zip->addFromString("{$prefix}_BACK.svg", $this->svgRenderer->renderSvg($version, 'back', $data, PlateTemplateRenderService::MODE_PRODUCTION));
+            $manifest[] = [
+                'serial' => $serial,
+                'legacy_code' => $plate->legacyCode?->code,
+                'front_file' => "{$prefix}_FRONT.svg",
+                'back_file' => "{$prefix}_BACK.svg",
+            ];
         }
 
         $zip->addFromString('manifest.json', (string) json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PlateBackTransform;
 use App\Enums\PlateTemplateVersionStatus;
 use Database\Factories\PlateTemplateFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'name', 'slug', 'description', 'width_mm', 'height_mm', 'material',
     'orientation', 'safe_margin_mm', 'created_by', 'preview_path', 'active',
+    'sport_type', 'back_transform', 'minimum_validated_qr_size_mm',
 ])]
 class PlateTemplate extends Model
 {
@@ -26,6 +28,8 @@ class PlateTemplate extends Model
             'height_mm' => 'decimal:2',
             'safe_margin_mm' => 'decimal:2',
             'active' => 'boolean',
+            'back_transform' => PlateBackTransform::class,
+            'minimum_validated_qr_size_mm' => 'decimal:2',
         ];
     }
 

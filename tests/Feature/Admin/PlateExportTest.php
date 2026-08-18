@@ -94,15 +94,16 @@ test('admin can download the qr and the full export package with metadata', func
     $zip = new ZipArchive;
     $zip->open($tmp);
 
-    expect($zip->locateName('front.svg'))->not->toBeFalse()
-        ->and($zip->locateName('back.svg'))->not->toBeFalse()
-        ->and($zip->locateName('qr.svg'))->not->toBeFalse()
-        ->and($zip->locateName('metadata.json'))->not->toBeFalse();
+    $root = 'plate-'.$this->plate->serial_number.'/';
+    foreach (['front.svg', 'front.png', 'front.pdf', 'back.svg', 'back.png', 'back.pdf', 'qr.svg', 'production.json'] as $file) {
+        expect($zip->locateName($root.$file))->not->toBeFalse("Missing {$file}");
+    }
 
-    $metadata = json_decode((string) $zip->getFromName('metadata.json'), true);
-    expect($metadata['serial'])->toBe($this->plate->serial_number)
-        ->and($metadata['legacy_code'])->toBe($this->legacyCode->code)
-        ->and($metadata['template_version'])->toBe($this->version->version);
+    $production = json_decode((string) $zip->getFromName($root.'production.json'), true);
+    expect($production['serial'])->toBe($this->plate->serial_number)
+        ->and($production['legacy_code'])->toBe($this->legacyCode->code)
+        ->and($production['template_version'])->toBe($this->version->version)
+        ->and($production['faces'])->toBe(['front', 'back']);
 
     $zip->close();
     unlink($tmp);

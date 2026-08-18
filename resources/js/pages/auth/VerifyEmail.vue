@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import { Check, Copy } from '@lucide/vue';
 import { ref } from 'vue';
+import FinisherMascot from '@/components/public/FinisherMascot.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { logout } from '@/routes';
+import { dashboard, logout } from '@/routes';
+import { edit as editProfile } from '@/routes/dashboard/profile';
 import { send } from '@/routes/verification';
 
 defineOptions({
@@ -37,30 +39,36 @@ async function copyLegacyId() {
 <template>
     <Head title="Verificación de correo" />
 
-    <div
-        v-if="legacyId"
-        class="fl-hover-glow mb-6 rounded-xl border border-fl-gold/30 bg-gradient-to-br from-fl-gold/10 to-transparent p-5 text-center transition-shadow duration-300"
-    >
-        <p class="text-xs font-medium tracking-widest text-white/40 uppercase">
-            Tu Legacy ID
-        </p>
-        <div class="mt-2 flex items-center justify-center gap-2">
-            <p class="font-mono text-2xl font-bold text-fl-gold">
-                {{ legacyId }}
-            </p>
-            <button
-                type="button"
-                class="fl-focus-glow flex size-8 items-center justify-center rounded-full text-white/50 transition-colors hover:text-fl-gold"
-                aria-label="Copiar Legacy ID"
-                @click="copyLegacyId"
+    <div v-if="legacyId" class="mb-6 text-center">
+        <FinisherMascot variant="success" alt="" class="mx-auto mb-4" />
+
+        <div
+            class="fl-hover-glow rounded-xl border border-fl-gold/30 bg-gradient-to-br from-fl-gold/10 to-transparent p-5 transition-shadow duration-300"
+        >
+            <p
+                class="text-xs font-medium tracking-widest text-white/40 uppercase"
             >
-                <Check v-if="copied" class="size-4" />
-                <Copy v-else class="size-4" />
-            </button>
+                Tu Legacy ID
+            </p>
+            <div class="mt-2 flex items-center justify-center gap-2">
+                <p class="font-mono text-2xl font-bold text-fl-gold">
+                    {{ legacyId }}
+                </p>
+                <button
+                    type="button"
+                    class="fl-focus-glow flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium text-white/50 transition-colors hover:text-fl-gold"
+                    aria-label="Copiar Legacy ID"
+                    @click="copyLegacyId"
+                >
+                    <Check v-if="copied" class="size-3.5" />
+                    <Copy v-else class="size-3.5" />
+                    {{ copied ? 'Copiado' : 'Copiar' }}
+                </button>
+            </div>
+            <p class="mt-3 text-sm text-white/50">
+                Este es tu identificador permanente dentro de Finisher Legacy.
+            </p>
         </div>
-        <p class="mt-3 text-sm text-white/50">
-            Confirma tu correo para desbloquear tu Legacy Profile.
-        </p>
     </div>
 
     <div
@@ -71,18 +79,37 @@ async function copyLegacyId() {
         registraste.
     </div>
 
-    <Form
-        v-bind="send.form()"
-        class="space-y-6 text-center"
-        v-slot="{ processing }"
-    >
-        <Button
-            :disabled="processing"
-            class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
-        >
-            <Spinner v-if="processing" />
-            Reenviar correo de verificación
-        </Button>
+    <div class="space-y-6 text-center">
+        <p class="text-sm text-white/50">
+            Confirma tu correo para desbloquear tu Legacy Profile.
+        </p>
+
+        <div class="flex flex-col gap-2 sm:flex-row">
+            <Button
+                as-child
+                class="fl-hover-lift w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+            >
+                <Link :href="editProfile()">Completar mi perfil</Link>
+            </Button>
+            <Button
+                as-child
+                variant="outline"
+                class="fl-hover-lift w-full border-white/15 text-white hover:bg-white/5"
+            >
+                <Link :href="dashboard()">Ir a mi Legacy</Link>
+            </Button>
+        </div>
+
+        <Form v-bind="send.form()" class="space-y-4" v-slot="{ processing }">
+            <Button
+                variant="ghost"
+                :disabled="processing"
+                class="text-sm text-white/60 hover:bg-white/5 hover:text-fl-gold"
+            >
+                <Spinner v-if="processing" />
+                Reenviar correo de verificación
+            </Button>
+        </Form>
 
         <TextLink
             :href="logout()"
@@ -91,5 +118,5 @@ async function copyLegacyId() {
         >
             Cerrar sesión
         </TextLink>
-    </Form>
+    </div>
 </template>

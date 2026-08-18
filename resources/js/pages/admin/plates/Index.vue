@@ -27,6 +27,11 @@ const { plates, batchExportLimit } = defineProps<{
     batchExportLimit: number;
 }>();
 
+const generationModeLabel: Record<string, string> = {
+    integrated: 'Integrada',
+    quick: 'Rápida',
+};
+
 const columns = [
     { key: 'select', label: '' },
     { key: 'serial_number', label: 'Serie' },
@@ -118,6 +123,12 @@ function downloadBatch() {
                     :model-value="selected.has(row.id as number)"
                     @update:model-value="toggle(row.id as number)"
                 />
+            </template>
+            <template #cell-generation_mode="{ row }">
+                {{
+                    generationModeLabel[row.generation_mode as string] ??
+                    row.generation_mode
+                }}
             </template>
             <template #cell-status="{ row }">
                 <Badge

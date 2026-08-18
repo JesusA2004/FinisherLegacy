@@ -1,53 +1,71 @@
 <script setup lang="ts">
-withDefaults(
+import { computed, ref } from 'vue';
+
+const props = withDefaults(
     defineProps<{
-        withWordmark?: boolean;
-        size?: 'sm' | 'md' | 'lg';
+        /** `mark` = only the FL glyph. `horizontal` = FL glyph + "Tu historia. Tu legado." lockup. */
+        variant?: 'mark' | 'horizontal';
+        /** Color treatment of the asset itself — pick the one that reads on the surface behind it. */
+        tone?: 'light' | 'gold' | 'dark' | 'auto';
+        size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
     }>(),
     {
-        withWordmark: true,
+        variant: 'horizontal',
+        tone: 'auto',
         size: 'md',
     },
 );
 
-const sizes = {
-    sm: { box: 'size-8', text: 'text-[11px]' },
-    md: { box: 'size-9', text: 'text-[13px]' },
-    lg: { box: 'size-12', text: 'text-base' },
+// The product surface is dark-first end to end (navbar, sidebar, auth,
+// footer all render on fl-black), so "auto" resolves to the light-on-dark
+// treatment. Callers on a light surface should pass tone="dark" explicitly.
+const resolvedTone = computed(() =>
+    props.tone === 'auto' ? 'light' : props.tone,
+);
+
+const sources: Record<
+    'mark' | 'horizontal',
+    Record<'light' | 'gold' | 'dark', string>
+> = {
+    mark: {
+        light: '/images/brand/logo/logo-mark-white.png',
+        gold: '/images/brand/logo/logo-mark-gold.png',
+        dark: '/images/brand/logo/logo-mark-black.png',
+    },
+    horizontal: {
+        light: '/images/brand/logo/logo-horizontal-light.png',
+        gold: '/images/brand/logo/logo-horizontal-gold.png',
+        dark: '/images/brand/logo/logo-horizontal-dark.png',
+    },
 };
+
+const src = computed(() => sources[props.variant][resolvedTone.value]);
+
+const heights: Record<'xs' | 'sm' | 'md' | 'lg' | 'xl', string> = {
+    xs: 'h-5',
+    sm: 'h-7',
+    md: 'h-9',
+    lg: 'h-12',
+    xl: 'h-16',
+};
+
+const failed = ref(false);
 </script>
 
 <template>
-    <span class="inline-flex items-center gap-2.5">
-        <span
-            class="relative flex shrink-0 items-center justify-center"
-            :class="sizes[size].box"
-        >
-            <!-- Geometric, slightly inclined monogram badge -->
-            <span
-                class="absolute inset-0 -rotate-6 bg-gradient-to-br from-fl-gold via-fl-gold-soft to-fl-gold-dim [clip-path:polygon(18%_0,100%_0,82%_100%,0_100%)]"
-            />
-            <span
-                class="absolute inset-[1.5px] -rotate-6 bg-fl-black [clip-path:polygon(18%_0,100%_0,82%_100%,0_100%)]"
-            />
-            <span
-                class="relative font-black tracking-tighter text-fl-gold"
-                :class="sizes[size].text"
-            >
-                FL
-            </span>
-        </span>
-        <span v-if="withWordmark" class="flex flex-col leading-none">
-            <span
-                class="text-[13px] font-semibold tracking-[0.2em] text-white uppercase"
-            >
-                Finisher
-            </span>
-            <span
-                class="text-[11px] font-medium tracking-[0.35em] text-fl-gold uppercase"
-            >
-                Legacy
-            </span>
-        </span>
+    <span
+        v-if="failed"
+        class="inline-flex items-center font-black tracking-tighter text-fl-gold uppercase"
+        :class="heights[size]"
+    >
+        FL
     </span>
+    <img
+        v-else
+        :src="src"
+        alt="Finisher Legacy"
+        class="w-auto object-contain"
+        :class="heights[size]"
+        @error="failed = true"
+    />
 </template>

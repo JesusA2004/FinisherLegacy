@@ -13,8 +13,8 @@ import {
 import { computed, ref } from 'vue';
 import Reveal from '@/components/motion/Reveal.vue';
 import StaggerGroup from '@/components/motion/StaggerGroup.vue';
+import FinisherMascot from '@/components/public/FinisherMascot.vue';
 import MascotEmptyState from '@/components/public/MascotEmptyState.vue';
-import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -116,8 +116,9 @@ const statCards = computed(() => [
                 class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
             >
                 <div class="flex items-center gap-4">
-                    <MascotPlaceholderIcon
-                        class="hidden size-12 shrink-0 opacity-70 sm:block"
+                    <FinisherMascot
+                        variant="small"
+                        class="hidden shrink-0 sm:block"
                     />
                     <div>
                         <p class="text-sm text-white/50">Hola,</p>

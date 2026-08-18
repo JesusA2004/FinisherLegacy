@@ -4,6 +4,7 @@ import { ArrowRight, Ban, Download, PackageOpen } from '@lucide/vue';
 import { ref } from 'vue';
 import { exportMethod as exportFace } from '@/actions/App/Http/Controllers/Admin/PlateController';
 import { updateStatus } from '@/actions/App/Http/Controllers/ProductionController';
+import HelpPopover from '@/components/HelpPopover.vue';
 import { Spinner } from '@/components/ui/spinner';
 
 type Card = {
@@ -99,7 +100,13 @@ function cancel(plateId: number) {
     <Head title="Producción" />
 
     <div class="min-h-svh p-4 md:p-6">
-        <h1 class="mb-6 text-xl font-bold text-white">Producción</h1>
+        <h1 class="mb-6 flex items-center gap-1.5 text-xl font-bold text-white">
+            Producción
+            <HelpPopover
+                title="Archivo para láser"
+                text="SVG es el formato recomendado para importar al software de la máquina láser: es vectorial, así que nunca pierde nitidez sin importar el tamaño físico de la placa."
+            />
+        </h1>
 
         <div
             class="grid grid-cols-1 gap-4 overflow-x-auto sm:grid-cols-2 lg:grid-cols-5"

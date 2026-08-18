@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
+import FinisherMascot from '@/components/public/FinisherMascot.vue';
 
 defineProps<{
     title: string;
@@ -11,11 +11,7 @@ defineProps<{
     <div
         class="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-white/15 bg-fl-graphite/30 px-6 py-14 text-center"
     >
-        <div
-            class="flex size-16 items-center justify-center rounded-full border border-fl-gold/25 bg-fl-black"
-        >
-            <MascotPlaceholderIcon class="size-9" />
-        </div>
+        <FinisherMascot variant="empty" />
 
         <div class="max-w-sm">
             <h3 class="text-base font-semibold text-white">{{ title }}</h3>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download } from '@lucide/vue';
+import { ChevronDown, Download } from '@lucide/vue';
 import { ref } from 'vue';
 import {
     exportMethod as exportFace,
@@ -28,6 +28,26 @@ const open = defineModel<boolean>('open', { default: false });
 const format = ref<'svg' | 'png' | 'pdf' | 'zip'>('svg');
 const dpi = ref('300');
 const face = ref<'front' | 'back'>('front');
+const guideOpen = ref(false);
+
+const guideSteps = [
+    'Descarga el SVG del frente.',
+    'Abre LightBurn.',
+    'Importa front.svg.',
+    'Confirma 60 × 40 mm — no dejes que el software reescale.',
+    'Coloca la placa en el jig.',
+    'Configura potencia y velocidad según tu máquina y material (se calibra físicamente, no viene predefinido).',
+    'Ejecuta Frame/Preview antes de grabar.',
+    'Graba el frente.',
+    'Voltea la placa.',
+    'Importa back.svg.',
+    'Colócala nuevamente en el jig.',
+    'Aplica la transformación del reverso si el perfil de máquina la requiere (espejo/rotación).',
+    'Ejecuta Frame otra vez.',
+    'Graba el reverso.',
+    'Escanea el QR físicamente para validarlo.',
+    'Marca la placa como lista.',
+];
 
 function download() {
     if (format.value === 'zip') {
@@ -71,7 +91,7 @@ function download() {
                                 >PDF (tamaño físico exacto)</SelectItem
                             >
                             <SelectItem value="zip"
-                                >Paquete completo (ZIP)</SelectItem
+                                >Ambas caras — paquete (ZIP)</SelectItem
                             >
                         </SelectContent>
                     </Select>
@@ -108,9 +128,32 @@ function download() {
                 </div>
 
                 <p v-if="format === 'zip'" class="text-xs text-white/50">
-                    Incluye frente, reverso y QR en SVG, más metadata.json con
-                    serial, Legacy Code y evento.
+                    Incluye frente y reverso como archivos SVG, PNG y PDF por
+                    separado (nunca mezclados en un solo archivo), más qr.svg y
+                    production.json con serial, Legacy Code y evento.
                 </p>
+
+                <div class="rounded-lg border border-white/10">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between px-3 py-2 text-left text-xs font-medium text-white/60 hover:text-fl-gold"
+                        @click="guideOpen = !guideOpen"
+                    >
+                        ¿Cómo grabar esta placa?
+                        <ChevronDown
+                            class="size-3.5 transition-transform"
+                            :class="{ 'rotate-180': guideOpen }"
+                        />
+                    </button>
+                    <ol
+                        v-if="guideOpen"
+                        class="list-inside list-decimal space-y-1 px-3 pb-3 text-xs text-white/50"
+                    >
+                        <li v-for="step in guideSteps" :key="step">
+                            {{ step }}
+                        </li>
+                    </ol>
+                </div>
             </div>
 
             <DialogFooter>

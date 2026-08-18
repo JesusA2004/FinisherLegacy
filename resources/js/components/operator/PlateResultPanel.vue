@@ -13,6 +13,7 @@ import { ref } from 'vue';
 import DownloadPlateDialog from '@/components/plates/DownloadPlateDialog.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { plateStatus, statusLabel } from '@/lib/statusLabels';
 
 const props = defineProps<{
     plate: {
@@ -46,7 +47,7 @@ function copyCode() {
         >
             <p class="flex items-center gap-2 text-sm text-fl-gold">
                 <CheckCircle2 class="size-4" />
-                Placa generada — {{ plate.status }}
+                Placa generada — {{ statusLabel(plateStatus, plate.status) }}
             </p>
             <p class="font-mono text-sm text-white">
                 Serial: {{ plate.serial_number }}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EditionStatus;
+use App\Exceptions\PlateTemplateMissingException;
 use App\Models\EventEdition;
 use App\Models\EventParticipant;
 use App\Models\Plate;
@@ -115,7 +116,13 @@ class OperatorController extends Controller
     {
         abort_if(Plate::where('event_participant_id', $eventParticipant->id)->exists(), 409, 'Esta persona ya tiene una placa generada.');
 
-        $plate = $this->plates->generateIntegrated($eventParticipant);
+        try {
+            $plate = $this->plates->generateIntegrated($eventParticipant);
+        } catch (PlateTemplateMissingException) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Este evento no tiene un molde de producción asignado. Configúralo antes de generar placas.']);
+
+            return back();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Placa generada y enviada a producción.']);
 
@@ -139,7 +146,13 @@ class OperatorController extends Controller
             'personal_phrase' => ['nullable', 'string', 'max:150'],
         ]);
 
-        $plate = $this->plates->generateQuick($edition, $data);
+        try {
+            $plate = $this->plates->generateQuick($edition, $data);
+        } catch (PlateTemplateMissingException) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Este evento no tiene un molde de producción asignado. Configúralo antes de generar placas.']);
+
+            return back();
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Placa rápida generada y enviada a producción.']);
 

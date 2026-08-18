@@ -10,6 +10,7 @@ import {
     selectEvent,
     showParticipant,
 } from '@/actions/App/Http/Controllers/OperatorController';
+import HelpPopover from '@/components/HelpPopover.vue';
 import Reveal from '@/components/motion/Reveal.vue';
 import PlatePreviewCard from '@/components/plates/PlatePreviewCard.vue';
 import { Button } from '@/components/ui/button';
@@ -191,7 +192,15 @@ function submitQuickPlate() {
                     >
                         Event OS
                     </p>
-                    <h1 class="text-2xl font-bold text-white">Operador</h1>
+                    <h1
+                        class="flex items-center gap-1.5 text-2xl font-bold text-white"
+                    >
+                        Operador
+                        <HelpPopover
+                            title="Integrada vs. rápida"
+                            text="Placa integrada usa datos importados del evento (número, resultado, tiempo). Placa rápida permite producir aunque no exista una base de participantes — se completa a mano."
+                        />
+                    </h1>
                 </div>
                 <Select
                     :model-value="String(activeEdition?.id ?? '')"

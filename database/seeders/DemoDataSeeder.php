@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\LegacyCodeStatus;
 use App\Enums\PlateGenerationMode;
 use App\Enums\PlateStatus;
+use App\Enums\PlateTemplateVersionStatus;
 use App\Enums\ProductionJobStatus;
 use App\Enums\StaffRole;
 use App\Enums\UserStatus;
@@ -13,13 +14,14 @@ use App\Models\Event;
 use App\Models\EventEdition;
 use App\Models\EventIncident;
 use App\Models\EventParticipant;
+use App\Models\EventPlateTemplate;
 use App\Models\EventRace;
 use App\Models\EventStaffAssignment;
 use App\Models\LegacyCode;
 use App\Models\Medal;
 use App\Models\Organizer;
 use App\Models\Plate;
-use App\Models\PlateTemplate;
+use App\Models\PlateTemplateVersion;
 use App\Models\ProductionJob;
 use App\Models\Sport;
 use App\Models\User;
@@ -44,10 +46,20 @@ class DemoDataSeeder extends Seeder
         $staff = $this->createStaffUsers();
         $athlete = $this->createDemoAthlete();
 
-        $template = PlateTemplate::query()->where('slug', 'classic-black-gold')->first();
+        // PlateTemplateSeeder (runs before this one in DatabaseSeeder) is the
+        // only place a template + published version actually gets created —
+        // there is no "classic-black-gold" template. Every demo plate must
+        // carry a real plate_template_version_id or export/production tooling
+        // breaks on a NULL template downstream.
+        $version = PlateTemplateVersion::query()
+            ->whereHas('plateTemplate', fn ($q) => $q->where('slug', 'triathlon-premium-60x40'))
+            ->where('status', PlateTemplateVersionStatus::Published)
+            ->latest('version')
+            ->firstOrFail();
 
         [$edition, $races] = $this->createDemoEvent($staff);
 
+        $this->assignDefaultTemplate($edition, $version);
         $this->assignStaff($edition, $staff);
 
         $participants = $this->createParticipants($edition, $races, 500);
@@ -55,8 +67,8 @@ class DemoDataSeeder extends Seeder
         $this->createResults($participants);
 
         $integratedParticipant = $participants->first();
-        $this->createIntegratedPlate($integratedParticipant, $athlete, $edition, $template);
-        $this->createQuickPlates($edition, $template, 6);
+        $this->createIntegratedPlate($integratedParticipant, $athlete, $edition, $version);
+        $this->createQuickPlates($edition, $version, 6);
         $this->createPreregistrations($edition, $races, 30);
         $this->createSampleIncident($edition, $participants->skip(1)->first(), $staff['event_operator']);
         $this->createDemoMedals($athlete);
@@ -212,6 +224,18 @@ class DemoDataSeeder extends Seeder
         return [$edition, $races];
     }
 
+    private function assignDefaultTemplate(EventEdition $edition, PlateTemplateVersion $version): void
+    {
+        EventPlateTemplate::query()->updateOrCreate(
+            ['event_edition_id' => $edition->id, 'event_race_id' => null],
+            [
+                'plate_template_version_id' => $version->id,
+                'is_default' => true,
+                'active' => true,
+            ],
+        );
+    }
+
     /**
      * @param  array<string, User>  $staff
      */
@@ -317,7 +341,7 @@ class DemoDataSeeder extends Seeder
         DB::table('event_results')->insert($rows);
     }
 
-    private function createIntegratedPlate(EventParticipant $participant, User $athlete, EventEdition $edition, ?PlateTemplate $template): void
+    private function createIntegratedPlate(EventParticipant $participant, User $athlete, EventEdition $edition, PlateTemplateVersion $version): void
     {
         $result = $participant->result;
 
@@ -325,7 +349,8 @@ class DemoDataSeeder extends Seeder
             'user_id' => $athlete->id,
             'event_edition_id' => $edition->id,
             'event_participant_id' => $participant->id,
-            'plate_template_id' => $template?->id,
+            'plate_template_id' => $version->plate_template_id,
+            'plate_template_version_id' => $version->id,
             'serial_number' => CodeGenerator::generate('PLT', 8),
             'generation_mode' => PlateGenerationMode::Integrated,
             'athlete_name' => $athlete->name,
@@ -364,7 +389,7 @@ class DemoDataSeeder extends Seeder
         ]);
     }
 
-    private function createQuickPlates(EventEdition $edition, ?PlateTemplate $template, int $count): void
+    private function createQuickPlates(EventEdition $edition, PlateTemplateVersion $version, int $count): void
     {
         for ($i = 1; $i <= $count; $i++) {
             $claimed = $i <= 2;
@@ -372,7 +397,8 @@ class DemoDataSeeder extends Seeder
             $plate = Plate::create([
                 'user_id' => null,
                 'event_edition_id' => $edition->id,
-                'plate_template_id' => $template?->id,
+                'plate_template_id' => $version->plate_template_id,
+                'plate_template_version_id' => $version->id,
                 'serial_number' => CodeGenerator::generate('PLT', 8),
                 'generation_mode' => PlateGenerationMode::Quick,
                 'athlete_name' => fake()->name(),

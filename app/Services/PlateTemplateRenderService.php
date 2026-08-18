@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PlateTemplate;
 use App\Models\PlateTemplateVersion;
 use App\Support\PlateMeasurementService;
 use App\Support\PlateRenderData;
@@ -42,6 +43,14 @@ class PlateTemplateRenderService
         $warnings = [];
 
         foreach ($elements as $element) {
+            // e.g. 'visible_when' => 'swim_time' hides the whole element (its
+            // label included) when that field is empty — a static_text like
+            // "SWIM {{swim_time}}" must not render as a bare "SWIM" for a
+            // runner with no swim split.
+            if (! $this->isVisible($element, $data)) {
+                continue;
+            }
+
             [$out, $elementWarnings] = $this->resolveElement($element, $data, $template);
             $resolved[] = $out;
             array_push($warnings, ...$elementWarnings);
@@ -52,9 +61,25 @@ class PlateTemplateRenderService
 
     /**
      * @param  array<string, mixed>  $element
+     */
+    private function isVisible(array $element, PlateRenderData $data): bool
+    {
+        $field = $element['visible_when'] ?? null;
+
+        if ($field === null || $field === '') {
+            return true;
+        }
+
+        $value = $data->get((string) $field);
+
+        return $value !== null && trim((string) $value) !== '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $element
      * @return array{0: array<string, mixed>, 1: list<string>}
      */
-    private function resolveElement(array $element, PlateRenderData $data, mixed $template): array
+    private function resolveElement(array $element, PlateRenderData $data, PlateTemplate $template): array
     {
         $type = $element['type'] ?? 'static_text';
         $out = $element;
@@ -91,10 +116,20 @@ class PlateTemplateRenderService
 
         if ($type === 'qr') {
             $widthMm = (float) ($element['width_mm'] ?? 0);
+            $validatedMin = $template->minimum_validated_qr_size_mm !== null
+                ? (float) $template->minimum_validated_qr_size_mm
+                : null;
 
-            if ($widthMm > 0 && $widthMm < 10) {
+            if ($validatedMin !== null && $widthMm > 0 && $widthMm < $validatedMin) {
                 $warnings[] = sprintf(
-                    'El QR "%s" mide %.1fmm — mínimo operativo sugerido ~10-12mm. Valida este tamaño con una muestra de grabado antes de producción masiva.',
+                    'El QR "%s" mide %.1fmm — por debajo de los %.1fmm validados físicamente para este molde.',
+                    $label,
+                    $widthMm,
+                    $validatedMin,
+                );
+            } elseif ($validatedMin === null && $widthMm > 0 && $widthMm < 10) {
+                $warnings[] = sprintf(
+                    'El QR "%s" mide %.1fmm — mínimo operativo sugerido ~10-12mm, sin validar aún con una prueba física de grabado.',
                     $label,
                     $widthMm,
                 );

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
+import FinisherMascot from '@/components/public/FinisherMascot.vue';
 
 withDefaults(
     defineProps<{
@@ -18,18 +18,7 @@ withDefaults(
             class="absolute -top-16 left-1/2 size-48 -translate-x-1/2 rounded-full bg-fl-gold/10 blur-3xl"
         />
 
-        <div class="relative">
-            <div
-                class="flex size-24 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black"
-            >
-                <MascotPlaceholderIcon class="size-14" />
-            </div>
-            <span
-                class="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-fl-black px-2 py-0.5 text-[9px] font-medium tracking-wide whitespace-nowrap text-white/40 uppercase"
-            >
-                Mascota — próximamente
-            </span>
-        </div>
+        <FinisherMascot variant="hero" class="relative" />
 
         <div class="relative mt-2 max-w-md">
             <h3 class="text-xl font-bold text-white">{{ title }}</h3>

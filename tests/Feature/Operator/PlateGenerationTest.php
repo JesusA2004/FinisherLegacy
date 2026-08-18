@@ -15,6 +15,7 @@ use App\Models\Medal;
 use App\Models\Plate;
 use App\Models\PlateTemplate;
 use App\Models\PlateTemplateVersion;
+use App\Models\ProductionJob;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 
@@ -32,16 +33,60 @@ function publishedEditionForOperator(): EventEdition
     return $edition->fresh();
 }
 
+/**
+ * A Plate must never be generated without a template version (see
+ * PlateGenerationService) — tests that only care about the rest of the
+ * flow use this to make the edition production-ready without asserting
+ * anything about the template itself.
+ */
+function assignDefaultTemplateFor(EventEdition $edition): PlateTemplateVersion
+{
+    $version = PlateTemplateVersion::factory()->create([
+        'status' => PlateTemplateVersionStatus::Published,
+    ]);
+
+    EventPlateTemplate::create([
+        'event_edition_id' => $edition->id,
+        'plate_template_version_id' => $version->id,
+        'is_default' => true,
+        'active' => true,
+    ]);
+
+    return $version;
+}
+
 test('operator routes are blocked without the operator.access permission', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)->get(route('operator.index'))->assertForbidden();
 });
 
+test('generating a plate for an event with no default template is blocked, and nothing is created', function () {
+    $edition = publishedEditionForOperator();
+    $race = EventRace::factory()->create(['event_edition_id' => $edition->id]);
+    $participant = EventParticipant::factory()->create([
+        'event_edition_id' => $edition->id,
+        'event_race_id' => $race->id,
+    ]);
+
+    $this->actingAs($this->operator)->post(route('operator.select-event'), ['event_edition_id' => $edition->id]);
+
+    $integrated = $this->actingAs($this->operator)->post(route('operator.participants.plate', $participant));
+    $integrated->assertRedirect();
+
+    $quick = $this->actingAs($this->operator)->post(route('operator.quick-plate'), ['athlete_name' => 'Sin Molde']);
+    $quick->assertRedirect();
+
+    expect(Plate::count())->toBe(0)
+        ->and(LegacyCode::count())->toBe(0)
+        ->and(ProductionJob::count())->toBe(0);
+});
+
 // --- CAMINO A: INTEGRATED ------------------------------------------------
 
 test('end to end: participant with a result generates an integrated plate, legacy code, real qr, and production job', function () {
     $edition = publishedEditionForOperator();
+    assignDefaultTemplateFor($edition);
     $race = EventRace::factory()->create(['event_edition_id' => $edition->id]);
     $athlete = User::factory()->create();
 
@@ -146,6 +191,7 @@ test('the pre-generation preview never creates a legacy code and reflects the dr
 
 test('a quick plate redirects to a dedicated result page showing the real plate', function () {
     $edition = publishedEditionForOperator();
+    assignDefaultTemplateFor($edition);
     $this->actingAs($this->operator)->post(route('operator.select-event'), ['event_edition_id' => $edition->id]);
 
     $response = $this->actingAs($this->operator)->post(route('operator.quick-plate'), ['athlete_name' => 'Placa Rápida De Prueba']);
@@ -163,6 +209,7 @@ test('a quick plate redirects to a dedicated result page showing the real plate'
 
 test('a participant cannot get two plates', function () {
     $edition = publishedEditionForOperator();
+    assignDefaultTemplateFor($edition);
     $race = EventRace::factory()->create(['event_edition_id' => $edition->id]);
     $participant = EventParticipant::factory()->create([
         'event_edition_id' => $edition->id,
@@ -182,6 +229,7 @@ test('a participant cannot get two plates', function () {
 
 test('end to end: a quick plate has no owner, gets a real qr, and can later be claimed into a Legacy', function () {
     $edition = publishedEditionForOperator();
+    assignDefaultTemplateFor($edition);
 
     $this->actingAs($this->operator)->post(route('operator.select-event'), ['event_edition_id' => $edition->id]);
 

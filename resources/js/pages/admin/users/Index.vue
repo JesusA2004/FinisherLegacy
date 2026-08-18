@@ -33,6 +33,7 @@ type UserRow = {
     phone: string | null;
     status: string;
     roles: string;
+    legacy_id: string | null;
     last_login_at: string;
 };
 
@@ -69,6 +70,7 @@ const columns = [
     { key: 'name', label: 'Nombre' },
     { key: 'email', label: 'Correo' },
     { key: 'roles', label: 'Roles' },
+    { key: 'legacy_id', label: 'Legacy ID' },
     { key: 'status', label: 'Estado' },
     { key: 'last_login_at', label: 'Último acceso' },
     { key: 'actions', label: '' },
@@ -302,6 +304,15 @@ function saveReset() {
                 <span>{{
                     (row.roles as string).split(', ').map(roleLabel).join(', ')
                 }}</span>
+            </template>
+            <template #cell-legacy_id="{ row }">
+                <span
+                    v-if="row.legacy_id"
+                    class="font-mono text-xs text-fl-gold"
+                >
+                    {{ row.legacy_id }}
+                </span>
+                <span v-else class="text-xs text-white/30">—</span>
             </template>
             <template #cell-status="{ row }">
                 <Select

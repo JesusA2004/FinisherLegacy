@@ -24,7 +24,7 @@ const legal = [
             class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8"
         >
             <div class="md:col-span-2">
-                <FinisherLegacyLogo />
+                <FinisherLegacyLogo variant="mark" size="lg" />
                 <p class="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
                     Finisher Legacy transforma cada logro deportivo en una
                     historia que puedes conservar, revivir y compartir.

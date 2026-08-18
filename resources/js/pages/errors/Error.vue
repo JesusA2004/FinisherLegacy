@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
 import Reveal from '@/components/motion/Reveal.vue';
-import MascotPlaceholderIcon from '@/components/public/MascotPlaceholderIcon.vue';
+import FinisherMascot from '@/components/public/FinisherMascot.vue';
 import { Button } from '@/components/ui/button';
 import { home } from '@/routes';
 
@@ -61,11 +61,8 @@ const content = copy[status] ?? {
         </Reveal>
 
         <Reveal :delay-ms="80">
-            <div
-                v-if="status === 404"
-                class="mx-auto mt-6 flex size-16 items-center justify-center rounded-full border border-fl-gold/25 bg-fl-graphite/40"
-            >
-                <MascotPlaceholderIcon class="size-9" />
+            <div v-if="status === 404" class="mt-6 flex justify-center">
+                <FinisherMascot variant="empty" alt="" />
             </div>
         </Reveal>
 
