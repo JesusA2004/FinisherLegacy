@@ -3,12 +3,20 @@ import { Link } from '@inertiajs/vue3';
 import { ArrowRight, MapPin } from '@lucide/vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
+import { useAssetExists } from '@/composables/useAssetProbe';
 import { show as eventShow } from '@/routes/events';
 import type { EventEditionCard, EventPhase } from '@/types';
 
 const { edition } = defineProps<{
     edition: EventEditionCard;
 }>();
+
+// cover_url → brand placeholder photo (checked before render, never an
+// optimistic-then-@error flash) → typographic fallback. See
+// public/media/home/events/README.md.
+const { exists: placeholderExists } = useAssetExists(
+    '/media/home/events/event-placeholder.webp',
+);
 
 const phaseCopy: Record<EventPhase, { label: string; class: string }> = {
     upcoming: {
@@ -52,7 +60,7 @@ const monthAbbrev = computed(() =>
         class="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-fl-graphite/60 transition-all duration-300 hover:-translate-y-1 hover:border-fl-gold/40 hover:shadow-[0_0_40px_-12px_rgba(207,171,89,0.4)]"
     >
         <div
-            class="relative aspect-16/9 w-full overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black"
+            class="fl-shine relative aspect-16/9 w-full overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black"
         >
             <img
                 v-if="edition.event.cover_url"
@@ -60,6 +68,13 @@ const monthAbbrev = computed(() =>
                 :alt="edition.event.name"
                 loading="lazy"
                 class="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <img
+                v-else-if="placeholderExists"
+                src="/media/home/events/event-placeholder.webp"
+                alt=""
+                loading="lazy"
+                class="size-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-105"
             />
             <div
                 v-else

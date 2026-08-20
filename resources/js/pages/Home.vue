@@ -9,10 +9,10 @@ import FaqSection from '@/components/public/FaqSection.vue';
 import HeroSection from '@/components/public/HeroSection.vue';
 import HowItWorksSteps from '@/components/public/HowItWorksSteps.vue';
 import JourneyExperience from '@/components/public/JourneyExperience.vue';
-import LegacyCodePreview from '@/components/public/LegacyCodePreview.vue';
 import LegacyProfileShowcase from '@/components/public/LegacyProfileShowcase.vue';
+import LegacyScanMedia from '@/components/public/media/LegacyScanMedia.vue';
+import PlateMedia from '@/components/public/media/PlateMedia.vue';
 import PlateFlowSwitch from '@/components/public/PlateFlowSwitch.vue';
-import PlateShowcase from '@/components/public/PlateShowcase.vue';
 import ScrollCueButton from '@/components/public/ScrollCueButton.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 import { howItWorks, register } from '@/routes';
@@ -104,8 +104,8 @@ TODA UNA HISTORIA."
                 class="mb-14"
             />
             <div class="grid items-center gap-12 lg:grid-cols-2">
-                <PlateShowcase />
-                <LegacyCodePreview />
+                <PlateMedia />
+                <LegacyScanMedia />
             </div>
         </Reveal>
         <div class="mt-14 flex justify-center">
@@ -206,5 +206,6 @@ Muchas carreras son un Legacy."
         secondary-label="EXPLORAR EVENTOS"
         :secondary-href="eventsIndex()"
         show-mascot
+        cinematic
     />
 </template>

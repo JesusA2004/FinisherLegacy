@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import type { InertiaLinkProps } from '@inertiajs/vue3';
 import MagneticButton from '@/components/public/MagneticButton.vue';
+import FinalMedia from '@/components/public/media/FinalMedia.vue';
 import { Button } from '@/components/ui/button';
 
 withDefaults(
@@ -15,9 +16,13 @@ withDefaults(
         /** Let the mascot peek from the corner, celebrating — optional,
          * never a boxed/framed section of its own (brand system §23). */
         showMascot?: boolean;
+        /** Try a real closing video/photo behind the gradient — optional,
+         * see public/media/home/final/README.md. */
+        cinematic?: boolean;
     }>(),
     {
         showMascot: false,
+        cinematic: false,
     },
 );
 </script>
@@ -31,6 +36,7 @@ withDefaults(
             class="absolute -top-32 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full bg-fl-gold/10 blur-3xl"
         />
         <div class="legacy-line absolute inset-x-0 top-0" />
+        <FinalMedia v-if="cinematic" />
 
         <img
             v-if="showMascot"

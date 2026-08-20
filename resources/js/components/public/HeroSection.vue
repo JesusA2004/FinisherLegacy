@@ -4,34 +4,19 @@ import type { InertiaLinkProps } from '@inertiajs/vue3';
 import { Award, IdCard, Medal, QrCode } from '@lucide/vue';
 import { useTemplateRef } from 'vue';
 import MagneticButton from '@/components/public/MagneticButton.vue';
+import HomeHeroMedia from '@/components/public/media/HomeHeroMedia.vue';
 import ScrollCueButton from '@/components/public/ScrollCueButton.vue';
 import { Button } from '@/components/ui/button';
 import { useReducedMotion } from '@/composables/useReducedMotion';
 
-withDefaults(
-    defineProps<{
-        title: string;
-        subtitle: string;
-        primaryLabel: string;
-        primaryHref: NonNullable<InertiaLinkProps['href']>;
-        secondaryLabel: string;
-        secondaryHref: NonNullable<InertiaLinkProps['href']>;
-        /**
-         * Optional cinematic background video (brand system §9/§23.2). No
-         * video ships with the project yet — until one is dropped into
-         * public/videos/ and a src is passed here, the hero renders its
-         * current CSS scene instead. When a src IS passed, videoPoster
-         * should be a same-aspect still so there's no flash before it
-         * decodes; the video always stays muted/looped/decorative.
-         */
-        videoSrc?: string;
-        videoPoster?: string;
-    }>(),
-    {
-        videoSrc: undefined,
-        videoPoster: undefined,
-    },
-);
+defineProps<{
+    title: string;
+    subtitle: string;
+    primaryLabel: string;
+    primaryHref: NonNullable<InertiaLinkProps['href']>;
+    secondaryLabel: string;
+    secondaryHref: NonNullable<InertiaLinkProps['href']>;
+}>();
 
 const chain = [
     { icon: Medal, label: 'Medalla física', accent: 'gold' as const },
@@ -69,66 +54,9 @@ function resetTilt() {
     <section
         class="relative flex min-h-[100svh] items-center overflow-hidden bg-fl-black"
     >
-        <!-- Cinematic scene: real hero video when one is provided, else the
-             track-lanes + amber dawn light CSS scene stands in for it. -->
-        <video
-            v-if="videoSrc"
-            class="absolute inset-0 size-full object-cover"
-            :poster="videoPoster"
-            autoplay
-            muted
-            loop
-            playsinline
-            preload="metadata"
-            aria-hidden="true"
-        >
-            <source :src="videoSrc" type="video/mp4" />
-        </video>
-        <div
-            class="pointer-events-none absolute inset-0"
-            :class="{ 'bg-fl-black/55': videoSrc }"
-        >
-            <div
-                v-if="!videoSrc"
-                class="absolute inset-0"
-                style="
-                    background:
-                        radial-gradient(
-                            ellipse 70% 55% at 18% 15%,
-                            color-mix(in srgb, var(--fl-gold) 22%, transparent),
-                            transparent 60%
-                        ),
-                        radial-gradient(
-                            ellipse 60% 50% at 85% 85%,
-                            color-mix(
-                                in srgb,
-                                var(--fl-gold-soft) 10%,
-                                transparent
-                            ),
-                            transparent 60%
-                        ),
-                        linear-gradient(
-                            180deg,
-                            var(--fl-black) 0%,
-                            var(--fl-graphite) 55%,
-                            var(--fl-black) 100%
-                        );
-                "
-            />
-            <div
-                class="absolute inset-0 opacity-[0.07]"
-                style="
-                    background-image: repeating-linear-gradient(
-                        115deg,
-                        rgba(255, 255, 255, 0.6) 0px,
-                        rgba(255, 255, 255, 0.6) 1px,
-                        transparent 1px,
-                        transparent 64px
-                    );
-                "
-            />
-            <div class="absolute inset-x-0 bottom-0 h-px bg-white/10" />
-        </div>
+        <!-- Cinematic scene: video → poster photo → CSS scene cascade, see
+             public/media/home/hero/README.md for the asset contract. -->
+        <HomeHeroMedia />
 
         <div
             class="relative mx-auto grid w-full max-w-7xl gap-16 px-4 py-28 pt-32 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8 lg:pt-28"

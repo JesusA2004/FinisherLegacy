@@ -91,7 +91,7 @@ const active = computed(() => content[mode.value]);
                 <div class="flex flex-wrap items-center gap-2">
                     <template v-for="(step, index) in active.chain" :key="step">
                         <span
-                            class="fl-flow-node rounded-full border border-fl-gold/40 bg-fl-black px-3 py-1.5 text-sm font-medium text-fl-gold-soft"
+                            class="fl-flow-node inline-block rounded-full border border-fl-gold/40 bg-fl-black px-3 py-1.5 text-sm font-medium text-fl-gold-soft transition-transform duration-200 hover:scale-110 hover:border-fl-gold/70"
                             :style="{ animationDelay: `${index * 100}ms` }"
                         >
                             {{ step }}

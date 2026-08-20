@@ -48,7 +48,7 @@ const legal = [
                     <li v-for="item in product" :key="item.label">
                         <Link
                             :href="item.href"
-                            class="text-sm text-white/60 transition-colors hover:text-fl-gold-soft"
+                            class="fl-footer-link relative text-sm text-white/60 transition-colors hover:text-fl-gold-soft"
                         >
                             {{ item.label }}
                         </Link>
@@ -66,7 +66,7 @@ const legal = [
                     <li>
                         <Link
                             :href="contact()"
-                            class="text-sm text-white/60 transition-colors hover:text-fl-gold-soft"
+                            class="fl-footer-link relative text-sm text-white/60 transition-colors hover:text-fl-gold-soft"
                         >
                             Contacto
                         </Link>
@@ -74,7 +74,7 @@ const legal = [
                     <li v-for="item in legal" :key="item.label">
                         <Link
                             :href="item.href"
-                            class="text-sm text-white/60 transition-colors hover:text-fl-gold-soft"
+                            class="fl-footer-link relative text-sm text-white/60 transition-colors hover:text-fl-gold-soft"
                         >
                             {{ item.label }}
                         </Link>
@@ -98,3 +98,26 @@ const legal = [
         </div>
     </footer>
 </template>
+
+<style scoped>
+.fl-footer-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: -2px;
+    height: 1px;
+    background: var(--fl-gold-soft);
+    transition: right 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fl-footer-link:hover::after {
+    right: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fl-footer-link::after {
+        transition: none;
+    }
+}
+</style>

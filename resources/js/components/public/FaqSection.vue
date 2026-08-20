@@ -64,9 +64,12 @@ const openIndex = ref<number | null>(null);
             "
         >
             <CollapsibleTrigger
-                class="fl-focus-glow flex w-full items-center justify-between gap-4 py-4 text-left"
+                class="fl-focus-glow group flex w-full items-center justify-between gap-4 rounded-lg px-3 py-4 text-left transition-colors hover:bg-white/5"
             >
-                <span class="font-medium text-white">{{ faq.question }}</span>
+                <span
+                    class="font-medium text-white transition-colors group-hover:text-fl-gold-soft"
+                    >{{ faq.question }}</span
+                >
                 <ChevronDown
                     class="size-4 shrink-0 text-fl-gold-soft transition-transform duration-300"
                     :class="{ 'rotate-180': openIndex === index }"

@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { Menu } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import FinisherLegacyLogo from '@/components/public/FinisherLegacyLogo.vue';
+import MagneticButton from '@/components/public/MagneticButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     Sheet,
@@ -81,12 +82,14 @@ onBeforeUnmount(() => {
                     >
                         Mi Legacy
                     </Link>
-                    <Button
-                        as-child
-                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
-                    >
-                        <Link :href="dashboard()">Dashboard</Link>
-                    </Button>
+                    <MagneticButton>
+                        <Button
+                            as-child
+                            class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        >
+                            <Link :href="dashboard()">Dashboard</Link>
+                        </Button>
+                    </MagneticButton>
                 </template>
                 <template v-else>
                     <Link
@@ -95,12 +98,14 @@ onBeforeUnmount(() => {
                     >
                         Iniciar sesión
                     </Link>
-                    <Button
-                        as-child
-                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
-                    >
-                        <Link :href="register()">Crear mi Legacy</Link>
-                    </Button>
+                    <MagneticButton>
+                        <Button
+                            as-child
+                            class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        >
+                            <Link :href="register()">Crear mi Legacy</Link>
+                        </Button>
+                    </MagneticButton>
                 </template>
             </div>
 

@@ -5,6 +5,7 @@
  * the closing line lands as the section's thesis (brand system §12).
  */
 import Reveal from '@/components/motion/Reveal.vue';
+import StoryMediaSequence from '@/components/public/media/StoryMediaSequence.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 
 const lines = [
@@ -32,37 +33,45 @@ const lines = [
             "
         />
 
-        <div class="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-            <Reveal>
-                <SectionHeading
-                    align="left"
-                    eyebrow="El significado"
-                    title="NO ES SOLO UNA MEDALLA."
-                />
+        <div
+            class="relative mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:gap-16 lg:px-8"
+        >
+            <Reveal class="order-1 lg:order-2">
+                <StoryMediaSequence />
             </Reveal>
 
-            <div class="mt-12 space-y-2">
+            <div class="order-2 lg:order-1">
+                <Reveal>
+                    <SectionHeading
+                        align="left"
+                        eyebrow="El significado"
+                        title="NO ES SOLO UNA MEDALLA."
+                    />
+                </Reveal>
+
+                <div class="mt-12 space-y-2">
+                    <Reveal
+                        v-for="(line, index) in lines"
+                        :key="line"
+                        as="p"
+                        :delay-ms="index * 90"
+                        class="text-xl leading-snug text-white/60 sm:text-2xl"
+                    >
+                        {{ line }}
+                    </Reveal>
+                </div>
+
                 <Reveal
-                    v-for="(line, index) in lines"
-                    :key="line"
-                    as="p"
-                    :delay-ms="index * 90"
-                    class="text-xl leading-snug text-white/60 sm:text-2xl"
+                    :delay-ms="lines.length * 90 + 100"
+                    class="mt-12 border-t border-white/10 pt-10"
                 >
-                    {{ line }}
+                    <p
+                        class="text-2xl font-semibold tracking-tight text-white sm:text-3xl"
+                    >
+                        Finisher Legacy preserva lo que hay detrás del metal.
+                    </p>
                 </Reveal>
             </div>
-
-            <Reveal
-                :delay-ms="lines.length * 90 + 100"
-                class="mt-12 border-t border-white/10 pt-10"
-            >
-                <p
-                    class="text-2xl font-semibold tracking-tight text-white sm:text-3xl"
-                >
-                    Finisher Legacy preserva lo que hay detrás del metal.
-                </p>
-            </Reveal>
         </div>
     </section>
 </template>
