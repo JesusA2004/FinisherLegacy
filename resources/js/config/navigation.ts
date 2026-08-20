@@ -152,6 +152,13 @@ export const navigation: NavItem[] = [
         permission: 'imports.manage',
         group: 'eventos',
     },
+    {
+        label: 'Integraciones',
+        icon: resolveIcon('Plug'),
+        href: '/admin/integrations',
+        permission: 'integrations.view',
+        group: 'eventos',
+    },
 
     {
         label: 'Placas',

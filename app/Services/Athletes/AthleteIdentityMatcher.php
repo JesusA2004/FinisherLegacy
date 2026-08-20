@@ -46,9 +46,9 @@ class AthleteIdentityMatcher
 
     /**
      * @param  bool  $excludeAthletesLinkedToOtherUsers  Registration-only guard (docs/adr/0004
-     *                                                    §Registration match): an Athlete already
-     *                                                    linked to a different User can never be
-     *                                                    silently claimed by a new registrant.
+     *                                                   §Registration match): an Athlete already
+     *                                                   linked to a different User can never be
+     *                                                   silently claimed by a new registrant.
      */
     public function match(AthleteIdentityCandidateData $data, bool $excludeAthletesLinkedToOtherUsers = false): AthleteMatchResult
     {

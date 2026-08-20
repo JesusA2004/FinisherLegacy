@@ -9,6 +9,7 @@ use App\Models\EventParticipant;
 use App\Models\Medal;
 use App\Models\Plate;
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     $this->merge = app(MergeAthletes::class);
@@ -54,7 +55,7 @@ test('merging a source into itself is rejected', function () {
     $athlete = Athlete::factory()->create();
 
     $this->merge->handle($athlete, $athlete, $this->actor, 'nonsense');
-})->throws(\Illuminate\Validation\ValidationException::class);
+})->throws(ValidationException::class);
 
 test('merging moves an external identity onto the target when the target has no conflicting one', function () {
     $source = Athlete::factory()->create();

@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\AthleteIdentityStatus;
 use App\Enums\AthleteMatchOutcome;
 use App\Models\Athlete;
 use App\Models\AthleteExternalIdentity;
+use App\Models\User;
 use App\Services\Athletes\AthleteIdentityMatcher;
 use App\Support\Athletes\AthleteIdentityCandidateData;
 
@@ -137,7 +139,7 @@ test('a merged athlete is never returned as a match candidate', function () {
     Athlete::factory()->create([
         'email' => 'juan@example.com',
         'normalized_email' => 'juan@example.com',
-        'identity_status' => \App\Enums\AthleteIdentityStatus::Merged,
+        'identity_status' => AthleteIdentityStatus::Merged,
     ]);
 
     $result = $this->matcher->match(candidate(['email' => 'juan@example.com']));
@@ -146,7 +148,7 @@ test('a merged athlete is never returned as a match candidate', function () {
 });
 
 test('registration-context matching excludes athletes already linked to a different user', function () {
-    $otherUser = App\Models\User::factory()->create();
+    $otherUser = User::factory()->create();
     Athlete::factory()->create([
         'email' => 'juan@example.com',
         'normalized_email' => 'juan@example.com',

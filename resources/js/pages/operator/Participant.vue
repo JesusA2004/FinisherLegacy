@@ -22,7 +22,7 @@ type PlatePreviewData = {
     status: string;
 };
 
-const { participant, existingPlate, templateName } = defineProps<{
+const { participant, existingPlate, templateName, eligibility } = defineProps<{
     participant: {
         id: number;
         bib_number: string | null;
@@ -31,10 +31,19 @@ const { participant, existingPlate, templateName } = defineProps<{
         official_time: string | null;
         pace: string | null;
         result_status: string | null;
+        manual_override: boolean;
     };
     templateName: string | null;
     existingPlate: PlatePreviewData | null;
+    eligibility: { eligible: boolean; reasons: string[] };
 }>();
+
+const reasonLabels: Record<string, string> = {
+    NO_RESULT: 'Resultado no disponible',
+    NO_TEMPLATE: 'Molde no asignado',
+    IDENTITY_CONFLICT: 'Conflicto de identidad — revisar',
+    PLATE_ALREADY_EXISTS: 'Ya existe una placa',
+};
 
 const generating = ref(false);
 
@@ -144,6 +153,34 @@ function generate() {
                         Este evento no tiene un molde asignado — configúralo en
                         "Preparar evento para producción".
                     </p>
+                    <span
+                        v-if="participant.manual_override"
+                        class="mt-2 inline-block rounded-full border border-fl-gold/30 px-2.5 py-1 text-[10px] text-fl-gold uppercase"
+                    >
+                        Corrección manual
+                    </span>
+
+                    <div
+                        v-if="!existingPlate"
+                        class="mt-4 rounded-lg border px-3 py-2 text-xs"
+                        :class="
+                            eligibility.eligible
+                                ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400'
+                                : 'border-amber-500/30 bg-amber-500/5 text-amber-400'
+                        "
+                    >
+                        <template v-if="eligibility.eligible">
+                            Listo para producir ✓
+                        </template>
+                        <template v-else>
+                            No listo —
+                            {{
+                                eligibility.reasons
+                                    .map((r) => reasonLabels[r] ?? r)
+                                    .join(', ')
+                            }}
+                        </template>
+                    </div>
 
                     <div
                         class="mt-6 grid grid-cols-2 gap-4 rounded-xl border border-white/10 bg-fl-graphite/40 p-5"
@@ -173,7 +210,7 @@ function generate() {
                     <Button
                         v-else
                         class="mt-6 w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
-                        :disabled="generating || !templateName"
+                        :disabled="generating || !eligibility.eligible"
                         @click="generate"
                     >
                         <Spinner v-if="generating" />

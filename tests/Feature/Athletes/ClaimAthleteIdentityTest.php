@@ -1,8 +1,10 @@
 <?php
 
+use App\Actions\Athletes\EnsureAthleteForUser;
 use App\Enums\LegacyCodeStatus;
 use App\Enums\PlateGenerationMode;
 use App\Models\Athlete;
+use App\Models\AthleteIdentityConflict;
 use App\Models\EventParticipant;
 use App\Models\LegacyCode;
 use App\Models\Plate;
@@ -52,7 +54,7 @@ test('claiming a quick plate with no participant creates a fresh athlete for a u
 
 test('claiming reuses the athlete the user already has instead of creating a second one', function () {
     $user = User::factory()->create();
-    $existingAthlete = app(\App\Actions\Athletes\EnsureAthleteForUser::class)->handle($user, 'registration');
+    $existingAthlete = app(EnsureAthleteForUser::class)->handle($user, 'registration');
     $legacyCode = createAssignedLegacyCodeForAthleteTests(['generation_mode' => PlateGenerationMode::Quick]);
     $athletesBefore = Athlete::count();
 
@@ -68,7 +70,7 @@ test('claiming a plate whose participant athlete differs from the user own athle
     $legacyCode = createAssignedLegacyCodeForAthleteTests([], $participant);
 
     $user = User::factory()->create();
-    app(\App\Actions\Athletes\EnsureAthleteForUser::class)->handle($user, 'registration');
+    app(EnsureAthleteForUser::class)->handle($user, 'registration');
     $userAthleteId = $user->fresh()->athlete->id;
 
     expect($userAthleteId)->not->toBe($participantAthlete->id);
@@ -79,7 +81,7 @@ test('claiming a plate whose participant athlete differs from the user own athle
     expect($legacyCode->fresh()->status)->toBe(LegacyCodeStatus::Assigned)
         ->and($legacyCode->fresh()->claimed_by_user_id)->toBeNull()
         ->and($legacyCode->plate->fresh()->athlete_id)->toBeNull()
-        ->and(\App\Models\AthleteIdentityConflict::where('source_type', 'claim')->count())->toBe(1);
+        ->and(AthleteIdentityConflict::where('source_type', 'claim')->count())->toBe(1);
 });
 
 test('a plate frozen snapshot never changes when the linked athlete is renamed afterward', function () {

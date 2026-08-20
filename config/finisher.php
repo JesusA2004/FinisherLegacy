@@ -99,6 +99,12 @@ return [
     // on read. See App\Enums\ProductionDeviceStatus.
     'device_online_timeout_seconds' => env('FINISHER_DEVICE_ONLINE_TIMEOUT_SECONDS', 90),
 
+    // Event Ops shows a "datos sin actualizar" warning once the last
+    // successful provider sync is older than this — see
+    // App\Queries\Operations\GetEventOperationsDashboard and
+    // docs/adr/0006-event-operations.md §11.
+    'event_ops_sync_stale_seconds' => env('FINISHER_EVENT_OPS_SYNC_STALE_SECONDS', 300),
+
     // How long a claimed ProductionJob's lease lasts before it becomes
     // reclaimable by another device — ONLY while the job is Assigned or
     // Preparing (ProductionJob::isSafeToRelease()). Once physical

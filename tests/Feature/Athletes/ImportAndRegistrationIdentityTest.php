@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Athletes\EnsureAthleteForUser;
 use App\Actions\Athletes\IngestEventParticipant;
 use App\Enums\EditionStatus;
 use App\Enums\EventStatus;
@@ -105,7 +106,7 @@ test('a new account registering with the exact email of an athlete already impor
     $existing = Athlete::factory()->create(['email' => 'ada@example.com', 'normalized_email' => 'ada@example.com', 'user_id' => null]);
 
     $user = User::factory()->create(['email' => 'ada@example.com']);
-    $athlete = app(\App\Actions\Athletes\EnsureAthleteForUser::class)->handle($user, 'registration');
+    $athlete = app(EnsureAthleteForUser::class)->handle($user, 'registration');
 
     expect($athlete->id)->toBe($existing->id)
         ->and(Athlete::count())->toBe(1);

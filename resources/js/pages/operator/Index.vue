@@ -2,7 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { CalendarClock, QrCode, Search, Zap } from '@lucide/vue';
 import { useDebounceFn } from '@vueuse/core';
-import { ref, watch } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import {
     generateQuickPlate,
     previewPlate as previewAction,
@@ -42,10 +42,87 @@ type SearchResult = {
     has_plate: boolean;
 };
 
-const { editions, activeEdition } = defineProps<{
+type EventOpsDashboard = {
+    provider: {
+        connected: boolean;
+        provider_name: string | null;
+        last_sync_at: string | null;
+        stale: boolean;
+    };
+    data: { participants: number; results: number; conflicts: number };
+    production: Record<
+        'pending' | 'assigned' | 'engraving' | 'ready' | 'delivered' | 'failed',
+        number
+    >;
+    stations: {
+        id: number;
+        name: string;
+        online: boolean;
+        current_job: string | null;
+    }[];
+    readiness: {
+        ready: boolean;
+        checks: Record<string, boolean>;
+        blocking_reasons: string[];
+    };
+    metrics: {
+        queue_wait: number | null;
+        front_duration: number | null;
+        flip_delay: number | null;
+        back_duration: number | null;
+        qr_delay: number | null;
+        total_duration: number | null;
+        sample_size: number;
+    } | null;
+};
+
+const {
+    editions,
+    activeEdition,
+    dashboard: initialDashboard,
+} = defineProps<{
     editions: { id: number; name: string }[];
     activeEdition: { id: number; name: string; hasTemplate: boolean } | null;
+    dashboard: EventOpsDashboard | null;
 }>();
+
+const dashboard = ref<EventOpsDashboard | null>(initialDashboard);
+let statusTimer: ReturnType<typeof setInterval> | undefined;
+
+function formatDuration(seconds: number | null): string {
+    if (seconds === null) {
+        return '—';
+    }
+
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// Polls a small JSON endpoint every 5s — never a full Inertia reload
+// (docs/adr/0006-event-operations.md §11).
+onMounted(() => {
+    if (!activeEdition) {
+        return;
+    }
+
+    statusTimer = setInterval(async () => {
+        const response = await fetch('/operator/status', {
+            headers: { Accept: 'application/json' },
+        });
+
+        if (response.ok) {
+            dashboard.value = (await response.json()).data;
+        }
+    }, 5000);
+});
+
+onBeforeUnmount(() => {
+    if (statusTimer) {
+        clearInterval(statusTimer);
+    }
+});
 
 const query = ref('');
 const results = ref<SearchResult[]>([]);
@@ -250,6 +327,103 @@ function submitQuickPlate() {
                     en "Preparar evento para producción" antes de generar
                     placas.
                 </p>
+
+                <div
+                    v-if="dashboard"
+                    class="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4"
+                >
+                    <div
+                        class="rounded-xl border border-white/10 bg-fl-graphite/30 p-3"
+                    >
+                        <p class="text-[10px] text-white/40 uppercase">
+                            Proveedor
+                        </p>
+                        <p
+                            class="mt-0.5 flex items-center gap-1.5 text-sm text-white"
+                        >
+                            <span
+                                class="size-1.5 rounded-full"
+                                :class="
+                                    dashboard.provider.connected
+                                        ? dashboard.provider.stale
+                                            ? 'bg-amber-400'
+                                            : 'bg-emerald-400'
+                                        : 'bg-white/30'
+                                "
+                            />
+                            {{
+                                dashboard.provider.connected
+                                    ? dashboard.provider.stale
+                                        ? 'Datos sin actualizar'
+                                        : 'Conectado'
+                                    : 'Sin proveedor'
+                            }}
+                        </p>
+                        <p
+                            v-if="dashboard.provider.last_sync_at"
+                            class="mt-0.5 text-[10px] text-white/30"
+                        >
+                            Último sync: {{ dashboard.provider.last_sync_at }}
+                        </p>
+                    </div>
+                    <div
+                        class="rounded-xl border border-white/10 bg-fl-graphite/30 p-3"
+                    >
+                        <p class="text-[10px] text-white/40 uppercase">Datos</p>
+                        <p class="mt-0.5 text-sm text-white">
+                            {{ dashboard.data.participants }} corredores ·
+                            {{ dashboard.data.results }} resultados
+                        </p>
+                        <p
+                            v-if="dashboard.data.conflicts > 0"
+                            class="mt-0.5 text-[10px] text-amber-400"
+                        >
+                            {{ dashboard.data.conflicts }} conflicto(s) de
+                            identidad
+                        </p>
+                    </div>
+                    <div
+                        class="rounded-xl border border-white/10 bg-fl-graphite/30 p-3"
+                    >
+                        <p class="text-[10px] text-white/40 uppercase">
+                            Producción
+                        </p>
+                        <p class="mt-0.5 text-sm text-white">
+                            {{ dashboard.production.pending }} pendientes ·
+                            {{ dashboard.production.delivered }} entregadas
+                        </p>
+                        <p
+                            v-if="dashboard.production.failed > 0"
+                            class="mt-0.5 text-[10px] text-red-400"
+                        >
+                            {{ dashboard.production.failed }} con problema
+                        </p>
+                    </div>
+                    <div
+                        class="rounded-xl border border-white/10 bg-fl-graphite/30 p-3"
+                    >
+                        <p class="text-[10px] text-white/40 uppercase">
+                            Estaciones
+                        </p>
+                        <p class="mt-0.5 text-sm text-white">
+                            {{
+                                dashboard.stations.filter((s) => s.online)
+                                    .length
+                            }}
+                            /
+                            {{ dashboard.stations.length }} en línea
+                        </p>
+                        <p
+                            v-if="dashboard.metrics"
+                            class="mt-0.5 text-[10px] text-white/30"
+                        >
+                            Prom. producción:
+                            {{
+                                formatDuration(dashboard.metrics.total_duration)
+                            }}
+                        </p>
+                    </div>
+                </div>
 
                 <p
                     class="mb-2 text-xs font-semibold tracking-[0.2em] text-white/40 uppercase"

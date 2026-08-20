@@ -7,6 +7,7 @@ use App\Models\AthleteIdentityConflict;
 use App\Models\EventParticipant;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
@@ -63,7 +64,7 @@ test('link_existing without any candidate athlete fails validation', function ()
     $admin = User::factory()->create();
 
     $this->action->handle($conflict, 'link_existing', $admin);
-})->throws(\Illuminate\Validation\ValidationException::class);
+})->throws(ValidationException::class);
 
 test('the admin identity-conflicts index is blocked without the athletes.manage permission', function () {
     $user = User::factory()->create();

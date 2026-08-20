@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\AuditController as AdminAuditController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EditionController as AdminEditionController;
 use App\Http\Controllers\Admin\IncidentController as AdminIncidentController;
+use App\Http\Controllers\Admin\Integrations\ProviderConnectionController as AdminProviderConnectionController;
+use App\Http\Controllers\Admin\Integrations\SyncController as AdminSyncController;
 use App\Http\Controllers\Admin\LegacyCodeController as AdminLegacyCodeController;
 use App\Http\Controllers\Admin\MachineProfileController as AdminMachineProfileController;
 use App\Http\Controllers\Admin\OrganizerController as AdminOrganizerController;
@@ -74,6 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('can:operator.access')->prefix('operator')->name('operator.')->group(function () {
         Route::get('/', [OperatorController::class, 'index'])->name('index');
         Route::post('event', [OperatorController::class, 'selectEvent'])->name('select-event');
+        Route::get('status', [OperatorController::class, 'status'])->middleware('throttle:30,1')->name('status');
         Route::get('search', [OperatorController::class, 'search'])->middleware('throttle:60,1')->name('search');
         Route::post('preview', [OperatorController::class, 'previewPlate'])->middleware('throttle:60,1')->name('preview');
         Route::get('participants/{eventParticipant}', [OperatorController::class, 'showParticipant'])->name('participants.show');
@@ -140,6 +143,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::middleware('can:athletes.manage')->prefix('identity-conflicts')->name('identity-conflicts.')->group(function () {
             Route::get('/', [AdminAthleteIdentityConflictController::class, 'index'])->name('index');
             Route::post('{conflict}/resolve', [AdminAthleteIdentityConflictController::class, 'resolve'])->name('resolve');
+        });
+
+        // Unified external event ingestion (docs/adr/0005-unified-event-ingestion.md).
+        Route::middleware('can:integrations.view')->prefix('integrations')->name('integrations.')->group(function () {
+            Route::get('/', [AdminProviderConnectionController::class, 'index'])->name('index');
+            Route::get('{providerConnection}', [AdminProviderConnectionController::class, 'show'])->name('show');
+            Route::get('sync-runs/{syncRun}', [AdminSyncController::class, 'show'])->name('sync-runs.show');
+            Route::get('sync-runs/{syncRun}/status', [AdminSyncController::class, 'status'])->name('sync-runs.status');
+
+            Route::middleware('can:integrations.manage')->group(function () {
+                Route::post('/', [AdminProviderConnectionController::class, 'store'])->name('store');
+                Route::post('{providerConnection}/test', [AdminProviderConnectionController::class, 'test'])->name('test');
+                Route::post('{providerConnection}/events', [AdminProviderConnectionController::class, 'linkEvent'])->name('events.link');
+            });
+
+            Route::middleware('can:integrations.sync')->post('mappings/{eventMapping}/sync', [AdminSyncController::class, 'store'])->name('mappings.sync');
         });
 
         Route::middleware('can:plates.view')->group(function () {

@@ -7,6 +7,8 @@ use App\Exceptions\PlateTemplateMissingException;
 use App\Models\EventEdition;
 use App\Models\EventParticipant;
 use App\Models\Plate;
+use App\Queries\Operations\GetEventOperationsDashboard;
+use App\Services\PlateEligibilityService;
 use App\Services\PlateGenerationService;
 use App\Services\PlateSnapshotBuilder;
 use App\Services\PlateTemplateRenderService;
@@ -18,12 +20,20 @@ use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * "Event Ops" — the search→produce console every operator lives in during
+ * an event. Slice 5 (docs/adr/0006-event-operations.md) extended this
+ * with dashboard stats and Slice 4 plate eligibility; the search/produce
+ * flow itself is unchanged from Slice 2.
+ */
 class OperatorController extends Controller
 {
     public function __construct(
         private readonly PlateGenerationService $plates,
         private readonly PlateTemplateRenderService $renderer,
         private readonly PlateSnapshotBuilder $snapshotBuilder,
+        private readonly PlateEligibilityService $eligibility,
+        private readonly GetEventOperationsDashboard $dashboard,
     ) {}
 
     public function index(Request $request): Response
@@ -46,7 +56,41 @@ class OperatorController extends Controller
                 'name' => $activeEdition->event->name.' — '.$activeEdition->name,
                 'hasTemplate' => $activeEdition->defaultPlateTemplateVersion() !== null,
             ] : null,
+            'dashboard' => $activeEdition ? $this->dashboardPayload($activeEdition) : null,
         ]);
+    }
+
+    /**
+     * Polled every few seconds from the Event Ops dashboard — a small JSON
+     * payload, never a full Inertia reload (docs/adr/0006 §11).
+     */
+    public function status(Request $request): JsonResponse
+    {
+        $activeEdition = $this->activeEdition($request);
+        abort_unless($activeEdition !== null, 422);
+
+        return response()->json(['data' => $this->dashboardPayload($activeEdition)]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function dashboardPayload(EventEdition $edition): array
+    {
+        $data = $this->dashboard->handle($edition);
+
+        return [
+            'provider' => $data['provider'],
+            'data' => $data['data'],
+            'production' => $data['production'],
+            'stations' => $data['stations'],
+            'readiness' => [
+                'ready' => $data['readiness']->ready,
+                'checks' => $data['readiness']->checks,
+                'blocking_reasons' => $data['readiness']->blockingReasons,
+            ],
+            'metrics' => $data['metrics'],
+        ];
     }
 
     public function selectEvent(Request $request): RedirectResponse
@@ -98,6 +142,7 @@ class OperatorController extends Controller
         $eventParticipant->load(['eventRace', 'eventEdition.event', 'result', 'user']);
         $existingPlate = Plate::where('event_participant_id', $eventParticipant->id)->first();
         $version = $eventParticipant->eventEdition->defaultPlateTemplateVersion($eventParticipant->event_race_id);
+        $eligibility = $this->eligibility->check($eventParticipant);
 
         return Inertia::render('operator/Participant', [
             'participant' => [
@@ -108,9 +153,14 @@ class OperatorController extends Controller
                 'official_time' => $eventParticipant->result?->official_time,
                 'pace' => $eventParticipant->result?->pace,
                 'result_status' => $eventParticipant->result?->status->value,
+                'manual_override' => $eventParticipant->result?->manual_override_at !== null,
             ],
             'templateName' => $version ? "{$version->plateTemplate->name} — V{$version->version}" : null,
             'existingPlate' => $existingPlate ? $this->plates->previewPayload($existingPlate) : null,
+            'eligibility' => [
+                'eligible' => $eligibility->eligible,
+                'reasons' => $eligibility->reasons,
+            ],
         ]);
     }
 

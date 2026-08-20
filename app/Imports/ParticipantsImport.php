@@ -2,18 +2,18 @@
 
 namespace App\Imports;
 
-use App\Actions\Athletes\IngestEventParticipant;
+use App\Actions\Integrations\IngestEventResult;
 use App\Enums\ImportStatus;
-use App\Enums\ParticipantSource;
 use App\Enums\PreregistrationStatus;
-use App\Enums\RegistrationStatus;
-use App\Enums\VerificationStatus;
+use App\Models\EventEdition;
 use App\Models\EventImport;
 use App\Models\EventImportError;
 use App\Models\EventParticipant;
 use App\Models\EventPreregistration;
 use App\Models\EventRace;
-use App\Models\EventResult;
+use App\Services\Integrations\EventIngestionService;
+use App\Support\Integrations\ExternalParticipantData;
+use App\Support\Integrations\ExternalResultData;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
@@ -69,7 +69,7 @@ class ParticipantsImport implements ShouldQueue, ToCollection, WithChunkReading,
         foreach ($rows as $offset => $row) {
             $rowNumber = $this->startRow() + $offset;
 
-            [$ok, $error] = $this->importRow($row, $edition->id, $mapping, $racesByName);
+            [$ok, $error] = $this->importRow($row, $edition, $mapping, $racesByName);
 
             if ($ok) {
                 $import->increment('successful_rows');
@@ -107,7 +107,7 @@ class ParticipantsImport implements ShouldQueue, ToCollection, WithChunkReading,
      * @param  Collection<string, EventRace>  $racesByName
      * @return array{0: bool, 1: ?array{code: string, message: string}}
      */
-    private function importRow(Collection $row, int $editionId, array $mapping, Collection $racesByName): array
+    private function importRow(Collection $row, EventEdition $edition, array $mapping, Collection $racesByName): array
     {
         $field = fn (string $key): ?string => isset($mapping[$key])
             ? trim((string) ($row[$mapping[$key]] ?? ''))
@@ -135,30 +135,34 @@ class ParticipantsImport implements ShouldQueue, ToCollection, WithChunkReading,
         }
 
         try {
-            // Upsert + canonical-identity resolution together — the same
-            // pipeline every participant entry point uses, never a second
-            // matcher for CSV rows (docs/adr/0004-athlete-canonical-identity.md §71-75).
-            // A conflict here never fails the row: the participant is still
-            // created/updated, just with `athlete_id` left null pending
-            // review (§26 — don't fail 5,000 rows over 2 ambiguous ones).
-            $participant = app(IngestEventParticipant::class)->handle([
-                'event_edition_id' => $editionId,
+            // Same canonical DTO + ingestion pipeline an API sync uses
+            // (docs/adr/0005-unified-event-ingestion.md §53-55) — CSV is
+            // just another source feeding App\Services\Integrations\EventIngestionService,
+            // never a second upsert-then-match implementation. Identity
+            // resolution/conflict handling inside it is unchanged from
+            // Slice 3 (docs/adr/0004 §71-75): a conflict never fails the
+            // row, `athlete_id` is just left null pending review.
+            $data = ExternalParticipantData::fromArray([
+                'external_participant_id' => null,
                 'bib_number' => $bibNumber,
-                'event_race_id' => $race->id,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
-                'full_name' => trim("{$firstName} {$lastName}"),
                 'email' => $email,
                 'phone' => $phone,
-                'registration_status' => RegistrationStatus::Registered,
-                'source' => ParticipantSource::Csv,
-                'verification_status' => VerificationStatus::Unverified,
-            ], 'import', (string) $this->eventImportId);
+            ]);
+
+            $participant = app(EventIngestionService::class)->ingestParticipant(
+                $data,
+                $edition,
+                $race,
+                null,
+                'import',
+            );
         } catch (Throwable $e) {
             return [false, ['code' => 'db_error', 'message' => $e->getMessage()]];
         }
 
-        $this->matchPreregistration($participant, $editionId, $bibNumber, $email, $firstName, $lastName);
+        $this->matchPreregistration($participant, $edition->id, $bibNumber, $email, $firstName, $lastName);
         $this->importResultAndSplits($participant, $row, $mapping, $field);
 
         return [true, null];
@@ -202,24 +206,25 @@ class ParticipantsImport implements ShouldQueue, ToCollection, WithChunkReading,
             return;
         }
 
-        $result = EventResult::firstOrNew(['event_participant_id' => $participant->id]);
-
-        if ($officialTime !== null) {
-            $result->official_time = $officialTime;
-        }
-
-        if ($pace !== null) {
-            $result->pace = $pace;
-        }
-
-        $result->save();
-
-        foreach ($splitRows as $split) {
-            $result->splits()->updateOrCreate(
-                ['label' => $split['label']],
-                ['type' => 'split', 'sequence' => $split['sequence'], 'elapsed_time' => $split['elapsed_time']],
-            );
-        }
+        // Same App\Actions\Integrations\IngestEventResult an API sync uses —
+        // the participant is already known here, so this skips
+        // EventIngestionService's participant-resolution step and calls the
+        // ingest action directly (docs/adr/0005 §53-55, §61).
+        app(IngestEventResult::class)->handle(
+            $participant,
+            ExternalResultData::fromArray([
+                'external_participant_id' => (string) $participant->id,
+                'official_time' => $officialTime,
+                'pace' => $pace,
+                'splits' => array_map(fn (array $s) => [
+                    'type' => 'split',
+                    'label' => $s['label'],
+                    'sequence' => $s['sequence'],
+                    'elapsed_time' => $s['elapsed_time'],
+                ], $splitRows),
+            ]),
+            'csv',
+        );
     }
 
     private function matchPreregistration(EventParticipant $participant, int $editionId, string $bibNumber, ?string $email, string $firstName, string $lastName): void

@@ -34,6 +34,7 @@ class RolePermissionSeeder extends Seeder
             'participants.manage', 'results.manage', 'preregistrations.manage',
             'imports.manage', 'incidents.manage', 'plates.view', 'legacycodes.view',
             'operators.manage', 'platetemplates.view',
+            'integrations.view', 'integrations.manage', 'integrations.sync',
         ]);
 
         Role::findOrCreate('event_operator')->syncPermissions([

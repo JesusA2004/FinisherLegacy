@@ -468,3 +468,25 @@ trazos) ya está implementada y probada:
 - Integración directa con el software/driver de la máquina láser — esta
   fase termina en el archivo de exportación (SVG/PNG/PDF); el operador lo
   importa manualmente a LightBurn.
+
+## Event Ops (Slice 5)
+
+`App\Http\Controllers\OperatorController` (`/operator`) es la consola
+donde un operador busca un corredor y produce su placa — ver
+`docs/adr/0006-event-operations.md`. Antes de producir, siempre puede
+consultar:
+
+- **Elegibilidad** (`App\Services\PlateEligibilityService`, Slice 4):
+  `NO_RESULT`/`NO_TEMPLATE`/`IDENTITY_CONFLICT`/`PLATE_ALREADY_EXISTS`.
+- **Preparación del evento** (`App\Services\Production\EventProductionReadiness`):
+  molde, carrera, fuente de datos, estación, perfil de máquina,
+  calibración QR — solo el molde bloquea la producción.
+- **Métricas reales** (`App\Queries\Production\GetProductionMetrics`):
+  tiempos medidos (cola, frente, volteo, reverso, QR, total), nunca un
+  número prometido de antemano.
+
+El driver de láser (`App\Contracts\Production\LaserDriver`,
+`App\Services\Production\Drivers\MockLaserDriver`) es una abstracción
+para el Desktop Event Station — ver `docs/adr/0007-desktop-event-station.md`.
+Sigue sin existir integración real con LightBurn/el láser; esta fase
+sigue terminando en el archivo de exportación, como arriba.

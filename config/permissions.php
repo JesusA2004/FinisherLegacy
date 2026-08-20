@@ -138,6 +138,15 @@ return [
             'imports.manage' => 'Gestionar importaciones',
         ],
     ],
+    'integrations' => [
+        'label' => 'Integraciones',
+        'icon' => 'Plug',
+        'permissions' => [
+            'integrations.view' => 'Ver integraciones',
+            'integrations.manage' => 'Gestionar integraciones',
+            'integrations.sync' => 'Sincronizar integraciones',
+        ],
+    ],
     'incidents' => [
         'label' => 'Incidencias',
         'icon' => 'AlertTriangle',
