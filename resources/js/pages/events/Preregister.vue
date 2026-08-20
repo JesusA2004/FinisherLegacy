@@ -48,17 +48,17 @@ function submit() {
     <section class="mx-auto max-w-lg px-4 py-16 sm:px-6 lg:px-8">
         <template v-if="!edition || !isOpen">
             <div
-                class="mx-auto flex size-16 items-center justify-center rounded-full border border-legacy-copper/30 bg-legacy-carbon/60 text-legacy-copper-soft"
+                class="mx-auto flex size-16 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-graphite/60 text-fl-gold-soft"
             >
                 <Clock class="size-7" />
             </div>
 
-            <h1 class="mt-6 text-center text-3xl font-bold text-legacy-bone">
+            <h1 class="mt-6 text-center text-3xl font-bold text-white">
                 Prerregistro no disponible
             </h1>
-            <p class="mx-auto mt-4 max-w-md text-center text-legacy-titanium">
+            <p class="mx-auto mt-4 max-w-md text-center text-white/60">
                 El prerregistro para
-                <span class="text-legacy-bone">{{ event.name }}</span> no está abierto
+                <span class="text-white">{{ event.name }}</span> no está abierto
                 en este momento.
             </p>
         </template>
@@ -66,18 +66,18 @@ function submit() {
         <Reveal v-else>
             <div class="mb-8 text-center">
                 <p
-                    class="text-xs font-semibold tracking-widest text-legacy-copper-soft uppercase"
+                    class="text-xs font-semibold tracking-widest text-fl-gold-soft uppercase"
                 >
                     Prerregistro
                 </p>
-                <h1 class="mt-2 text-2xl font-bold text-legacy-bone">
+                <h1 class="mt-2 text-2xl font-bold text-white">
                     {{ event.name }}
                 </h1>
-                <p class="mt-1 text-sm text-legacy-titanium/60">{{ edition.name }}</p>
+                <p class="mt-1 text-sm text-white/60">{{ edition.name }}</p>
             </div>
 
             <form
-                class="space-y-5 rounded-2xl border border-legacy-titanium/10 bg-legacy-carbon/40 p-6"
+                class="space-y-5 rounded-2xl border border-white/10 bg-fl-graphite/40 p-6"
                 @submit.prevent="submit"
             >
                 <div class="grid gap-2">
@@ -163,7 +163,7 @@ function submit() {
 
                 <Button
                     type="submit"
-                    class="w-full bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
+                    class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
                     :disabled="form.processing"
                 >
                     <Spinner v-if="form.processing" />

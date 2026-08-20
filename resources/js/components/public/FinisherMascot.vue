@@ -5,7 +5,7 @@ const props = withDefaults(
     defineProps<{
         /**
          * Placement context. Every variant currently renders the same
-         * `mascot-hero` photo (it's the only pose the brand has shipped) —
+         * `mascot-hero` pose (it's the only one the brand has shipped) —
          * keeping the prop lets each call site express intent, and swapping
          * in dedicated poses later only touches the `poses` map below.
          */
@@ -19,19 +19,22 @@ const props = withDefaults(
     },
 );
 
+// mascot-hero.png is a real transparent PNG (RGBA, alpha-cut around the
+// character) — unlike the older mascot-hero.jpeg, which shipped with an
+// opaque light background and needed a radial mask hack to fade into dark
+// UI. The PNG needs none of that: it renders straight, no mask, no frame,
+// no card (brand system §23).
 const poses: Record<'hero' | 'small' | 'empty' | 'success', string> = {
-    hero: '/images/brand/mascot/mascot-hero.jpeg',
-    small: '/images/brand/mascot/mascot-hero.jpeg',
-    empty: '/images/brand/mascot/mascot-hero.jpeg',
-    success: '/images/brand/mascot/mascot-hero.jpeg',
+    hero: '/images/brand/mascot/mascot-hero.png',
+    small: '/images/brand/mascot/mascot-hero.png',
+    empty: '/images/brand/mascot/mascot-hero.png',
+    success: '/images/brand/mascot/mascot-hero.png',
 };
 
 const src = computed(() => poses[props.variant]);
 
 const sizeClass: Record<'hero' | 'small' | 'empty' | 'success', string> = {
     hero: 'h-64 sm:h-80',
-    // mascot-hero.jpeg is a narrow portrait (~0.57 ratio) — much below h-20
-    // and the character's facial detail turns into an illegible blur.
     small: 'h-20',
     empty: 'h-24',
     success: 'h-28',
@@ -43,7 +46,7 @@ const failed = ref(false);
 <template>
     <span
         v-if="!failed"
-        class="fl-mascot-frame relative inline-block shrink-0 overflow-hidden rounded-[2rem]"
+        class="fl-mascot-glow relative inline-block shrink-0"
         :class="sizeClass[variant]"
     >
         <img
@@ -51,28 +54,18 @@ const failed = ref(false);
             :alt="alt"
             class="h-full w-auto object-contain"
             loading="lazy"
+            decoding="async"
             @error="failed = true"
         />
     </span>
 </template>
 
 <style scoped>
-/*
- * mascot-hero.jpeg ships with a flat light background (no alpha channel).
- * Rather than fighting it with a blend-mode hack — which would also mute
- * the character's own gold/yellow tones — we fade its edges into the
- * surrounding dark UI with a soft radial mask, so it reads as "framed art"
- * instead of a pasted photo.
- */
-.fl-mascot-frame {
-    -webkit-mask-image: radial-gradient(
-        closest-side,
-        #000 82%,
-        transparent 100%
-    );
-    mask-image: radial-gradient(closest-side, #000 82%, transparent 100%);
+/* A soft ground-glow instead of a frame — enough to seat the character on
+   dark UI without boxing it in an oval, card, or mask. */
+.fl-mascot-glow {
     filter: drop-shadow(
-        0 8px 24px color-mix(in srgb, var(--fl-gold) 25%, transparent)
+        0 12px 28px color-mix(in srgb, var(--fl-gold) 30%, transparent)
     );
 }
 </style>

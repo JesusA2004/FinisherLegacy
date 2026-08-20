@@ -51,14 +51,16 @@ const statusCopy: Record<string, string> = {
         />
 
         <div
-            class="mt-6 rounded-2xl border-2 border-legacy-copper/30 bg-gradient-to-b from-legacy-copper/10 to-legacy-carbon/40 p-6 text-center"
+            class="mt-6 rounded-2xl border-2 border-fl-gold/30 bg-gradient-to-b from-fl-gold/10 to-fl-graphite/40 p-6 text-center"
         >
-            <p class="text-lg font-bold text-legacy-bone">{{ firstName }}</p>
-            <p class="mt-1 text-sm text-legacy-titanium">{{ event.name }}</p>
-            <p class="text-sm text-legacy-copper-soft">{{ edition.name }} · {{ race }}</p>
+            <p class="text-lg font-bold text-white">{{ firstName }}</p>
+            <p class="mt-1 text-sm text-white/60">{{ event.name }}</p>
+            <p class="text-sm text-fl-gold-soft">
+                {{ edition.name }} · {{ race }}
+            </p>
 
             <div
-                class="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-legacy-titanium/60"
+                class="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-white/60"
             >
                 <span class="inline-flex items-center gap-1">
                     <Calendar class="size-3.5" />
@@ -79,7 +81,7 @@ const statusCopy: Record<string, string> = {
             </div>
 
             <p
-                class="mt-4 rounded-md border border-legacy-titanium/10 bg-legacy-ink px-3 py-1.5 font-mono text-xs text-legacy-titanium/60"
+                class="mt-4 rounded-md border border-white/10 bg-fl-black px-3 py-1.5 font-mono text-xs text-white/60"
             >
                 {{ token }}
             </p>
@@ -88,11 +90,11 @@ const statusCopy: Record<string, string> = {
         <Button
             as-child
             variant="outline"
-            class="mt-6 w-full border-legacy-titanium/25 bg-transparent text-legacy-bone hover:bg-white/10 hover:text-legacy-bone"
+            class="mt-6 w-full border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
         >
             <Link :href="eventShow(event.slug)">Volver al evento</Link>
         </Button>
-        <Button as-child variant="ghost" class="mt-2 w-full text-legacy-titanium/60">
+        <Button as-child variant="ghost" class="mt-2 w-full text-white/60">
             <Link :href="home()">Ir al inicio</Link>
         </Button>
     </section>

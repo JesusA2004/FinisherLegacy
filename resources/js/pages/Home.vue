@@ -5,14 +5,15 @@ import StaggerGroup from '@/components/motion/StaggerGroup.vue';
 import CTASection from '@/components/public/CTASection.vue';
 import EditorialMoment from '@/components/public/EditorialMoment.vue';
 import EventCard from '@/components/public/EventCard.vue';
+import FaqSection from '@/components/public/FaqSection.vue';
 import HeroSection from '@/components/public/HeroSection.vue';
 import HowItWorksSteps from '@/components/public/HowItWorksSteps.vue';
 import JourneyExperience from '@/components/public/JourneyExperience.vue';
 import LegacyCodePreview from '@/components/public/LegacyCodePreview.vue';
 import LegacyProfileShowcase from '@/components/public/LegacyProfileShowcase.vue';
-import MascotSpotlight from '@/components/public/MascotSpotlight.vue';
-import PlateFlowCard from '@/components/public/PlateFlowCard.vue';
+import PlateFlowSwitch from '@/components/public/PlateFlowSwitch.vue';
 import PlateShowcase from '@/components/public/PlateShowcase.vue';
+import ScrollCueButton from '@/components/public/ScrollCueButton.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 import { howItWorks, register } from '@/routes';
 import { index as eventsIndex } from '@/routes/events';
@@ -80,7 +81,7 @@ TU HISTORIA NO."
     <EditorialMoment />
 
     <!-- El ecosistema, como secuencia conectada -->
-    <section class="border-t border-legacy-titanium/10 py-24 sm:py-28">
+    <section class="border-t border-white/10 py-24 sm:py-28">
         <Reveal as="div" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="El concepto"
@@ -93,7 +94,7 @@ TU HISTORIA NO."
     </section>
 
     <!-- Legacy Code -->
-    <section class="border-t border-legacy-titanium/10 bg-legacy-carbon/30 py-24 sm:py-28">
+    <section class="border-t border-white/10 bg-fl-graphite/30 py-24 sm:py-28">
         <Reveal as="div" class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Legacy Code"
@@ -107,41 +108,25 @@ TODA UNA HISTORIA."
                 <LegacyCodePreview />
             </div>
         </Reveal>
+        <div class="mt-14 flex justify-center">
+            <ScrollCueButton label="Sigue tu Legacy" />
+        </div>
     </section>
 
     <!-- Dos caminos -->
-    <section class="border-t border-legacy-titanium/10 py-24 sm:py-28">
-        <Reveal as="div" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <section class="border-t border-white/10 py-24 sm:py-28">
+        <Reveal as="div" class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Cómo preparamos tu placa"
                 title="Dos caminos. El mismo Legacy."
                 class="mb-14"
             />
-            <StaggerGroup as="div" class="grid gap-6 md:grid-cols-2">
-                <PlateFlowCard
-                    eyebrow="Camino automático"
-                    title="Cuando trabajamos conectados con el evento"
-                    :chain="['Corredor', 'Resultado', 'Placa', 'Legacy']"
-                    description="Si contamos con los datos del evento, podemos preparar tu placa utilizando la información oficial disponible y vincularla con tu Legacy."
-                    highlighted
-                />
-                <PlateFlowCard
-                    eyebrow="Camino flexible"
-                    title="Cuando no existe integración"
-                    :chain="[
-                        'Placa',
-                        'Legacy Code',
-                        'Escanea después',
-                        'Vincula a tu Legacy',
-                    ]"
-                    description="Si el evento no comparte sus datos, tu placa puede entregarse igualmente. Después podrás escanear su Legacy Code y vincularla desde casa."
-                />
-            </StaggerGroup>
+            <PlateFlowSwitch />
         </Reveal>
     </section>
 
     <!-- Legacy Profile preview -->
-    <section class="border-t border-legacy-titanium/10 bg-legacy-carbon/30 py-24 sm:py-28">
+    <section class="border-t border-white/10 bg-fl-graphite/30 py-24 sm:py-28">
         <Reveal
             as="div"
             class="mx-auto grid max-w-6xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:px-8"
@@ -158,7 +143,7 @@ Muchas carreras son un Legacy."
     </section>
 
     <!-- Cómo funciona -->
-    <section class="border-t border-legacy-titanium/10 py-24 sm:py-28">
+    <section class="border-t border-white/10 py-24 sm:py-28">
         <Reveal as="div" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Cómo funciona"
@@ -172,7 +157,7 @@ Muchas carreras son un Legacy."
     <!-- Eventos destacados -->
     <section
         v-if="featuredEditions.length"
-        class="border-t border-legacy-titanium/10 bg-legacy-carbon/30 py-24 sm:py-28"
+        class="border-t border-white/10 bg-fl-graphite/30 py-24 sm:py-28"
     >
         <Reveal as="div" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
@@ -193,7 +178,7 @@ Muchas carreras son un Legacy."
             <div class="mt-12 flex justify-center">
                 <Link
                     :href="eventsIndex()"
-                    class="text-sm font-semibold tracking-wide text-legacy-copper-soft hover:text-legacy-copper"
+                    class="text-sm font-semibold tracking-wide text-fl-gold-soft hover:text-fl-gold"
                 >
                     EXPLORAR EVENTOS →
                 </Link>
@@ -201,12 +186,15 @@ Muchas carreras son un Legacy."
         </Reveal>
     </section>
 
-    <section class="border-t border-legacy-titanium/10 py-20">
-        <Reveal as="div" class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-            <MascotSpotlight
-                title="No colecciones objetos. Preserva momentos."
-                description="Muy pronto conocerás a la mascota Finisher Legacy en eventos y en tu propio Legacy Profile."
+    <!-- Preguntas frecuentes -->
+    <section class="border-t border-white/10 py-24 sm:py-28">
+        <Reveal as="div" class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            <SectionHeading
+                eyebrow="Preguntas frecuentes"
+                title="Dudas antes de empezar"
+                class="mb-14"
             />
+            <FaqSection />
         </Reveal>
     </section>
 
@@ -217,5 +205,6 @@ Muchas carreras son un Legacy."
         :primary-href="register()"
         secondary-label="EXPLORAR EVENTOS"
         :secondary-href="eventsIndex()"
+        show-mascot
     />
 </template>

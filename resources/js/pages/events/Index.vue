@@ -82,7 +82,7 @@ const statusOptions = [
                     <Input
                         v-model="form.q"
                         placeholder="Buscar por evento o ciudad…"
-                        class="border-white/10 bg-legacy-carbon/60 pl-9 text-legacy-bone placeholder:text-legacy-titanium/50"
+                        class="border-white/10 bg-fl-graphite/60 pl-9 text-white placeholder:text-white/50"
                         @input="debouncedApply"
                     />
                 </div>
@@ -97,7 +97,7 @@ const statusOptions = [
                     "
                 >
                     <SelectTrigger
-                        class="w-full border-white/10 bg-legacy-carbon/60 text-legacy-bone sm:w-44"
+                        class="w-full border-white/10 bg-fl-graphite/60 text-white sm:w-44"
                     >
                         <SelectValue placeholder="Deporte" />
                     </SelectTrigger>
@@ -123,7 +123,7 @@ const statusOptions = [
                     "
                 >
                     <SelectTrigger
-                        class="w-full border-white/10 bg-legacy-carbon/60 text-legacy-bone sm:w-44"
+                        class="w-full border-white/10 bg-fl-graphite/60 text-white sm:w-44"
                     >
                         <SelectValue placeholder="Estado" />
                     </SelectTrigger>
@@ -145,7 +145,7 @@ const statusOptions = [
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div
                 v-if="editions.data.length === 0"
-                class="rounded-2xl border border-white/10 bg-legacy-carbon/40 py-20 text-center"
+                class="rounded-2xl border border-white/10 bg-fl-graphite/40 py-20 text-center"
             >
                 <p class="text-white/50">
                     No encontramos eventos con esos filtros.

@@ -18,17 +18,27 @@ const lines = [
 </script>
 
 <template>
-    <section class="relative overflow-hidden border-t border-legacy-titanium/10 bg-legacy-carbon/40 py-24 sm:py-32">
+    <section
+        class="relative overflow-hidden border-t border-white/10 bg-fl-graphite/40 py-24 sm:py-32"
+    >
         <div
             class="pointer-events-none absolute inset-0 opacity-40"
             style="
-                background: radial-gradient(ellipse 50% 40% at 50% 0%, color-mix(in srgb, var(--legacy-copper) 10%, transparent), transparent 70%);
+                background: radial-gradient(
+                    ellipse 50% 40% at 50% 0%,
+                    color-mix(in srgb, var(--fl-gold) 10%, transparent),
+                    transparent 70%
+                );
             "
         />
 
         <div class="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <Reveal>
-                <SectionHeading align="left" eyebrow="El significado" title="NO ES SOLO UNA MEDALLA." />
+                <SectionHeading
+                    align="left"
+                    eyebrow="El significado"
+                    title="NO ES SOLO UNA MEDALLA."
+                />
             </Reveal>
 
             <div class="mt-12 space-y-2">
@@ -37,14 +47,19 @@ const lines = [
                     :key="line"
                     as="p"
                     :delay-ms="index * 90"
-                    class="text-xl leading-snug text-legacy-titanium sm:text-2xl"
+                    class="text-xl leading-snug text-white/60 sm:text-2xl"
                 >
                     {{ line }}
                 </Reveal>
             </div>
 
-            <Reveal :delay-ms="lines.length * 90 + 100" class="mt-12 border-t border-legacy-titanium/10 pt-10">
-                <p class="text-2xl font-semibold tracking-tight text-legacy-bone sm:text-3xl">
+            <Reveal
+                :delay-ms="lines.length * 90 + 100"
+                class="mt-12 border-t border-white/10 pt-10"
+            >
+                <p
+                    class="text-2xl font-semibold tracking-tight text-white sm:text-3xl"
+                >
                     Finisher Legacy preserva lo que hay detrás del metal.
                 </p>
             </Reveal>

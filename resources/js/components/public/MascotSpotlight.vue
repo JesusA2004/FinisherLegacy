@@ -1,4 +1,13 @@
 <script setup lang="ts">
+/**
+ * The mascot as a free-floating character, not a bordered/blurred card
+ * (brand system §23). Only one pose asset ships today (mascot-hero.jpeg,
+ * already alpha-masked in FinisherMascot.vue) — this component can't
+ * fabricate new poses without real generated assets, so it leans on a
+ * gentle float + fade-in instead of a pose change to feel alive. Used on
+ * Home right before the final CTA, and on the prerregistro confirmation
+ * page — both genuinely celebratory moments.
+ */
 import FinisherMascot from '@/components/public/FinisherMascot.vue';
 
 withDefaults(
@@ -12,23 +21,40 @@ withDefaults(
 
 <template>
     <div
-        class="relative flex flex-col items-center gap-6 overflow-hidden rounded-2xl border border-legacy-copper/20 bg-gradient-to-b from-legacy-carbon/60 to-legacy-ink p-10 text-center"
+        class="flex flex-col items-center gap-5 text-center sm:flex-row sm:gap-8 sm:text-left"
     >
-        <div
-            class="absolute -top-16 left-1/2 size-48 -translate-x-1/2 rounded-full bg-legacy-copper/10 blur-3xl"
-        />
+        <FinisherMascot variant="hero" class="fl-mascot-float shrink-0" />
 
-        <FinisherMascot variant="hero" class="relative" />
-
-        <div class="relative mt-2 max-w-md">
-            <h3 class="text-xl font-bold text-legacy-bone">{{ title }}</h3>
-            <p v-if="description" class="mt-2 text-sm text-legacy-titanium">
+        <div class="max-w-md">
+            <h3 class="text-xl font-bold text-white">{{ title }}</h3>
+            <p v-if="description" class="mt-2 text-sm text-white/60">
                 {{ description }}
             </p>
-        </div>
-
-        <div v-if="$slots.default" class="relative">
-            <slot />
+            <div v-if="$slots.default" class="mt-4">
+                <slot />
+            </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.fl-mascot-float {
+    animation: fl-mascot-float 4.5s ease-in-out infinite;
+}
+
+@keyframes fl-mascot-float {
+    0%,
+    100% {
+        transform: translateY(0) rotate(-1deg);
+    }
+    50% {
+        transform: translateY(-10px) rotate(1deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fl-mascot-float {
+        animation: none;
+    }
+}
+</style>

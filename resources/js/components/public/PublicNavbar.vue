@@ -46,8 +46,8 @@ onBeforeUnmount(() => {
         class="fixed inset-x-0 top-0 z-50 transition-all duration-300"
         :class="
             scrolled
-                ? 'border-b border-legacy-titanium/10 bg-legacy-ink/85 backdrop-blur-md'
-                : 'border-b border-transparent bg-gradient-to-b from-legacy-ink/70 to-transparent'
+                ? 'border-b border-white/10 bg-fl-black/85 backdrop-blur-md'
+                : 'border-b border-transparent bg-gradient-to-b from-fl-black/70 to-transparent'
         "
     >
         <div
@@ -62,8 +62,12 @@ onBeforeUnmount(() => {
                     v-for="link in navLinks"
                     :key="link.label"
                     :href="link.href"
-                    class="text-sm font-medium tracking-wide text-legacy-titanium transition-colors hover:text-legacy-copper-soft"
-                    :class="{ 'text-legacy-copper-soft': isCurrentUrl(link.href) }"
+                    class="fl-nav-link relative py-1 text-sm font-medium tracking-wide text-white/60 transition-colors hover:text-fl-gold-soft"
+                    :class="{
+                        'fl-nav-link--active text-fl-gold-soft': isCurrentUrl(
+                            link.href,
+                        ),
+                    }"
                 >
                     {{ link.label }}
                 </Link>
@@ -73,13 +77,13 @@ onBeforeUnmount(() => {
                 <template v-if="user">
                     <Link
                         :href="dashboard()"
-                        class="text-sm font-medium text-legacy-titanium transition-colors hover:text-legacy-copper-soft"
+                        class="text-sm font-medium text-white/60 transition-colors hover:text-fl-gold-soft"
                     >
                         Mi Legacy
                     </Link>
                     <Button
                         as-child
-                        class="bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
+                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
                     >
                         <Link :href="dashboard()">Dashboard</Link>
                     </Button>
@@ -87,13 +91,13 @@ onBeforeUnmount(() => {
                 <template v-else>
                     <Link
                         :href="login()"
-                        class="text-sm font-medium text-legacy-titanium transition-colors hover:text-legacy-copper-soft"
+                        class="text-sm font-medium text-white/60 transition-colors hover:text-fl-gold-soft"
                     >
                         Iniciar sesión
                     </Link>
                     <Button
                         as-child
-                        class="bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
+                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
                     >
                         <Link :href="register()">Crear mi Legacy</Link>
                     </Button>
@@ -105,7 +109,7 @@ onBeforeUnmount(() => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        class="text-legacy-bone hover:bg-white/10 hover:text-legacy-copper-soft"
+                        class="text-white hover:bg-white/10 hover:text-fl-gold-soft"
                         aria-label="Abrir menú"
                     >
                         <Menu class="size-5" />
@@ -113,7 +117,7 @@ onBeforeUnmount(() => {
                 </SheetTrigger>
                 <SheetContent
                     side="right"
-                    class="border-legacy-titanium/10 bg-legacy-ink text-legacy-bone"
+                    class="border-white/10 bg-fl-black text-white"
                 >
                     <SheetTitle class="sr-only">Menú</SheetTitle>
                     <div class="mt-10 flex flex-col gap-1 px-2">
@@ -124,19 +128,19 @@ onBeforeUnmount(() => {
                         >
                             <Link
                                 :href="link.href"
-                                class="rounded-md px-3 py-3 text-base font-medium text-legacy-bone/85 transition-colors hover:bg-white/5 hover:text-legacy-copper-soft"
+                                class="rounded-md px-3 py-3 text-base font-medium text-white/85 transition-colors hover:bg-white/5 hover:text-fl-gold-soft"
                             >
                                 {{ link.label }}
                             </Link>
                         </SheetClose>
 
-                        <div class="my-3 border-t border-legacy-titanium/10" />
+                        <div class="my-3 border-t border-white/10" />
 
                         <template v-if="user">
                             <SheetClose as-child>
                                 <Link
                                     :href="dashboard()"
-                                    class="rounded-md px-3 py-3 text-base font-medium text-legacy-bone/85 transition-colors hover:bg-white/5 hover:text-legacy-copper-soft"
+                                    class="rounded-md px-3 py-3 text-base font-medium text-white/85 transition-colors hover:bg-white/5 hover:text-fl-gold-soft"
                                 >
                                     Mi Legacy
                                 </Link>
@@ -144,7 +148,7 @@ onBeforeUnmount(() => {
                             <SheetClose as-child class="mt-2 px-3">
                                 <Button
                                     as-child
-                                    class="w-full bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
+                                    class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
                                 >
                                     <Link :href="dashboard()">Dashboard</Link>
                                 </Button>
@@ -154,7 +158,7 @@ onBeforeUnmount(() => {
                             <SheetClose as-child>
                                 <Link
                                     :href="login()"
-                                    class="rounded-md px-3 py-3 text-base font-medium text-legacy-bone/85 transition-colors hover:bg-white/5 hover:text-legacy-copper-soft"
+                                    class="rounded-md px-3 py-3 text-base font-medium text-white/85 transition-colors hover:bg-white/5 hover:text-fl-gold-soft"
                                 >
                                     Iniciar sesión
                                 </Link>
@@ -162,7 +166,7 @@ onBeforeUnmount(() => {
                             <SheetClose as-child class="mt-2 px-3">
                                 <Button
                                     as-child
-                                    class="w-full bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
+                                    class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
                                 >
                                     <Link :href="register()"
                                         >Crear mi Legacy</Link
@@ -176,3 +180,33 @@ onBeforeUnmount(() => {
         </div>
     </header>
 </template>
+
+<style scoped>
+/* Underline that grows in from the left on hover, and stays filled for the
+   active route — a small piece of the "navegación reactiva" the brand
+   system asks for (§34), done in pure CSS so it never depends on hover to
+   convey the active state (the text color + fill both say it). */
+.fl-nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1px;
+    background: var(--fl-gold-soft);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fl-nav-link:hover::after,
+.fl-nav-link--active::after {
+    transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fl-nav-link::after {
+        transition: none;
+    }
+}
+</style>

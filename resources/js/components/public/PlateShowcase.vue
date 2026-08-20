@@ -49,7 +49,7 @@ function resetTilt() {
     <div class="mx-auto w-full max-w-sm" style="perspective: 1000px">
         <div
             ref="plate"
-            class="legacy-shine relative aspect-[3/2] w-full rounded-xl border border-legacy-titanium/15 p-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] transition-transform duration-300 ease-out"
+            class="fl-shine relative aspect-[3/2] w-full rounded-xl border border-white/15 p-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] transition-transform duration-300 ease-out"
             style="
                 --tilt-x: 0deg;
                 --tilt-y: 0deg;
@@ -65,8 +65,17 @@ function resetTilt() {
                         transparent 1px,
                         transparent 3px
                     ),
-                    radial-gradient(circle at var(--glare-x) var(--glare-y), rgba(255,255,255,0.14), transparent 45%),
-                    linear-gradient(160deg, #3a3a3d 0%, #232326 55%, #17171a 100%);
+                    radial-gradient(
+                        circle at var(--glare-x) var(--glare-y),
+                        rgba(255, 255, 255, 0.14),
+                        transparent 45%
+                    ),
+                    linear-gradient(
+                        160deg,
+                        #3a3a3d 0%,
+                        #232326 55%,
+                        #17171a 100%
+                    );
             "
             @pointermove="handlePointerMove"
             @pointerleave="resetTilt"
@@ -78,35 +87,40 @@ function resetTilt() {
             <div class="relative flex h-full flex-col justify-between">
                 <div>
                     <p
-                        class="text-[10px] font-semibold tracking-[0.3em] text-legacy-copper-soft uppercase"
+                        class="text-[10px] font-semibold tracking-[0.3em] text-fl-gold-soft uppercase"
                     >
                         Finisher · Legacy
                     </p>
                     <p
-                        class="mt-3 text-lg leading-tight font-bold tracking-tight text-legacy-bone uppercase"
+                        class="mt-3 text-lg leading-tight font-bold tracking-tight text-white uppercase"
                     >
                         {{ eventName }}
                     </p>
-                    <p class="mt-1 text-sm text-legacy-titanium">{{ athleteName }}</p>
-                    <p class="legacy-numeric mt-2 text-xl font-semibold text-legacy-copper-soft">
+                    <p class="mt-1 text-sm text-white/60">{{ athleteName }}</p>
+                    <p
+                        class="legacy-numeric mt-2 text-xl font-semibold text-fl-gold-soft"
+                    >
                         {{ time }}
                     </p>
                 </div>
 
                 <div class="flex items-end justify-between">
-                    <span class="legacy-numeric font-mono text-[10px] text-legacy-titanium/50">{{
-                        serial
-                    }}</span>
-                    <div
-                        class="flex size-9 items-center justify-center rounded-md border border-legacy-ice/20 bg-black/30"
+                    <span
+                        class="legacy-numeric font-mono text-[10px] text-white/50"
+                        >{{ serial }}</span
                     >
-                        <QrCode class="size-5 text-legacy-ice" />
+                    <div
+                        class="flex size-9 items-center justify-center rounded-md border border-fl-gold-soft/20 bg-black/30"
+                    >
+                        <QrCode class="size-5 text-fl-gold-soft" />
                     </div>
                 </div>
             </div>
         </div>
 
-        <p class="mt-3 text-center text-xs tracking-wide text-legacy-titanium/40 uppercase">
+        <p
+            class="mt-3 text-center text-xs tracking-wide text-white/40 uppercase"
+        >
             Interactúa con la placa
         </p>
     </div>

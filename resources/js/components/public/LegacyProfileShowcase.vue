@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
- * Home-only rendition of the Legacy Profile preview card, in the new Legacy
- * identity (copper/ice). Deliberately a separate component from
- * LegacyProfilePreview.vue, which the authenticated profile-edit screen
- * still uses on the untouched fl-gold palette — see brand system §6.
+ * Home-only rendition of the Legacy Profile preview card. Deliberately kept
+ * as a separate component from LegacyProfilePreview.vue — that one is also
+ * used by the authenticated dashboard/profile/Edit screen, which this
+ * frontend pass does not touch, so Home gets its own copy to iterate on
+ * freely (brand system §6, "exclusivamente frontend público").
  */
 import { Award, MapPin } from '@lucide/vue';
 import { computed } from 'vue';
@@ -47,20 +48,20 @@ const initials = computed(() =>
 <template>
     <div class="relative mx-auto w-full max-w-md">
         <div
-            class="absolute -inset-4 rounded-3xl bg-gradient-to-br from-legacy-copper/10 via-transparent to-legacy-ice/5 blur-2xl"
+            class="absolute -inset-4 rounded-3xl bg-gradient-to-br from-fl-gold/10 via-transparent to-fl-gold-soft/5 blur-2xl"
         />
         <div
-            class="legacy-hover-glow relative overflow-hidden rounded-2xl border border-legacy-titanium/10 bg-legacy-carbon/70 backdrop-blur-sm transition-shadow duration-300"
+            class="fl-hover-glow relative overflow-hidden rounded-2xl border border-white/10 bg-fl-graphite/70 backdrop-blur-sm transition-shadow duration-300"
         >
             <span
                 v-if="isMock"
-                class="absolute top-4 right-4 z-10 rounded-full border border-legacy-titanium/15 bg-legacy-ink/80 px-2.5 py-1 text-[10px] font-medium tracking-wide text-legacy-titanium/50 uppercase"
+                class="absolute top-4 right-4 z-10 rounded-full border border-white/15 bg-fl-black/80 px-2.5 py-1 text-[10px] font-medium tracking-wide text-white/50 uppercase"
             >
                 Vista previa
             </span>
 
             <div
-                class="relative h-28 w-full bg-gradient-to-br from-legacy-carbon-lift to-legacy-ink"
+                class="relative h-28 w-full bg-gradient-to-br from-fl-graphite-light to-fl-black"
             >
                 <img
                     v-if="display.cover_url"
@@ -69,13 +70,13 @@ const initials = computed(() =>
                     class="size-full object-cover"
                 />
                 <div
-                    class="absolute inset-0 bg-gradient-to-t from-legacy-carbon/70 via-transparent to-transparent"
+                    class="absolute inset-0 bg-gradient-to-t from-fl-graphite/70 via-transparent to-transparent"
                 />
             </div>
 
             <div class="flex flex-col items-center px-6 pb-6 text-center">
                 <div
-                    class="-mt-10 flex size-24 items-center justify-center overflow-hidden rounded-full border-4 border-legacy-carbon bg-legacy-ink text-2xl font-semibold text-legacy-copper-soft ring-1 ring-legacy-copper/40"
+                    class="-mt-10 flex size-24 items-center justify-center overflow-hidden rounded-full border-4 border-fl-graphite bg-fl-black text-2xl font-semibold text-fl-gold-soft ring-1 ring-fl-gold/40"
                 >
                     <img
                         v-if="display.photo_url"
@@ -86,13 +87,13 @@ const initials = computed(() =>
                     <span v-else>{{ initials }}</span>
                 </div>
 
-                <h3 class="mt-4 text-lg font-semibold text-legacy-bone">
+                <h3 class="mt-4 text-lg font-semibold text-white">
                     {{ display.name }}
                 </h3>
-                <p class="text-sm text-legacy-copper-soft">@{{ display.username }}</p>
+                <p class="text-sm text-fl-gold-soft">@{{ display.username }}</p>
 
                 <div
-                    class="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-xs text-legacy-titanium/70"
+                    class="mt-2 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-xs text-white/70"
                 >
                     <template v-if="display.city || display.country">
                         <MapPin class="size-3.5" />
@@ -114,16 +115,16 @@ const initials = computed(() =>
 
                 <p
                     v-if="display.bio"
-                    class="mt-3 line-clamp-3 text-sm text-legacy-titanium"
+                    class="mt-3 line-clamp-3 text-sm text-white/60"
                 >
                     {{ display.bio }}
                 </p>
 
                 <div
-                    class="mt-5 flex items-center gap-1.5 rounded-full border border-legacy-titanium/10 bg-legacy-ink px-4 py-1.5"
+                    class="mt-5 flex items-center gap-1.5 rounded-full border border-white/10 bg-fl-black px-4 py-1.5"
                 >
-                    <Award class="size-4 text-legacy-copper-soft" />
-                    <span class="text-sm font-medium text-legacy-bone">
+                    <Award class="size-4 text-fl-gold-soft" />
+                    <span class="text-sm font-medium text-white">
                         {{ display.medals_count }} medallas
                     </span>
                 </div>
@@ -135,14 +136,14 @@ const initials = computed(() =>
                     <div
                         v-for="medal in display.medals"
                         :key="medal.title"
-                        class="fl-hover-lift rounded-lg border border-legacy-titanium/10 bg-legacy-ink/60 px-3 py-2 text-left transition-colors duration-300 hover:border-legacy-copper/30"
+                        class="fl-hover-lift rounded-lg border border-white/10 bg-fl-black/60 px-3 py-2 text-left transition-colors duration-300 hover:border-fl-gold/30"
                     >
-                        <p class="truncate text-xs font-medium text-legacy-bone/85">
+                        <p class="truncate text-xs font-medium text-white/85">
                             {{ medal.title }}
                         </p>
                         <p
                             v-if="medal.distance_label"
-                            class="legacy-numeric text-[11px] text-legacy-copper-soft"
+                            class="legacy-numeric text-[11px] text-fl-gold-soft"
                         >
                             {{ medal.distance_label }}
                         </p>

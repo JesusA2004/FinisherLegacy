@@ -4,10 +4,10 @@ import { AlertTriangle } from '@lucide/vue';
 
 <template>
     <div
-        class="mb-12 flex items-start gap-3 rounded-xl border border-legacy-copper/25 bg-legacy-copper/5 p-4"
+        class="mb-12 flex items-start gap-3 rounded-xl border border-fl-gold/25 bg-fl-gold/5 p-4"
     >
-        <AlertTriangle class="mt-0.5 size-4 shrink-0 text-legacy-copper-soft" />
-        <p class="text-sm text-legacy-titanium">
+        <AlertTriangle class="mt-0.5 size-4 shrink-0 text-fl-gold-soft" />
+        <p class="text-sm text-white/60">
             Este contenido es un texto de referencia (placeholder) y todavía no
             ha sido revisado ni aprobado por asesoría legal. No debe
             interpretarse como la versión definitiva de esta política.

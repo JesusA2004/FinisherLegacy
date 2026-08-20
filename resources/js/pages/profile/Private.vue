@@ -12,7 +12,7 @@ defineProps<{
 
     <section class="mx-auto max-w-md px-4 py-32 text-center sm:px-6">
         <div
-            class="mx-auto flex size-16 items-center justify-center rounded-full border border-legacy-titanium/15 bg-legacy-carbon text-legacy-titanium/60"
+            class="mx-auto flex size-16 items-center justify-center rounded-full border border-white/15 bg-fl-graphite text-white/60"
         >
             <Lock class="size-7" />
         </div>
