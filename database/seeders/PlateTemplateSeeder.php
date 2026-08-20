@@ -25,7 +25,7 @@ class PlateTemplateSeeder extends Seeder
     {
         $this->seedPreset(
             slug: 'triathlon-premium-60x40',
-            name: 'Triathlon Premium — Acero 60x40 V1',
+            name: 'Triathlon Premium — Acero 60x40',
             description: 'Placa metálica 60×40mm para triatlón: frente con splits de natación/ciclismo/carrera, reverso con QR grande y Legacy Code.',
             sportType: PlateSportType::Triathlon,
             front: $this->triathlonFront(),
@@ -34,7 +34,7 @@ class PlateTemplateSeeder extends Seeder
 
         $this->seedPreset(
             slug: 'running-classic-60x40',
-            name: 'Running Classic — Acero 60x40 V1',
+            name: 'Running Classic — Acero 60x40',
             description: 'Placa metálica 60×40mm para carreras de ruta: frente con distancia, tiempo y ritmo, reverso con QR grande y Legacy Code.',
             sportType: PlateSportType::Running,
             front: $this->runningFront(),
@@ -43,7 +43,7 @@ class PlateTemplateSeeder extends Seeder
 
         $this->seedPreset(
             slug: 'cycling-classic-60x40',
-            name: 'Cycling Classic — Acero 60x40 V1',
+            name: 'Cycling Classic — Acero 60x40',
             description: 'Placa metálica 60×40mm para ciclismo: frente con distancia, tiempo y ritmo, reverso con QR grande y Legacy Code.',
             sportType: PlateSportType::Cycling,
             front: $this->cyclingFront(),

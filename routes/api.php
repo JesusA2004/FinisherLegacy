@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\Devices\DeviceController;
+use App\Http\Controllers\Api\V1\Devices\PairingController;
+use App\Http\Controllers\Api\V1\Devices\ProductionJobController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\LegacyCodeController;
 use App\Http\Controllers\Api\V1\MedalController;
@@ -27,7 +30,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         ->middleware('throttle:login')
         ->name('auth.login');
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'user.token'])->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('me', [AuthController::class, 'me'])->name('me');
 
@@ -60,4 +63,49 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('legacy-codes/{code}', [LegacyCodeController::class, 'show'])
         ->middleware('throttle:api-legacy-lookup')
         ->name('legacy-codes.show');
+
+    /*
+    |----------------------------------------------------------------------
+    | Device API (docs/adr/0002, docs/device-api/v1.md) — the contract a
+    | Finisher Event Desktop instance builds on. Still /api/v1: no parallel
+    | API surface, just a `device`/`devices`/`production` sub-namespace with
+    | its own auth (device.token, not auth:sanctum+user.token) and its own
+    | error envelope (see bootstrap/app.php).
+    |----------------------------------------------------------------------
+    */
+    Route::prefix('devices')->name('device.pairing.')->group(function () {
+        Route::post('pair', [PairingController::class, 'pair'])
+            ->middleware('throttle:api-register')
+            ->name('pair');
+        // Deliberately a looser limiter than api-register: a desktop polls
+        // this every few seconds while waiting for a Super Admin, which
+        // isn't the kind of one-shot action api-register is tuned for.
+        Route::post('pair/confirm', [PairingController::class, 'confirm'])
+            ->middleware('throttle:device-pairing-confirm')
+            ->name('confirm');
+    });
+
+    Route::middleware(['auth:sanctum', 'device.token'])->group(function () {
+        Route::get('device', [DeviceController::class, 'show'])
+            ->middleware('ability:device:heartbeat')
+            ->name('device.show');
+        Route::post('device/heartbeat', [DeviceController::class, 'heartbeat'])
+            ->middleware('ability:device:heartbeat')
+            ->name('device.heartbeat');
+
+        Route::prefix('production/jobs')->name('device.production.jobs.')->group(function () {
+            Route::get('next', [ProductionJobController::class, 'next'])
+                ->middleware('ability:production:read')
+                ->name('next');
+            Route::get('{job}', [ProductionJobController::class, 'show'])
+                ->middleware('ability:production:read')
+                ->name('show');
+            Route::post('{job}/claim', [ProductionJobController::class, 'claim'])
+                ->middleware(['ability:production:claim', 'device.idempotent'])
+                ->name('claim');
+            Route::get('{job}/artifact/{face}', [ProductionJobController::class, 'artifact'])
+                ->middleware('ability:production:read')
+                ->name('artifact');
+        });
+    });
 });

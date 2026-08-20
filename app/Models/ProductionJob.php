@@ -16,6 +16,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'queued_at', 'started_at', 'completed_at', 'attempts', 'error_message',
     'front_engraved_at', 'front_engraved_by', 'back_engraved_at', 'back_engraved_by',
     'qr_verified_at', 'qr_verified_by',
+    'production_device_id', 'claimed_at', 'lease_expires_at',
 ])]
 class ProductionJob extends Model
 {
@@ -32,6 +33,8 @@ class ProductionJob extends Model
             'front_engraved_at' => 'datetime',
             'back_engraved_at' => 'datetime',
             'qr_verified_at' => 'datetime',
+            'claimed_at' => 'datetime',
+            'lease_expires_at' => 'datetime',
         ];
     }
 
@@ -69,6 +72,24 @@ class ProductionJob extends Model
     public function qrVerifiedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'qr_verified_by');
+    }
+
+    /** @return BelongsTo<ProductionDevice, $this> */
+    public function productionDevice(): BelongsTo
+    {
+        return $this->belongsTo(ProductionDevice::class);
+    }
+
+    /**
+     * True once a device may claim this job — either it's unclaimed, or its
+     * lease has lapsed. Does NOT check `status`; callers filter by
+     * ProductionJobStatus::Queued separately (see
+     * App\Services\Devices\ProductionJobClaimService).
+     */
+    public function hasClaimableLease(): bool
+    {
+        return $this->production_device_id === null
+            || ($this->lease_expires_at !== null && $this->lease_expires_at->isPast());
     }
 
     public function checklistComplete(): bool

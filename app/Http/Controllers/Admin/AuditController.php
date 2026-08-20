@@ -32,6 +32,7 @@ class AuditController extends Controller
         'PlateTemplateVersion' => 'una versión de molde',
         'PlateReprint' => 'una reimpresión de placa',
         'ProductionJob' => 'un trabajo de producción',
+        'ProductionDevice' => 'una estación de producción',
         'MachineProfile' => 'un perfil de máquina',
         'LegacyCode' => 'un Legacy Code',
         'EventResult' => 'un resultado',

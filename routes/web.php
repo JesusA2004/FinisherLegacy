@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ParticipantController as AdminParticipantControll
 use App\Http\Controllers\Admin\PlateController as AdminPlateController;
 use App\Http\Controllers\Admin\PlateStudioController as AdminPlateStudioController;
 use App\Http\Controllers\Admin\PreregistrationController as AdminPreregistrationController;
+use App\Http\Controllers\Admin\ProductionDeviceController as AdminProductionDeviceController;
 use App\Http\Controllers\Admin\ProductionSetupController as AdminProductionSetupController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -154,6 +155,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::middleware('can:platetemplates.manage')->group(function () {
                 Route::post('/', [AdminMachineProfileController::class, 'store'])->name('store');
                 Route::patch('{machineProfile}', [AdminMachineProfileController::class, 'update'])->name('update');
+            });
+        });
+
+        // Estaciones: Super Admin only in practice — `admin` gets every
+        // permission via RolePermissionSeeder, `super_admin` bypasses via
+        // Gate::before, and no other seeded role is granted these keys.
+        Route::middleware('can:productiondevices.view')->prefix('production-devices')->name('production-devices.')->group(function () {
+            Route::get('/', [AdminProductionDeviceController::class, 'index'])->name('index');
+
+            Route::middleware('can:productiondevices.manage')->group(function () {
+                Route::post('pairings/{pairingRequest}/approve', [AdminProductionDeviceController::class, 'approvePairing'])->name('pairings.approve');
+                Route::post('{device}/revoke', [AdminProductionDeviceController::class, 'revoke'])->name('revoke');
             });
         });
 

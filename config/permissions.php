@@ -122,6 +122,14 @@ return [
             'production.manage' => 'Gestionar producción',
         ],
     ],
+    'productiondevices' => [
+        'label' => 'Estaciones',
+        'icon' => 'Cpu',
+        'permissions' => [
+            'productiondevices.view' => 'Ver estaciones',
+            'productiondevices.manage' => 'Gestionar estaciones',
+        ],
+    ],
     'imports' => [
         'label' => 'Importaciones',
         'icon' => 'Upload',

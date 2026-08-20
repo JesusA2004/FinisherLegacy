@@ -185,6 +185,13 @@ export const navigation: NavItem[] = [
         group: 'operacion',
     },
     {
+        label: 'Estaciones',
+        icon: resolveIcon('Cpu'),
+        href: '/admin/production-devices',
+        permission: 'productiondevices.view',
+        group: 'operacion',
+    },
+    {
         label: 'Incidencias',
         icon: resolveIcon('AlertTriangle'),
         href: '/admin/incidents',

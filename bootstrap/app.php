@@ -1,13 +1,19 @@
 <?php
 
+use App\Http\Middleware\EnsureIdempotencyKey;
+use App\Http\Middleware\EnsureProductionDeviceToken;
+use App\Http\Middleware\EnsureUserToken;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Support\Devices\DeviceExceptionRenderer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -25,11 +31,34 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        // Device API (docs/adr/0002) — kept as aliases rather than global
+        // middleware since only the device/production routes in
+        // routes/api.php opt into them.
+        $middleware->alias([
+            'device.token' => EnsureProductionDeviceToken::class,
+            'user.token' => EnsureUserToken::class,
+            'device.idempotent' => EnsureIdempotencyKey::class,
+            'ability' => CheckForAnyAbility::class,
+            'abilities' => CheckAbilities::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        // Device API surface renders {"error": {"code", "message", "details"}}
+        // (docs/device-api/v1.md) instead of Laravel's default JSON error
+        // shape — every other path (web Inertia, non-device /api/v1) is
+        // untouched.
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $request->is('api/v1/devices*', 'api/v1/device', 'api/v1/device/*', 'api/v1/production/*')) {
+                return null;
+            }
+
+            return app(DeviceExceptionRenderer::class)->render($e);
+        });
 
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
             if ($request->is('api/*') || $request->expectsJson()) {

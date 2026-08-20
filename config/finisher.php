@@ -82,4 +82,41 @@ return [
         'max_videos_per_athlete' => 5,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Device / Production API (ADR 0002, Slice 1)
+    |--------------------------------------------------------------------------
+    |
+    | Tunables for pairing, heartbeat and job-claim leases — centralized here
+    | instead of hardcoded in the Actions/Services that use them, so a real
+    | deployment can tune timings without touching code.
+    */
+
+    // A device counts as "online" if its last heartbeat is within this many
+    // seconds. Deliberately NOT a persisted "offline" status — a device
+    // that stops sending heartbeats doesn't need a background job to flip
+    // a flag; ProductionDevice::isOnline() derives it from `last_seen_at`
+    // on read. See App\Enums\ProductionDeviceStatus.
+    'device_online_timeout_seconds' => env('FINISHER_DEVICE_ONLINE_TIMEOUT_SECONDS', 90),
+
+    // How long a claimed ProductionJob's lease lasts before it becomes
+    // reclaimable by another device. Deliberately does NOT apply to jobs
+    // whose physical engraving is already in progress — Slice 1 has no
+    // engraving-progress state yet (see docs/adr/0002), so today this only
+    // protects the queued -> claimed window, which is safe to reclaim.
+    'device_lease_seconds' => env('FINISHER_DEVICE_LEASE_SECONDS', 900),
+
+    // How long a pairing code/poll token stays valid before a desktop must
+    // request a new one. Short on purpose — pairing is a one-time,
+    // attended (Super Admin present) handshake, not a long-lived credential.
+    'pairing_expiration_minutes' => env('FINISHER_PAIRING_EXPIRATION_MINUTES', 10),
+
+    // Length of the human-readable pairing code shown on the desktop
+    // screen and in the admin "Estaciones" list. Not a secret — the real
+    // secret is the poll token the desktop keeps privately (docs/adr/0002).
+    'pairing_code_length' => env('FINISHER_PAIRING_CODE_LENGTH', 6),
+
+    // How long a stored device idempotency response is honored before a
+    // repeated Idempotency-Key is treated as a new request.
+    'idempotency_ttl_seconds' => env('FINISHER_IDEMPOTENCY_TTL_SECONDS', 86400),
 ];
