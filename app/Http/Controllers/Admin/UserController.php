@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\Athletes\EnsureAthleteForUser;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
@@ -97,9 +98,12 @@ class UserController extends Controller
             $user->syncRoles($roles);
 
             // Same rule as public registration: any user with the athlete
-            // role has a Legacy ID, regardless of how the account was made.
+            // role has a Legacy ID and a canonical Athlete, regardless of
+            // how the account was made — see
+            // docs/adr/0004-athlete-canonical-identity.md §34.
             if (in_array('athlete', $roles, true)) {
                 app(LegacyIdService::class)->issueFor($user);
+                app(EnsureAthleteForUser::class)->handle($user, 'admin_user_create');
             }
 
             return $user;
@@ -202,6 +206,7 @@ class UserController extends Controller
 
         if (in_array('athlete', $newRoles, true)) {
             app(LegacyIdService::class)->issueFor($user);
+            app(EnsureAthleteForUser::class)->handle($user, 'admin_user_roles');
         }
 
         activity()

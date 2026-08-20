@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\AthleteController as AdminAthleteController;
+use App\Http\Controllers\Admin\AthleteIdentityConflictController as AdminAthleteIdentityConflictController;
 use App\Http\Controllers\Admin\AuditController as AdminAuditController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\EditionController as AdminEditionController;
@@ -129,6 +131,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
         Route::middleware('can:preregistrations.view')->get('preregistrations', [AdminPreregistrationController::class, 'index'])->name('preregistrations.index');
         Route::middleware('can:participants.view')->get('participants', [AdminParticipantController::class, 'index'])->name('participants.index');
+
+        // Canonical athlete identity (docs/adr/0004-athlete-canonical-identity.md).
+        Route::middleware('can:athletes.view')->prefix('athletes')->name('athletes.')->group(function () {
+            Route::get('/', [AdminAthleteController::class, 'index'])->name('index');
+            Route::get('{athlete}', [AdminAthleteController::class, 'show'])->name('show');
+        });
+        Route::middleware('can:athletes.manage')->prefix('identity-conflicts')->name('identity-conflicts.')->group(function () {
+            Route::get('/', [AdminAthleteIdentityConflictController::class, 'index'])->name('index');
+            Route::post('{conflict}/resolve', [AdminAthleteIdentityConflictController::class, 'resolve'])->name('resolve');
+        });
+
         Route::middleware('can:plates.view')->group(function () {
             Route::get('plates', [AdminPlateController::class, 'index'])->name('plates.index');
             Route::post('plates/export-batch', [AdminPlateController::class, 'exportBatch'])->name('plates.export-batch');

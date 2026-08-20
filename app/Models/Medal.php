@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 #[Fillable([
-    'user_id', 'event_id', 'event_edition_id', 'event_race_id', 'event_participant_id', 'title',
+    'user_id', 'athlete_id', 'event_id', 'event_edition_id', 'event_race_id', 'event_participant_id', 'title',
     'event_name_manual', 'event_date', 'distance_label', 'official_time', 'pace', 'city', 'country',
     'story', 'visibility', 'status',
 ])]
@@ -43,6 +43,17 @@ class Medal extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * For historical queries independent of `user_id` — see
+     * docs/adr/0004-athlete-canonical-identity.md §Medal.
+     *
+     * @return BelongsTo<Athlete, $this>
+     */
+    public function athlete(): BelongsTo
+    {
+        return $this->belongsTo(Athlete::class);
     }
 
     /** @return BelongsTo<Event, $this> */

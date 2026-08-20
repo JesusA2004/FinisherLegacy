@@ -15,7 +15,7 @@ use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
 #[Fillable([
-    'user_id', 'medal_id', 'event_edition_id', 'event_participant_id', 'plate_template_id',
+    'user_id', 'athlete_id', 'medal_id', 'event_edition_id', 'event_participant_id', 'plate_template_id',
     'plate_template_version_id', 'legacy_code_id', 'serial_number', 'generation_mode', 'athlete_name',
     'bib_number', 'event_name', 'race_name', 'official_time', 'pace', 'event_date', 'dynamic_fields',
     'status', 'linked_at', 'produced_at', 'delivered_at',
@@ -42,6 +42,18 @@ class Plate extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Set from `eventParticipant.athlete_id` at generation time for an
+     * integrated plate; null on a quick plate until its Legacy Code is
+     * claimed — see docs/adr/0004-athlete-canonical-identity.md §Plate.
+     *
+     * @return BelongsTo<Athlete, $this>
+     */
+    public function athlete(): BelongsTo
+    {
+        return $this->belongsTo(Athlete::class);
     }
 
     /** @return BelongsTo<Medal, $this> */

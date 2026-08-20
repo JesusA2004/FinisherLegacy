@@ -45,6 +45,8 @@ class AuditController extends Controller
         'Organizer' => 'un organizador',
         'Role' => 'un rol',
         'Medal' => 'una medalla',
+        'Athlete' => 'un atleta',
+        'AthleteIdentityConflict' => 'un conflicto de identidad de atleta',
     ];
 
     public function index(Request $request): Response

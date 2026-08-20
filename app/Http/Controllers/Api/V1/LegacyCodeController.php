@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\LegacyCodeStatus;
+use App\Exceptions\Athletes\AthleteIdentityConflictException;
 use App\Exceptions\LegacyCodeClaimConflictException;
 use App\Exceptions\LegacyCodeUnavailableException;
 use App\Http\Controllers\Api\V1\Concerns\ApiResponses;
@@ -81,6 +82,8 @@ class LegacyCodeController extends Controller
             return $this->respond(null, 'Este código no está disponible para vincularse.', status: 403);
         } catch (LegacyCodeClaimConflictException) {
             return $this->respond(null, 'Esta placa ya forma parte de otro Legacy.', status: 409);
+        } catch (AthleteIdentityConflictException $e) {
+            return $this->respond(null, $e->getMessage(), status: 409);
         }
 
         return $this->respond([

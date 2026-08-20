@@ -2,6 +2,7 @@
 
 namespace App\Imports;
 
+use App\Actions\Athletes\IngestEventParticipant;
 use App\Enums\ImportStatus;
 use App\Enums\ParticipantSource;
 use App\Enums\PreregistrationStatus;
@@ -134,20 +135,25 @@ class ParticipantsImport implements ShouldQueue, ToCollection, WithChunkReading,
         }
 
         try {
-            $participant = EventParticipant::updateOrCreate(
-                ['event_edition_id' => $editionId, 'bib_number' => $bibNumber],
-                [
-                    'event_race_id' => $race->id,
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'full_name' => trim("{$firstName} {$lastName}"),
-                    'email' => $email,
-                    'phone' => $phone,
-                    'registration_status' => RegistrationStatus::Registered,
-                    'source' => ParticipantSource::Csv,
-                    'verification_status' => VerificationStatus::Unverified,
-                ],
-            );
+            // Upsert + canonical-identity resolution together — the same
+            // pipeline every participant entry point uses, never a second
+            // matcher for CSV rows (docs/adr/0004-athlete-canonical-identity.md §71-75).
+            // A conflict here never fails the row: the participant is still
+            // created/updated, just with `athlete_id` left null pending
+            // review (§26 — don't fail 5,000 rows over 2 ambiguous ones).
+            $participant = app(IngestEventParticipant::class)->handle([
+                'event_edition_id' => $editionId,
+                'bib_number' => $bibNumber,
+                'event_race_id' => $race->id,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'full_name' => trim("{$firstName} {$lastName}"),
+                'email' => $email,
+                'phone' => $phone,
+                'registration_status' => RegistrationStatus::Registered,
+                'source' => ParticipantSource::Csv,
+                'verification_status' => VerificationStatus::Unverified,
+            ], 'import', (string) $this->eventImportId);
         } catch (Throwable $e) {
             return [false, ['code' => 'db_error', 'message' => $e->getMessage()]];
         }

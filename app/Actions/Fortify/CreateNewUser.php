@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Actions\Athletes\EnsureAthleteForUser;
 use App\Concerns\PasswordValidationRules;
 use App\Enums\UserStatus;
 use App\Models\User;
@@ -40,6 +41,11 @@ class CreateNewUser implements CreatesNewUsers
             $user->assignRole('athlete');
 
             app(LegacyIdService::class)->issueFor($user);
+
+            // An Athlete already exists from an event import with this
+            // exact email? Link to it — never create a duplicate. See
+            // docs/adr/0004-athlete-canonical-identity.md §32-33.
+            app(EnsureAthleteForUser::class)->handle($user, 'registration');
 
             return $user;
         });

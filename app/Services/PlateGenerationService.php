@@ -45,6 +45,7 @@ class PlateGenerationService
         return DB::transaction(function () use ($participant, $edition, $result, $version, $dynamicFields) {
             $plate = Plate::create([
                 'user_id' => $participant->user_id,
+                'athlete_id' => $participant->athlete_id,
                 'event_edition_id' => $edition->id,
                 'event_participant_id' => $participant->id,
                 'plate_template_id' => $version->plate_template_id,

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
-    'event_edition_id', 'event_race_id', 'user_id', 'external_participant_id', 'bib_number',
+    'event_edition_id', 'event_race_id', 'user_id', 'athlete_id', 'external_participant_id', 'bib_number',
     'first_name', 'last_name', 'full_name', 'email', 'phone', 'gender', 'birth_date', 'category',
     'registration_status', 'source', 'source_reference', 'verification_status',
 ])]
@@ -51,6 +51,20 @@ class EventParticipant extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * The canonical identity behind this participation — `null` while a
+     * possible-duplicate conflict is pending review
+     * (App\Models\AthleteIdentityConflict). Never the same thing as
+     * `first_name`/`last_name`/etc. on this row, which stay exactly what
+     * the event reported (docs/adr/0004 §Snapshot vs. identity).
+     *
+     * @return BelongsTo<Athlete, $this>
+     */
+    public function athlete(): BelongsTo
+    {
+        return $this->belongsTo(Athlete::class);
+    }
+
     /** @return HasOne<EventResult, $this> */
     public function result(): HasOne
     {
@@ -79,5 +93,11 @@ class EventParticipant extends Model
     public function incidents(): HasMany
     {
         return $this->hasMany(EventIncident::class);
+    }
+
+    /** @return HasMany<AthleteIdentityConflict, $this> */
+    public function identityConflicts(): HasMany
+    {
+        return $this->hasMany(AthleteIdentityConflict::class);
     }
 }

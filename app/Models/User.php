@@ -80,6 +80,20 @@ class User extends Authenticatable implements ProductionActor
         return $this->hasOne(AthleteProfile::class);
     }
 
+    /**
+     * The canonical sporting identity, if linked — see
+     * docs/adr/0004-athlete-canonical-identity.md. Distinct from
+     * `athleteProfile` (public presentation, always User-owned); a User can
+     * have an Athlete with no AthleteProfile and vice versa is impossible
+     * (AthleteProfile requires a User by construction).
+     *
+     * @return HasOne<Athlete, $this>
+     */
+    public function athlete(): HasOne
+    {
+        return $this->hasOne(Athlete::class);
+    }
+
     /** @return HasOne<LegacyId, $this> */
     public function legacyId(): HasOne
     {

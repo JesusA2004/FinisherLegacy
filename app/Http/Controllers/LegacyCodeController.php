@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\LegacyCodeStatus;
+use App\Exceptions\Athletes\AthleteIdentityConflictException;
 use App\Exceptions\LegacyCodeClaimConflictException;
 use App\Exceptions\LegacyCodeUnavailableException;
 use App\Models\LegacyCode;
@@ -108,6 +109,10 @@ class LegacyCodeController extends Controller
             return back();
         } catch (LegacyCodeClaimConflictException) {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Esta placa ya forma parte de otro Legacy.']);
+
+            return back();
+        } catch (AthleteIdentityConflictException $e) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
 
             return back();
         }

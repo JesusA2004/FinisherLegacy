@@ -95,6 +95,20 @@ export const navigation: NavItem[] = [
         group: 'personas',
     },
     {
+        label: 'Atletas',
+        icon: resolveIcon('UserCircle'),
+        href: '/admin/athletes',
+        permission: 'athletes.view',
+        group: 'personas',
+    },
+    {
+        label: 'Conflictos de identidad',
+        icon: resolveIcon('ShieldQuestion'),
+        href: '/admin/identity-conflicts',
+        permission: 'athletes.manage',
+        group: 'personas',
+    },
+    {
         label: 'Roles y permisos',
         icon: resolveIcon('ShieldCheck'),
         href: '/admin/roles',

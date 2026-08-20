@@ -2,12 +2,16 @@
 
 namespace Database\Seeders;
 
+use App\Actions\Athletes\CreateAthlete;
+use App\Actions\Athletes\EnsureAthleteForUser;
+use App\Actions\Athletes\LinkParticipantToAthlete;
 use App\Enums\LegacyCodeStatus;
 use App\Enums\PlateStatus;
 use App\Enums\PlateTemplateVersionStatus;
 use App\Enums\ProductionJobStatus;
 use App\Enums\StaffRole;
 use App\Enums\UserStatus;
+use App\Models\Athlete;
 use App\Models\AthleteProfile;
 use App\Models\Event;
 use App\Models\EventEdition;
@@ -25,6 +29,7 @@ use App\Models\Sport;
 use App\Models\User;
 use App\Services\LegacyIdService;
 use App\Services\PlateGenerationService;
+use App\Support\Athletes\AthleteIdentityCandidateData;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
@@ -56,6 +61,14 @@ class DemoDataSeeder extends Seeder
         $staff = $this->createStaffUsers();
         $athlete = $this->createDemoAthlete();
 
+        // Slice 3: every demo User with the athlete role resolves through the
+        // same canonical-identity pipeline the real app uses (see
+        // docs/adr/0004-athlete-canonical-identity.md) — this is the Athlete
+        // record that later gets linked to three different EventParticipant
+        // rows across three different events, proving the "1 person, N bibs,
+        // 1 Athlete" rule visually in /admin/athletes/{id}.
+        $canonicalAthlete = app(EnsureAthleteForUser::class)->handle($athlete, 'seed');
+
         // PlateTemplateSeeder (runs before this one in DatabaseSeeder) is the
         // only place a template + published version actually gets created.
         // Every demo plate must carry a real plate_template_version_id or
@@ -70,7 +83,7 @@ class DemoDataSeeder extends Seeder
         $participants = $this->createParticipants($edition, $races, 500);
         $marathonRace = $races->firstWhere('name', '42K') ?? $races->first();
         $participants->first()->update(['event_race_id' => $marathonRace->id]);
-        $this->linkAthleteToParticipant($participants->first(), $athlete);
+        $this->linkAthleteToParticipant($participants->first(), $athlete, $canonicalAthlete);
         $this->createResults($participants);
 
         $integratedParticipant = $participants->first()->fresh(['eventRace', 'result']);
@@ -80,9 +93,11 @@ class DemoDataSeeder extends Seeder
         $this->createQuickPlates($edition, $runningVersion, 6);
         $this->createPreregistrations($edition, $races, 30);
         $this->createSampleIncident($edition, $participants->skip(1)->first(), $staff['event_operator']);
-        $this->createDemoMedals($athlete);
+        $this->createDemoMedals($athlete, $canonicalAthlete);
+        $this->seedSingleParticipationAthletes($participants);
 
         $this->createTriathlonDemoEvent($staff);
+        $this->createThirdEventParticipationForCanonicalAthlete($canonicalAthlete, $athlete);
     }
 
     private function publishedVersion(string $slug): PlateTemplateVersion
@@ -94,7 +109,7 @@ class DemoDataSeeder extends Seeder
             ->firstOrFail();
     }
 
-    private function createDemoMedals(User $athlete): void
+    private function createDemoMedals(User $athlete, Athlete $canonicalAthlete): void
     {
         foreach ([
             ['title' => 'Maratón CDMX 2026', 'distance_label' => '42K', 'official_time' => '03:47:21', 'city' => 'Ciudad de México'],
@@ -104,6 +119,7 @@ class DemoDataSeeder extends Seeder
             Medal::query()->firstOrCreate(
                 ['user_id' => $athlete->id, 'title' => $medal['title']],
                 [
+                    'athlete_id' => $canonicalAthlete->id,
                     'event_name_manual' => $medal['title'],
                     'event_date' => now()->subMonths(random_int(1, 18)),
                     'distance_label' => $medal['distance_label'],
@@ -316,10 +332,11 @@ class DemoDataSeeder extends Seeder
         return EventParticipant::query()->where('event_edition_id', $edition->id)->orderBy('id')->get();
     }
 
-    private function linkAthleteToParticipant(EventParticipant $participant, User $athlete): void
+    private function linkAthleteToParticipant(EventParticipant $participant, User $athlete, Athlete $canonicalAthlete): void
     {
         $participant->update([
             'user_id' => $athlete->id,
+            'athlete_id' => $canonicalAthlete->id,
             'first_name' => $athlete->first_name,
             'last_name' => $athlete->last_name,
             'full_name' => $athlete->name,
@@ -465,6 +482,7 @@ class DemoDataSeeder extends Seeder
             [
                 'event_race_id' => $race->id,
                 'user_id' => $athlete?->id,
+                'athlete_id' => $athlete?->athlete?->id,
                 'first_name' => 'Zuriel',
                 'last_name' => 'Ávila',
                 'full_name' => 'Zuriel Ávila',
@@ -515,6 +533,137 @@ class DemoDataSeeder extends Seeder
                 'attempts' => 1,
             ]);
         }
+    }
+
+    /**
+     * Slice 3 demo: the SAME canonical Athlete created in run() shows up
+     * here a third time, under a third bib, in a third event entirely
+     * unrelated to the marathon or the triathlon — the literal proof
+     * required by docs/adr/0004-athlete-canonical-identity.md that a
+     * person is never duplicated across events. Deliberately no Plate is
+     * generated here; this event only exists to populate
+     * /admin/athletes/{id} → "Participaciones por evento" with 3 rows.
+     */
+    private function createThirdEventParticipationForCanonicalAthlete(Athlete $canonicalAthlete, User $athleteUser): void
+    {
+        $organizer = Organizer::query()->firstOrCreate(
+            ['slug' => 'finisher-sports-group'],
+            ['name' => 'Finisher Sports Group'],
+        );
+        $sport = Sport::query()->where('slug', 'running')->firstOrFail();
+
+        $event = Event::query()->updateOrCreate(
+            ['slug' => 'carrera-nocturna-guadalajara'],
+            [
+                'organizer_id' => $organizer->id,
+                'sport_id' => $sport->id,
+                'name' => 'Carrera Nocturna Guadalajara',
+                'description' => 'Carrera nocturna 10K por el centro histórico de Guadalajara — evento de demostración para la identidad canónica de atletas.',
+                'status' => 'published',
+            ],
+        );
+
+        $edition = EventEdition::query()->updateOrCreate(
+            ['event_id' => $event->id, 'year' => 2026],
+            [
+                'name' => 'Carrera Nocturna Guadalajara 2026',
+                'event_date' => now()->addMonth()->toDateString(),
+                'city' => 'Guadalajara',
+                'state' => 'Jalisco',
+                'country' => 'México',
+                'timezone' => 'America/Mexico_City',
+                'registration_open_at' => now()->subMonths(2),
+                'registration_close_at' => now()->subDays(5),
+                'operation_mode' => 'hybrid',
+                'status' => 'published',
+                'results_status' => 'partial',
+            ],
+        );
+
+        $race = EventRace::query()->updateOrCreate(
+            ['event_edition_id' => $edition->id, 'name' => '10K'],
+            [
+                'distance_value' => 10,
+                'distance_unit' => 'km',
+                'race_type' => 'individual',
+                'start_time' => '19:00:00',
+                'active' => true,
+            ],
+        );
+
+        $participant = EventParticipant::query()->updateOrCreate(
+            ['event_edition_id' => $edition->id, 'bib_number' => '992'],
+            [
+                'event_race_id' => $race->id,
+                'user_id' => $athleteUser->id,
+                'athlete_id' => $canonicalAthlete->id,
+                'first_name' => $athleteUser->first_name,
+                'last_name' => $athleteUser->last_name,
+                'full_name' => $athleteUser->name,
+                'email' => $athleteUser->email,
+                'registration_status' => 'registered',
+                'source' => 'csv',
+                'source_reference' => 'seed-import.csv',
+                'verification_status' => 'verified',
+                'category' => '25-29',
+            ],
+        );
+
+        EventResult::query()->updateOrCreate(
+            ['event_participant_id' => $participant->id],
+            [
+                'official_time' => '00:48:03',
+                'chip_time' => '00:48:01',
+                'pace' => '4:48',
+                'overall_position' => 34,
+                'gender_position' => 22,
+                'category_position' => 5,
+                'status' => 'finished',
+                'result_source' => 'timing_import',
+                'verified_at' => now(),
+            ],
+        );
+    }
+
+    /**
+     * Two more Slice 3 demo Athletes besides the canonical multi-event one
+     * above: one with a linked User and exactly one participation, and one
+     * with NO User at all (a pure import-derived identity) — so
+     * /admin/athletes shows the full range of shapes an Athlete record can
+     * take, not just the 3-events showcase.
+     *
+     * @param  Collection<int, EventParticipant>  $participants
+     */
+    private function seedSingleParticipationAthletes($participants): void
+    {
+        $withUserParticipant = $participants->skip(5)->first();
+        $withUserAccount = User::factory()->create([
+            'first_name' => $withUserParticipant->first_name,
+            'last_name' => $withUserParticipant->last_name,
+            'email' => 'single-participation-athlete@finisherlegacy.com',
+            'status' => UserStatus::Active,
+            'email_verified_at' => now(),
+        ]);
+        $withUserAccount->syncRoles(['athlete']);
+        $this->legacyIdService->issueFor($withUserAccount);
+
+        $singleAthlete = app(EnsureAthleteForUser::class)->handle($withUserAccount, 'seed');
+
+        $withUserParticipant->update([
+            'user_id' => $withUserAccount->id,
+            'athlete_id' => $singleAthlete->id,
+            'first_name' => $withUserAccount->first_name,
+            'last_name' => $withUserAccount->last_name,
+            'full_name' => $withUserAccount->name,
+            'email' => $withUserAccount->email,
+            'verification_status' => 'verified',
+        ]);
+
+        $orphanParticipant = $participants->skip(10)->first();
+        $orphanAthlete = app(CreateAthlete::class)->handle(
+            AthleteIdentityCandidateData::fromEventParticipant($orphanParticipant),
+        );
+        app(LinkParticipantToAthlete::class)->handle($orphanParticipant, $orphanAthlete);
     }
 
     private function createIntegratedPlate(EventParticipant $participant, User $athlete, EventEdition $edition, PlateTemplateVersion $version): void
