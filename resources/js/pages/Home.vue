@@ -3,11 +3,13 @@ import { Head, Link } from '@inertiajs/vue3';
 import Reveal from '@/components/motion/Reveal.vue';
 import StaggerGroup from '@/components/motion/StaggerGroup.vue';
 import CTASection from '@/components/public/CTASection.vue';
+import EditorialMoment from '@/components/public/EditorialMoment.vue';
 import EventCard from '@/components/public/EventCard.vue';
 import HeroSection from '@/components/public/HeroSection.vue';
 import HowItWorksSteps from '@/components/public/HowItWorksSteps.vue';
+import JourneyExperience from '@/components/public/JourneyExperience.vue';
 import LegacyCodePreview from '@/components/public/LegacyCodePreview.vue';
-import LegacyProfilePreview from '@/components/public/LegacyProfilePreview.vue';
+import LegacyProfileShowcase from '@/components/public/LegacyProfileShowcase.vue';
 import MascotSpotlight from '@/components/public/MascotSpotlight.vue';
 import PlateFlowCard from '@/components/public/PlateFlowCard.vue';
 import PlateShowcase from '@/components/public/PlateShowcase.vue';
@@ -74,31 +76,24 @@ TU HISTORIA NO."
         :secondary-href="howItWorks()"
     />
 
-    <!-- Concepto -->
-    <section class="border-t border-white/5 py-24">
-        <Reveal as="div" class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+    <!-- El significado -->
+    <EditorialMoment />
+
+    <!-- El ecosistema, como secuencia conectada -->
+    <section class="border-t border-legacy-titanium/10 py-24 sm:py-28">
+        <Reveal as="div" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="El concepto"
                 title="MEDALLA → PLACA → LEGACY CODE → LEGACY PROFILE"
                 description="Cada medalla guarda mucho más que una meta. Guarda tiempo, esfuerzo, personas, lugares y una historia. Finisher Legacy conecta ese recuerdo físico con su historia digital."
+                class="mb-16"
             />
-        </Reveal>
-    </section>
-
-    <!-- Cómo funciona -->
-    <section class="border-t border-white/5 bg-fl-graphite/20 py-24">
-        <Reveal as="div" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <SectionHeading
-                eyebrow="Cómo funciona"
-                title="Corre. Registra. Preserva. Comparte."
-                class="mb-14"
-            />
-            <HowItWorksSteps :steps="steps" />
+            <JourneyExperience />
         </Reveal>
     </section>
 
     <!-- Legacy Code -->
-    <section class="border-t border-white/5 py-24">
+    <section class="border-t border-legacy-titanium/10 bg-legacy-carbon/30 py-24 sm:py-28">
         <Reveal as="div" class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Legacy Code"
@@ -115,7 +110,7 @@ TODA UNA HISTORIA."
     </section>
 
     <!-- Dos caminos -->
-    <section class="border-t border-white/5 bg-fl-graphite/20 py-24">
+    <section class="border-t border-legacy-titanium/10 py-24 sm:py-28">
         <Reveal as="div" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Cómo preparamos tu placa"
@@ -146,7 +141,7 @@ TODA UNA HISTORIA."
     </section>
 
     <!-- Legacy Profile preview -->
-    <section class="border-t border-white/5 py-24">
+    <section class="border-t border-legacy-titanium/10 bg-legacy-carbon/30 py-24 sm:py-28">
         <Reveal
             as="div"
             class="mx-auto grid max-w-6xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:px-8"
@@ -154,17 +149,30 @@ TODA UNA HISTORIA."
             <SectionHeading
                 align="left"
                 eyebrow="Legacy Profile"
-                title="Tu colección de logros, siempre contigo."
+                title="Una carrera es un recuerdo.
+Muchas carreras son un Legacy."
                 description="Cada Legacy Profile reúne tus medallas, tus tiempos y las historias detrás de cada meta. Público si tú lo decides, siempre tuyo."
             />
-            <LegacyProfilePreview :profile="legacyProfile" />
+            <LegacyProfileShowcase :profile="legacyProfile" />
+        </Reveal>
+    </section>
+
+    <!-- Cómo funciona -->
+    <section class="border-t border-legacy-titanium/10 py-24 sm:py-28">
+        <Reveal as="div" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <SectionHeading
+                eyebrow="Cómo funciona"
+                title="Corre. Registra. Preserva. Comparte."
+                class="mb-14"
+            />
+            <HowItWorksSteps :steps="steps" />
         </Reveal>
     </section>
 
     <!-- Eventos destacados -->
     <section
         v-if="featuredEditions.length"
-        class="border-t border-white/5 bg-fl-graphite/20 py-24"
+        class="border-t border-legacy-titanium/10 bg-legacy-carbon/30 py-24 sm:py-28"
     >
         <Reveal as="div" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
@@ -185,7 +193,7 @@ TODA UNA HISTORIA."
             <div class="mt-12 flex justify-center">
                 <Link
                     :href="eventsIndex()"
-                    class="text-sm font-semibold tracking-wide text-fl-gold hover:text-fl-gold-soft"
+                    class="text-sm font-semibold tracking-wide text-legacy-copper-soft hover:text-legacy-copper"
                 >
                     EXPLORAR EVENTOS →
                 </Link>
@@ -193,7 +201,7 @@ TODA UNA HISTORIA."
         </Reveal>
     </section>
 
-    <section class="border-t border-white/5 bg-fl-graphite/20 py-20">
+    <section class="border-t border-legacy-titanium/10 py-20">
         <Reveal as="div" class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
             <MascotSpotlight
                 title="No colecciones objetos. Preserva momentos."
@@ -203,9 +211,11 @@ TODA UNA HISTORIA."
     </section>
 
     <CTASection
-        title="Tu historia merece quedarse."
+        title="Terminaste la carrera. Ahora conserva lo que significó."
         description="Crea tu Legacy ID y empieza a construir tu colección de logros."
         primary-label="CREAR MI LEGACY"
         :primary-href="register()"
+        secondary-label="EXPLORAR EVENTOS"
+        :secondary-href="eventsIndex()"
     />
 </template>

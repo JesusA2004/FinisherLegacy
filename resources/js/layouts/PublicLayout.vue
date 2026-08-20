@@ -4,7 +4,7 @@ import PublicNavbar from '@/components/public/PublicNavbar.vue';
 </script>
 
 <template>
-    <div class="min-h-screen bg-fl-black text-white antialiased">
+    <div class="min-h-screen bg-legacy-ink text-legacy-bone antialiased">
         <PublicNavbar />
         <main class="pt-16">
             <slot />

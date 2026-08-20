@@ -13,7 +13,7 @@ const { edition } = defineProps<{
 const phaseCopy: Record<EventPhase, { label: string; class: string }> = {
     upcoming: {
         label: 'Próximo',
-        class: 'bg-fl-gold/15 text-fl-gold border-fl-gold/30',
+        class: 'bg-legacy-copper/15 text-legacy-copper-soft border-legacy-copper/30',
     },
     ongoing: {
         label: 'En curso',
@@ -21,7 +21,7 @@ const phaseCopy: Record<EventPhase, { label: string; class: string }> = {
     },
     finished: {
         label: 'Finalizado',
-        class: 'bg-white/10 text-white/50 border-white/15',
+        class: 'bg-white/10 text-legacy-titanium/60 border-legacy-titanium/15',
     },
 };
 
@@ -49,10 +49,10 @@ const monthAbbrev = computed(() =>
 <template>
     <Link
         :href="eventShow(edition.event.slug)"
-        class="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-fl-graphite/60 transition-all duration-300 hover:-translate-y-1 hover:border-fl-gold/40 hover:shadow-[0_0_40px_-12px_rgba(212,175,106,0.35)]"
+        class="group flex flex-col overflow-hidden rounded-2xl border border-legacy-titanium/10 bg-legacy-carbon/60 transition-all duration-300 hover:-translate-y-1 hover:border-legacy-copper/40 hover:shadow-[0_0_40px_-12px_rgba(184,111,68,0.35)]"
     >
         <div
-            class="relative aspect-16/9 w-full overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black"
+            class="relative aspect-16/9 w-full overflow-hidden bg-gradient-to-br from-legacy-carbon-lift via-legacy-carbon to-legacy-ink"
         >
             <img
                 v-if="edition.event.cover_url"
@@ -75,7 +75,7 @@ const monthAbbrev = computed(() =>
                 "
             >
                 <span
-                    class="text-4xl font-black tracking-tight text-white/10 uppercase"
+                    class="text-4xl font-black tracking-tight text-legacy-titanium/10 uppercase"
                 >
                     {{ edition.event.sport.name }}
                 </span>
@@ -90,13 +90,13 @@ const monthAbbrev = computed(() =>
             </Badge>
 
             <div
-                class="absolute top-3 right-3 flex flex-col items-center rounded-lg border border-white/10 bg-fl-black/80 px-2.5 py-1.5 leading-none backdrop-blur-sm"
+                class="legacy-numeric absolute top-3 right-3 flex flex-col items-center rounded-lg border border-legacy-titanium/10 bg-legacy-ink/80 px-2.5 py-1.5 leading-none backdrop-blur-sm"
             >
-                <span class="text-lg font-bold text-white">{{
+                <span class="text-lg font-bold text-legacy-bone">{{
                     dayNumber
                 }}</span>
                 <span
-                    class="mt-0.5 text-[10px] font-semibold tracking-wide text-fl-gold uppercase"
+                    class="mt-0.5 text-[10px] font-semibold tracking-wide text-legacy-copper-soft uppercase"
                     >{{ monthAbbrev }}</span
                 >
             </div>
@@ -104,18 +104,18 @@ const monthAbbrev = computed(() =>
 
         <div class="flex flex-1 flex-col gap-3 p-5">
             <span
-                class="text-xs font-semibold tracking-[0.2em] text-fl-gold uppercase"
+                class="text-xs font-semibold tracking-[0.2em] text-legacy-copper-soft uppercase"
             >
                 {{ edition.event.sport.name }}
             </span>
 
             <h3
-                class="text-lg font-semibold text-white transition-colors group-hover:text-fl-gold"
+                class="text-lg font-semibold text-legacy-bone transition-colors group-hover:text-legacy-copper-soft"
             >
                 {{ edition.event.name }}
             </h3>
 
-            <div class="flex items-center gap-1.5 text-sm text-white/50">
+            <div class="flex items-center gap-1.5 text-sm text-legacy-titanium/70">
                 <MapPin class="size-3.5 shrink-0" />
                 <span class="truncate">{{ edition.city }}</span>
                 <span aria-hidden="true">·</span>
@@ -126,14 +126,14 @@ const monthAbbrev = computed(() =>
                 <span
                     v-for="distance in edition.distances"
                     :key="distance"
-                    class="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-white/60"
+                    class="rounded-full border border-legacy-titanium/15 px-2.5 py-0.5 text-xs text-legacy-titanium"
                 >
                     {{ distance }}
                 </span>
             </div>
 
             <div
-                class="mt-auto flex items-center gap-1.5 pt-2 text-sm font-medium text-fl-gold"
+                class="mt-auto flex items-center gap-1.5 pt-2 text-sm font-medium text-legacy-copper-soft"
             >
                 Ver evento
                 <ArrowRight

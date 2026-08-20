@@ -78,7 +78,7 @@ const afterPlate = [
         />
     </Head>
 
-    <section class="border-b border-white/5 py-24">
+    <section class="border-b border-legacy-titanium/10 py-24">
         <div class="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Cómo funciona"
@@ -88,13 +88,13 @@ const afterPlate = [
         </div>
     </section>
 
-    <section class="border-b border-white/5 py-20">
+    <section class="border-b border-legacy-titanium/10 py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <HowItWorksSteps :steps="steps" />
         </div>
     </section>
 
-    <section class="border-b border-white/5 bg-fl-graphite/20 py-24">
+    <section class="border-b border-legacy-titanium/10 bg-legacy-carbon/30 py-24">
         <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="La cadena Finisher Legacy"
@@ -107,24 +107,24 @@ const afterPlate = [
                 <PlateShowcase />
 
                 <div
-                    class="flex flex-col items-center gap-6 rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 sm:flex-row sm:justify-center sm:gap-4 lg:flex-col lg:items-start"
+                    class="flex flex-col items-center gap-6 rounded-2xl border border-legacy-titanium/10 bg-legacy-carbon/50 p-8 sm:flex-row sm:justify-center sm:gap-4 lg:flex-col lg:items-start"
                 >
                     <template v-for="(step, index) in chain" :key="step.label">
                         <div
                             class="flex items-center gap-3 text-center lg:text-left"
                         >
                             <div
-                                class="flex size-12 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold"
+                                class="flex size-12 shrink-0 items-center justify-center rounded-full border border-legacy-copper/30 bg-legacy-ink text-legacy-copper-soft"
                             >
                                 <component :is="step.icon" class="size-5" />
                             </div>
-                            <span class="text-sm font-medium text-white/80">{{
+                            <span class="text-sm font-medium text-legacy-bone/80">{{
                                 step.label
                             }}</span>
                         </div>
                         <div
                             v-if="index < chain.length - 1"
-                            class="h-6 w-px bg-fl-gold/20 sm:h-px sm:w-10 lg:ml-6 lg:h-6 lg:w-px"
+                            class="h-6 w-px bg-legacy-copper/20 sm:h-px sm:w-10 lg:ml-6 lg:h-6 lg:w-px"
                         />
                     </template>
                 </div>
@@ -132,7 +132,7 @@ const afterPlate = [
         </div>
     </section>
 
-    <section class="border-b border-white/5 py-24">
+    <section class="border-b border-legacy-titanium/10 py-24">
         <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Cómo preparamos tu placa"
@@ -163,7 +163,7 @@ const afterPlate = [
         </div>
     </section>
 
-    <section class="border-b border-white/5 bg-fl-graphite/20 py-24">
+    <section class="border-b border-legacy-titanium/10 bg-legacy-carbon/30 py-24">
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Después de recibir tu placa"
@@ -177,15 +177,15 @@ const afterPlate = [
                     class="flex gap-4"
                 >
                     <span
-                        class="flex size-8 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 text-sm font-semibold text-fl-gold"
+                        class="flex size-8 shrink-0 items-center justify-center rounded-full border border-legacy-copper/30 text-sm font-semibold text-legacy-copper-soft"
                     >
                         {{ index + 1 }}
                     </span>
                     <div>
-                        <p class="font-semibold text-white">
+                        <p class="font-semibold text-legacy-bone">
                             {{ item.title }}
                         </p>
-                        <p class="mt-1 text-sm text-white/60">
+                        <p class="mt-1 text-sm text-legacy-titanium">
                             {{ item.description }}
                         </p>
                     </div>

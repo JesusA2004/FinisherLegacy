@@ -88,15 +88,15 @@ function submitClaim() {
 
         <template v-if="!available">
             <div
-                class="rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 text-center"
+                class="rounded-2xl border border-white/10 bg-legacy-carbon/50 p-8 text-center"
             >
                 <div
-                    class="mx-auto flex size-16 items-center justify-center rounded-full border border-white/15 bg-fl-black text-white/50"
+                    class="mx-auto flex size-16 items-center justify-center rounded-full border border-legacy-titanium/15 bg-legacy-ink text-legacy-titanium/60"
                 >
                     <Lock class="size-7" />
                 </div>
                 <p
-                    class="mt-6 rounded-md border border-white/10 bg-fl-black px-3 py-1.5 font-mono text-sm text-white/50"
+                    class="mt-6 rounded-md border border-legacy-titanium/10 bg-legacy-ink px-3 py-1.5 font-mono text-sm text-legacy-titanium/60"
                 >
                     {{ code }}
                 </p>
@@ -112,10 +112,10 @@ function submitClaim() {
 
         <template v-else-if="!plate">
             <div
-                class="rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 text-center"
+                class="rounded-2xl border border-white/10 bg-legacy-carbon/50 p-8 text-center"
             >
                 <div
-                    class="mx-auto flex size-20 items-center justify-center rounded-xl border border-fl-gold/30 bg-white p-2"
+                    class="mx-auto flex size-20 items-center justify-center rounded-xl border border-legacy-copper/30 bg-white p-2"
                 >
                     <img
                         v-if="qrUrl"
@@ -125,7 +125,7 @@ function submitClaim() {
                     />
                 </div>
                 <p
-                    class="mt-6 rounded-md border border-white/10 bg-fl-black px-3 py-1.5 font-mono text-sm text-fl-gold"
+                    class="mt-6 rounded-md border border-legacy-titanium/10 bg-legacy-ink px-3 py-1.5 font-mono text-sm text-legacy-copper-soft"
                 >
                     {{ code }}
                 </p>
@@ -141,10 +141,10 @@ function submitClaim() {
         <template v-else>
             <!-- Athlete card -->
             <div
-                class="flex items-center gap-4 rounded-2xl border border-white/10 bg-fl-graphite/50 p-5"
+                class="flex items-center gap-4 rounded-2xl border border-white/10 bg-legacy-carbon/50 p-5"
             >
                 <div
-                    class="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-fl-gold/40 bg-fl-black text-base font-semibold text-fl-gold"
+                    class="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-legacy-copper/40 bg-legacy-ink text-base font-semibold text-legacy-copper-soft"
                 >
                     {{ initials }}
                 </div>
@@ -170,7 +170,7 @@ function submitClaim() {
 
             <!-- Big gold result card -->
             <div
-                class="mt-4 rounded-2xl border-2 border-fl-gold/40 bg-gradient-to-b from-fl-gold/10 to-fl-graphite/40 p-6"
+                class="mt-4 rounded-2xl border-2 border-legacy-copper/40 bg-gradient-to-b from-legacy-copper/10 to-legacy-carbon/40 p-6"
             >
                 <p
                     v-if="plate.event_name"
@@ -187,7 +187,7 @@ function submitClaim() {
 
                 <p
                     v-if="plate.official_time"
-                    class="mt-5 font-mono text-4xl font-bold text-fl-gold"
+                    class="mt-5 legacy-numeric font-mono text-4xl font-bold text-legacy-copper-soft"
                 >
                     {{ plate.official_time }}
                 </p>
@@ -195,13 +195,13 @@ function submitClaim() {
                 <div class="mt-4 flex flex-wrap gap-2">
                     <span
                         v-if="plate.race_name"
-                        class="rounded-full border border-white/15 bg-fl-black px-3 py-1 text-xs font-medium text-white/70"
+                        class="rounded-full border border-legacy-titanium/15 bg-legacy-ink px-3 py-1 text-xs font-medium text-legacy-titanium"
                     >
                         {{ plate.race_name }}
                     </span>
                     <span
                         v-if="plate.pace"
-                        class="rounded-full border border-white/15 bg-fl-black px-3 py-1 text-xs font-medium text-white/70"
+                        class="rounded-full border border-legacy-titanium/15 bg-legacy-ink px-3 py-1 text-xs font-medium text-legacy-titanium"
                     >
                         Ritmo {{ plate.pace }}
                     </span>
@@ -226,7 +226,7 @@ function submitClaim() {
                     </p>
                 </template>
                 <template v-else-if="linked">
-                    <Award class="mx-auto size-5 text-fl-gold" />
+                    <Award class="mx-auto size-5 text-legacy-copper-soft" />
                     <p class="mt-2 text-sm text-white/70">
                         Esta placa ya forma parte de un Legacy Profile.
                     </p>
@@ -236,7 +236,7 @@ function submitClaim() {
                         Esta placa está esperando formar parte de un Legacy.
                     </p>
                     <Button
-                        class="fl-hover-lift mt-4 w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        class="fl-hover-lift mt-4 w-full bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
                         @click="confirmOpen = true"
                     >
                         Vincular a mi Legacy
@@ -262,7 +262,7 @@ function submitClaim() {
                         </Button>
                         <Button
                             as-child
-                            class="fl-hover-lift w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                            class="fl-hover-lift w-full bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
                         >
                             <a
                                 :href="
@@ -298,7 +298,7 @@ function submitClaim() {
                         Cancelar
                     </Button>
                     <Button
-                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        class="bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
                         :disabled="claiming"
                         @click="submitClaim"
                     >

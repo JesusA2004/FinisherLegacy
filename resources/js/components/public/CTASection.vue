@@ -14,25 +14,26 @@ defineProps<{
 </script>
 
 <template>
-    <section class="relative overflow-hidden border-t border-white/10">
+    <section class="relative overflow-hidden border-t border-legacy-titanium/10">
         <div
-            class="absolute inset-0 bg-gradient-to-br from-fl-graphite via-fl-black to-fl-black"
+            class="absolute inset-0 bg-gradient-to-br from-legacy-carbon via-legacy-ink to-legacy-ink"
         />
         <div
-            class="absolute -top-32 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full bg-fl-gold/10 blur-3xl"
+            class="absolute -top-32 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full bg-legacy-copper/10 blur-3xl"
         />
+        <div class="legacy-line absolute inset-x-0 top-0" />
 
         <div
-            class="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-20 text-center sm:px-6 lg:px-8"
+            class="relative mx-auto flex max-w-4xl flex-col items-center gap-6 px-4 py-24 text-center sm:px-6 lg:px-8"
         >
             <h2
-                class="text-3xl font-bold tracking-tight text-white sm:text-4xl"
+                class="text-3xl font-bold tracking-tight text-legacy-bone sm:text-4xl"
             >
                 {{ title }}
             </h2>
             <p
                 v-if="description"
-                class="max-w-xl text-base text-white/60 sm:text-lg"
+                class="max-w-xl text-base text-legacy-titanium sm:text-lg"
             >
                 {{ description }}
             </p>
@@ -40,7 +41,7 @@ defineProps<{
                 <Button
                     as-child
                     size="lg"
-                    class="bg-fl-gold px-8 text-fl-black hover:bg-fl-gold-soft"
+                    class="bg-legacy-copper px-8 text-legacy-bone hover:bg-legacy-copper-soft"
                 >
                     <Link :href="primaryHref">{{ primaryLabel }}</Link>
                 </Button>
@@ -49,7 +50,7 @@ defineProps<{
                     as-child
                     size="lg"
                     variant="outline"
-                    class="border-white/20 bg-transparent px-8 text-white hover:bg-white/10 hover:text-white"
+                    class="border-legacy-titanium/25 bg-transparent px-8 text-legacy-bone hover:bg-white/10 hover:text-legacy-bone"
                 >
                     <Link :href="secondaryHref">{{ secondaryLabel }}</Link>
                 </Button>

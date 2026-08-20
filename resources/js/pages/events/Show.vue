@@ -41,7 +41,7 @@ const phaseCopy: Record<string, string> = {
 
     <section class="relative border-b border-white/5">
         <div
-            class="relative flex h-72 items-end overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black sm:h-96"
+            class="relative flex h-72 items-end overflow-hidden bg-gradient-to-br from-legacy-carbon-lift via-legacy-carbon to-legacy-ink sm:h-96"
         >
             <img
                 v-if="event.cover_url"
@@ -50,7 +50,7 @@ const phaseCopy: Record<string, string> = {
                 class="absolute inset-0 size-full object-cover opacity-60"
             />
             <div
-                class="absolute inset-0 bg-gradient-to-t from-fl-black via-fl-black/40 to-transparent"
+                class="absolute inset-0 bg-gradient-to-t from-legacy-ink via-legacy-ink/40 to-transparent"
             />
 
             <div
@@ -59,14 +59,14 @@ const phaseCopy: Record<string, string> = {
                 <div class="flex flex-wrap items-center gap-2">
                     <Badge
                         variant="outline"
-                        class="border-fl-gold/30 bg-fl-black/60 text-fl-gold"
+                        class="border-legacy-copper/30 bg-legacy-ink/60 text-legacy-copper-soft"
                     >
                         {{ event.sport }}
                     </Badge>
                     <Badge
                         v-if="edition"
                         variant="outline"
-                        class="border-white/15 bg-fl-black/60 text-white/70"
+                        class="border-legacy-titanium/15 bg-legacy-ink/60 text-legacy-titanium"
                     >
                         {{ phaseCopy[edition.phase] }}
                     </Badge>
@@ -105,7 +105,7 @@ const phaseCopy: Record<string, string> = {
                         <div
                             v-for="race in edition.races"
                             :key="race.name"
-                            class="flex items-center justify-between rounded-xl border border-white/10 bg-fl-graphite/40 px-4 py-3"
+                            class="flex items-center justify-between rounded-xl border border-white/10 bg-legacy-carbon/40 px-4 py-3"
                         >
                             <span class="font-medium text-white">{{
                                 race.name
@@ -122,7 +122,7 @@ const phaseCopy: Record<string, string> = {
 
                 <div
                     v-else
-                    class="rounded-xl border border-white/10 bg-fl-graphite/40 p-6 text-white/50"
+                    class="rounded-xl border border-white/10 bg-legacy-carbon/40 p-6 text-legacy-titanium/60"
                 >
                     Este evento todavía no tiene una edición publicada con fecha
                     activa.
@@ -132,10 +132,10 @@ const phaseCopy: Record<string, string> = {
             <aside class="space-y-6">
                 <div
                     v-if="edition"
-                    class="space-y-5 rounded-2xl border border-white/10 bg-fl-graphite/50 p-6"
+                    class="space-y-5 rounded-2xl border border-white/10 bg-legacy-carbon/50 p-6"
                 >
                     <div class="flex items-start gap-3">
-                        <Calendar class="mt-0.5 size-4 shrink-0 text-fl-gold" />
+                        <Calendar class="mt-0.5 size-4 shrink-0 text-legacy-copper-soft" />
                         <div>
                             <p class="text-xs text-white/40">Fecha</p>
                             <p
@@ -146,7 +146,7 @@ const phaseCopy: Record<string, string> = {
                         </div>
                     </div>
                     <div class="flex items-start gap-3">
-                        <MapPin class="mt-0.5 size-4 shrink-0 text-fl-gold" />
+                        <MapPin class="mt-0.5 size-4 shrink-0 text-legacy-copper-soft" />
                         <div>
                             <p class="text-xs text-white/40">Ubicación</p>
                             <p class="text-sm font-medium text-white">
@@ -155,7 +155,7 @@ const phaseCopy: Record<string, string> = {
                         </div>
                     </div>
                     <div class="flex items-start gap-3">
-                        <Trophy class="mt-0.5 size-4 shrink-0 text-fl-gold" />
+                        <Trophy class="mt-0.5 size-4 shrink-0 text-legacy-copper-soft" />
                         <div>
                             <p class="text-xs text-white/40">Edición</p>
                             <p class="text-sm font-medium text-white">
@@ -168,7 +168,7 @@ const phaseCopy: Record<string, string> = {
                         v-if="edition.phase !== 'finished'"
                         as-child
                         size="lg"
-                        class="w-full bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        class="w-full bg-legacy-copper text-legacy-bone hover:bg-legacy-copper-soft"
                     >
                         <Link :href="preregister(event.slug)">
                             PRERREGISTRARME

@@ -25,26 +25,26 @@ const SUPPORT_EMAIL = 'hola@finisherlegacy.com';
         <div class="mt-12 grid gap-4 sm:grid-cols-2">
             <a
                 :href="`mailto:${SUPPORT_EMAIL}`"
-                class="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 transition-colors hover:border-fl-gold/40"
+                class="flex flex-col items-center gap-3 rounded-2xl border border-legacy-titanium/10 bg-legacy-carbon/50 p-8 transition-colors hover:border-legacy-copper/40"
             >
-                <Mail class="size-6 text-fl-gold" />
-                <span class="font-medium text-white">Correo</span>
-                <span class="text-sm text-white/50">{{ SUPPORT_EMAIL }}</span>
+                <Mail class="size-6 text-legacy-copper-soft" />
+                <span class="font-medium text-legacy-bone">Correo</span>
+                <span class="text-sm text-legacy-titanium/70">{{ SUPPORT_EMAIL }}</span>
             </a>
 
             <Link
                 :href="howItWorks()"
-                class="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-fl-graphite/50 p-8 transition-colors hover:border-fl-gold/40"
+                class="flex flex-col items-center gap-3 rounded-2xl border border-legacy-titanium/10 bg-legacy-carbon/50 p-8 transition-colors hover:border-legacy-copper/40"
             >
-                <MessageCircle class="size-6 text-fl-gold" />
-                <span class="font-medium text-white">¿Cómo funciona?</span>
-                <span class="text-sm text-white/50"
+                <MessageCircle class="size-6 text-legacy-copper-soft" />
+                <span class="font-medium text-legacy-bone">¿Cómo funciona?</span>
+                <span class="text-sm text-legacy-titanium/70"
                     >Resuelve dudas comunes aquí</span
                 >
             </Link>
         </div>
 
-        <p class="mt-12 text-sm text-white/40">
+        <p class="mt-12 text-sm text-legacy-titanium/50">
             Un centro de soporte completo estará disponible próximamente.
         </p>
     </section>

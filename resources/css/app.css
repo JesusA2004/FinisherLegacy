@@ -69,6 +69,23 @@
     --color-fl-gold: var(--fl-gold);
     --color-fl-gold-soft: var(--fl-gold-soft);
     --color-fl-gold-dim: var(--fl-gold-dim);
+
+    /* Finisher Legacy "Legacy" identity — the PUBLIC marketing surface only
+       (Home, Cómo funciona, Eventos, Contacto, Legal, perfiles y Legacy Code
+       públicos). Additive on top of the fl-* palette above: the
+       authenticated shell (dashboard, admin, operator, auth) keeps rendering
+       on fl-black/fl-graphite/fl-gold untouched. Only use legacy-* classes
+       inside resources/js/layouts/PublicLayout.vue, resources/js/pages/{Home,
+       HowItWorks,Contact,Terms,Privacy}.vue and resources/js/components/public/*. */
+    --color-legacy-ink: var(--legacy-ink);
+    --color-legacy-ink-soft: var(--legacy-ink-soft);
+    --color-legacy-carbon: var(--legacy-carbon);
+    --color-legacy-carbon-lift: var(--legacy-carbon-lift);
+    --color-legacy-bone: var(--legacy-bone);
+    --color-legacy-titanium: var(--legacy-titanium);
+    --color-legacy-copper: var(--legacy-copper);
+    --color-legacy-copper-soft: var(--legacy-copper-soft);
+    --color-legacy-ice: var(--legacy-ice);
 }
 
 :root {
@@ -78,6 +95,25 @@
     --fl-gold: hsl(42 55% 58%);
     --fl-gold-soft: hsl(42 65% 72%);
     --fl-gold-dim: hsl(42 30% 42%);
+
+    /* Legacy Ink / Copper / Ice — see the @theme block above for scope. */
+    --legacy-ink: #070b12;
+    --legacy-ink-soft: #0a1019;
+    --legacy-carbon: #0d1420;
+    --legacy-carbon-lift: #141e2c;
+    --legacy-bone: #f4f1ea;
+    --legacy-titanium: #b9c3cc;
+    --legacy-copper: #b86f44;
+    --legacy-copper-soft: #e0935b;
+    --legacy-ice: #73c7e8;
+
+    /* Motion tokens for the public site — durations only, easing stays the
+       cubic-bezier already used by <Reveal>/<StaggerGroup> below. */
+    --legacy-duration-fast: 160ms;
+    --legacy-duration-standard: 280ms;
+    --legacy-duration-reveal: 600ms;
+    --legacy-duration-cinematic: 1100ms;
+    --legacy-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /*
@@ -275,6 +311,100 @@
     .fl-error-shake,
     .fl-success-pulse {
         animation: none !important;
+    }
+}
+
+/*
+  Legacy motion + graphic system — public site only (see the @theme/:root
+  comments above for scope). Mirrors the fl-hover-* mechanics but tokened to
+  Legacy Copper/Ice instead of fl-gold, plus the "Legacy Line" motif: a
+  continuous stroke standing in for a race route / timeline / connection
+  between the physical medal and the digital profile (brand system §40).
+*/
+@layer utilities {
+    .legacy-hover-glow {
+        transition:
+            box-shadow var(--legacy-duration-standard) ease,
+            border-color var(--legacy-duration-standard) ease;
+    }
+    .legacy-hover-glow:hover {
+        border-color: color-mix(in srgb, var(--legacy-copper) 55%, transparent);
+        box-shadow:
+            0 0 0 1px color-mix(in srgb, var(--legacy-copper) 30%, transparent),
+            0 0 28px -6px color-mix(in srgb, var(--legacy-copper) 45%, transparent);
+    }
+
+    .legacy-shine {
+        position: relative;
+        overflow: hidden;
+    }
+    .legacy-shine::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            115deg,
+            transparent 40%,
+            color-mix(in srgb, var(--legacy-titanium) 40%, transparent) 50%,
+            transparent 60%
+        );
+        transform: translateX(-120%);
+        transition: transform var(--legacy-duration-cinematic) ease;
+        pointer-events: none;
+    }
+    .legacy-shine:hover::after {
+        transform: translateX(120%);
+    }
+
+    .legacy-focus-glow:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--legacy-copper) 40%, transparent);
+    }
+
+    /* The Legacy Line — a horizontal or vertical copper→ice stroke used as a
+       section divider, a connector between journey steps, or a timeline
+       spine. Not a border: it's a gradient bar so it can carry the two-tone
+       "physical → digital" meaning on its own. */
+    .legacy-line {
+        height: 1px;
+        width: 100%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--legacy-copper) 20%,
+            var(--legacy-copper-soft) 50%,
+            var(--legacy-ice) 85%,
+            transparent
+        );
+    }
+    .legacy-line-v {
+        width: 1px;
+        height: 100%;
+        background: linear-gradient(
+            180deg,
+            transparent,
+            var(--legacy-copper) 15%,
+            var(--legacy-copper-soft) 50%,
+            var(--legacy-ice) 90%,
+            transparent
+        );
+    }
+
+    /* Tabular numerals for finish times / pace / distance — numbers are part
+       of the identity (brand system §38) and must not jitter as digits
+       change during reveal animations. */
+    .legacy-numeric {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum' 1;
+        letter-spacing: 0.02em;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .legacy-hover-glow,
+    .legacy-shine::after {
+        transition: none !important;
     }
 }
 

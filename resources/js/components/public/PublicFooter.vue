@@ -19,13 +19,20 @@ const legal = [
 </script>
 
 <template>
-    <footer class="border-t border-white/10 bg-fl-black">
+    <footer class="border-t border-legacy-titanium/10 bg-legacy-ink">
+        <div class="legacy-line" />
+
         <div
             class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8"
         >
             <div class="md:col-span-2">
                 <FinisherLegacyLogo variant="mark" size="lg" />
-                <p class="mt-4 max-w-sm text-sm leading-relaxed text-white/60">
+                <p class="mt-5 max-w-sm text-lg font-semibold tracking-tight text-legacy-bone">
+                    Tu meta termina. Tu historia no.
+                </p>
+                <p
+                    class="mt-3 max-w-sm text-sm leading-relaxed text-legacy-titanium/80"
+                >
                     Finisher Legacy transforma cada logro deportivo en una
                     historia que puedes conservar, revivir y compartir.
                 </p>
@@ -33,7 +40,7 @@ const legal = [
 
             <div>
                 <h3
-                    class="text-xs font-semibold tracking-[0.2em] text-white/40 uppercase"
+                    class="text-xs font-semibold tracking-[0.2em] text-legacy-titanium/50 uppercase"
                 >
                     Producto
                 </h3>
@@ -41,7 +48,7 @@ const legal = [
                     <li v-for="item in product" :key="item.label">
                         <Link
                             :href="item.href"
-                            class="text-sm text-white/70 transition-colors hover:text-fl-gold"
+                            class="text-sm text-legacy-titanium transition-colors hover:text-legacy-copper-soft"
                         >
                             {{ item.label }}
                         </Link>
@@ -51,7 +58,7 @@ const legal = [
 
             <div>
                 <h3
-                    class="text-xs font-semibold tracking-[0.2em] text-white/40 uppercase"
+                    class="text-xs font-semibold tracking-[0.2em] text-legacy-titanium/50 uppercase"
                 >
                     Soporte
                 </h3>
@@ -59,7 +66,7 @@ const legal = [
                     <li>
                         <Link
                             :href="contact()"
-                            class="text-sm text-white/70 transition-colors hover:text-fl-gold"
+                            class="text-sm text-legacy-titanium transition-colors hover:text-legacy-copper-soft"
                         >
                             Contacto
                         </Link>
@@ -67,7 +74,7 @@ const legal = [
                     <li v-for="item in legal" :key="item.label">
                         <Link
                             :href="item.href"
-                            class="text-sm text-white/70 transition-colors hover:text-fl-gold"
+                            class="text-sm text-legacy-titanium transition-colors hover:text-legacy-copper-soft"
                         >
                             {{ item.label }}
                         </Link>
@@ -76,15 +83,15 @@ const legal = [
             </div>
         </div>
 
-        <div class="border-t border-white/10">
+        <div class="border-t border-legacy-titanium/10">
             <div
                 class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 sm:flex-row sm:px-6 lg:px-8"
             >
-                <p class="text-xs text-white/40">
+                <p class="text-xs text-legacy-titanium/50">
                     © {{ year }} Finisher Legacy. Todos los derechos reservados.
                 </p>
 
-                <p class="text-xs text-white/25">
+                <p class="text-xs text-legacy-titanium/30">
                     Próximamente en redes sociales
                 </p>
             </div>

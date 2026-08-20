@@ -37,7 +37,7 @@ const initials = computed(() =>
 
     <section>
         <div
-            class="relative h-48 w-full overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black sm:h-64"
+            class="relative h-48 w-full overflow-hidden bg-gradient-to-br from-legacy-carbon-lift via-legacy-carbon to-legacy-ink sm:h-64"
         >
             <img
                 v-if="profile.cover_url"
@@ -50,7 +50,7 @@ const initials = computed(() =>
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <div class="-mt-14 flex items-end justify-between">
                 <div
-                    class="flex size-28 items-center justify-center overflow-hidden rounded-full border-4 border-fl-black bg-fl-graphite text-3xl font-semibold text-fl-gold"
+                    class="flex size-28 items-center justify-center overflow-hidden rounded-full border-4 border-legacy-carbon bg-legacy-carbon text-3xl font-semibold text-legacy-copper-soft"
                 >
                     <img
                         v-if="profile.photo_url"
@@ -65,7 +65,7 @@ const initials = computed(() =>
                     v-if="isOwner"
                     as-child
                     variant="outline"
-                    class="mb-2 border-white/20 bg-fl-black text-white hover:bg-white/10 hover:text-white"
+                    class="mb-2 border-legacy-titanium/25 bg-legacy-ink text-legacy-bone hover:bg-white/10 hover:text-legacy-bone"
                 >
                     <Link :href="editProfile()">Editar mi Legacy Profile</Link>
                 </Button>
@@ -75,7 +75,7 @@ const initials = computed(() =>
                 <h1 class="text-2xl font-bold text-white">
                     {{ profile.name }}
                 </h1>
-                <p class="text-fl-gold">@{{ profile.username }}</p>
+                <p class="text-legacy-copper-soft">@{{ profile.username }}</p>
 
                 <p
                     v-if="profile.city || profile.country"
@@ -122,7 +122,7 @@ const initials = computed(() =>
                 <h2
                     class="mb-5 flex items-center gap-2 text-sm font-semibold tracking-wide text-white/60 uppercase"
                 >
-                    <Trophy class="size-4 text-fl-gold" />
+                    <Trophy class="size-4 text-legacy-copper-soft" />
                     Colección de medallas
                 </h2>
 
@@ -133,10 +133,10 @@ const initials = computed(() =>
                     <div
                         v-for="medal in medals"
                         :key="medal.id"
-                        class="group overflow-hidden rounded-xl border border-white/10 bg-fl-graphite/40"
+                        class="group overflow-hidden rounded-xl border border-white/10 bg-legacy-carbon/40"
                     >
                         <div
-                            class="aspect-square bg-gradient-to-br from-fl-graphite-light to-fl-black"
+                            class="aspect-square bg-gradient-to-br from-legacy-carbon-lift to-legacy-ink"
                         >
                             <img
                                 v-if="medal.thumbnail_url"
