@@ -1,6 +1,11 @@
 <script setup lang="ts">
+/**
+ * Editorial poster, not a SaaS card: name lives on the photo, date is huge,
+ * image and text drift at different speeds on hover for a subtle parallax
+ * (brand system §21 / §23.11 Escena 08).
+ */
 import { Link } from '@inertiajs/vue3';
-import { ArrowRight, MapPin } from '@lucide/vue';
+import { ArrowUpRight, MapPin } from '@lucide/vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { useAssetExists } from '@/composables/useAssetProbe';
@@ -39,7 +44,6 @@ const formattedDate = computed(() =>
     eventDate.value.toLocaleDateString('es-MX', {
         day: 'numeric',
         month: 'long',
-        year: 'numeric',
     }),
 );
 
@@ -57,24 +61,25 @@ const monthAbbrev = computed(() =>
 <template>
     <Link
         :href="eventShow(edition.event.slug)"
-        class="group flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-fl-graphite/60 transition-all duration-300 hover:-translate-y-1 hover:border-fl-gold/40 hover:shadow-[0_0_40px_-12px_rgba(207,171,89,0.4)]"
+        class="group relative flex aspect-[4/5] flex-col overflow-hidden rounded-2xl border border-white/10 bg-fl-graphite/60 transition-colors duration-300 hover:border-fl-gold/40 hover:shadow-[0_0_40px_-12px_rgba(207,171,89,0.4)]"
     >
+        <!-- Photo layer — moves slower/further than the text on hover -->
         <div
-            class="fl-shine relative aspect-16/9 w-full overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black"
+            class="fl-shine absolute inset-0 overflow-hidden bg-gradient-to-br from-fl-graphite-light via-fl-graphite to-fl-black"
         >
             <img
                 v-if="edition.event.cover_url"
                 :src="edition.event.cover_url"
                 :alt="edition.event.name"
                 loading="lazy"
-                class="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                class="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
             />
             <img
                 v-else-if="placeholderExists"
                 src="/media/home/events/event-placeholder.webp"
                 alt=""
                 loading="lazy"
-                class="size-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-105"
+                class="size-full object-cover opacity-70 transition-transform duration-700 ease-out group-hover:scale-110"
             />
             <div
                 v-else
@@ -96,28 +101,36 @@ const monthAbbrev = computed(() =>
                 </span>
             </div>
 
-            <Badge
-                variant="outline"
-                class="absolute top-3 left-3 backdrop-blur-sm"
-                :class="phaseCopy[edition.phase].class"
-            >
-                {{ phaseCopy[edition.phase].label }}
-            </Badge>
-
             <div
-                class="legacy-numeric absolute top-3 right-3 flex flex-col items-center rounded-lg border border-white/10 bg-fl-black/80 px-2.5 py-1.5 leading-none backdrop-blur-sm"
-            >
-                <span class="text-lg font-bold text-white">{{
-                    dayNumber
-                }}</span>
-                <span
-                    class="mt-0.5 text-[10px] font-semibold tracking-wide text-fl-gold-soft uppercase"
-                    >{{ monthAbbrev }}</span
-                >
-            </div>
+                class="pointer-events-none absolute inset-0 bg-gradient-to-t from-fl-black via-fl-black/30 to-transparent"
+            />
         </div>
 
-        <div class="flex flex-1 flex-col gap-3 p-5">
+        <!-- Huge date, top-left -->
+        <div
+            class="legacy-numeric relative flex items-baseline gap-2 p-5 leading-none text-white"
+        >
+            <span class="text-5xl font-black tracking-tight">{{
+                dayNumber
+            }}</span>
+            <span
+                class="text-sm font-semibold tracking-[0.2em] text-fl-gold-soft uppercase"
+                >{{ monthAbbrev }}</span
+            >
+        </div>
+
+        <Badge
+            variant="outline"
+            class="absolute top-5 right-5 backdrop-blur-sm"
+            :class="phaseCopy[edition.phase].class"
+        >
+            {{ phaseCopy[edition.phase].label }}
+        </Badge>
+
+        <!-- Text layer — moves less than the photo, the parallax delta -->
+        <div
+            class="relative mt-auto flex flex-col gap-2 p-5 transition-transform duration-300 ease-out group-hover:-translate-y-1"
+        >
             <span
                 class="text-xs font-semibold tracking-[0.2em] text-fl-gold-soft uppercase"
             >
@@ -125,7 +138,7 @@ const monthAbbrev = computed(() =>
             </span>
 
             <h3
-                class="text-lg font-semibold text-white transition-colors group-hover:text-fl-gold-soft"
+                class="text-xl leading-tight font-bold text-white transition-colors group-hover:text-fl-gold-soft"
             >
                 {{ edition.event.name }}
             </h3>
@@ -137,24 +150,25 @@ const monthAbbrev = computed(() =>
                 <span class="capitalize">{{ formattedDate }}</span>
             </div>
 
-            <div v-if="edition.distances.length" class="flex flex-wrap gap-1.5">
+            <div
+                v-if="edition.distances.length"
+                class="mt-1 flex flex-wrap gap-1.5"
+            >
                 <span
                     v-for="distance in edition.distances"
                     :key="distance"
-                    class="rounded-full border border-white/15 px-2.5 py-0.5 text-xs text-white/60"
+                    class="rounded-full border border-white/20 bg-fl-black/40 px-2.5 py-0.5 text-xs text-white/70 backdrop-blur-sm"
                 >
                     {{ distance }}
                 </span>
             </div>
-
-            <div
-                class="mt-auto flex items-center gap-1.5 pt-2 text-sm font-medium text-fl-gold-soft"
-            >
-                Ver evento
-                <ArrowRight
-                    class="size-3.5 transition-transform group-hover:translate-x-1"
-                />
-            </div>
         </div>
+
+        <!-- Circular arrow, poster signature detail -->
+        <span
+            class="absolute right-5 bottom-5 flex size-10 items-center justify-center rounded-full border border-fl-gold-soft/40 bg-fl-black/60 text-fl-gold-soft backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 group-hover:bg-fl-gold-soft group-hover:text-fl-black"
+        >
+            <ArrowUpRight class="size-4" />
+        </span>
     </Link>
 </template>

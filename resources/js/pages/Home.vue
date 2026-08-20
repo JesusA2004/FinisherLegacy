@@ -8,13 +8,14 @@ import EventCard from '@/components/public/EventCard.vue';
 import FaqSection from '@/components/public/FaqSection.vue';
 import HeroSection from '@/components/public/HeroSection.vue';
 import HowItWorksSteps from '@/components/public/HowItWorksSteps.vue';
-import JourneyExperience from '@/components/public/JourneyExperience.vue';
 import LegacyProfileShowcase from '@/components/public/LegacyProfileShowcase.vue';
+import LegacyTimeline from '@/components/public/LegacyTimeline.vue';
 import LegacyScanMedia from '@/components/public/media/LegacyScanMedia.vue';
 import PlateMedia from '@/components/public/media/PlateMedia.vue';
 import PlateFlowSwitch from '@/components/public/PlateFlowSwitch.vue';
 import ScrollCueButton from '@/components/public/ScrollCueButton.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
+import StickyLegacyJourney from '@/components/public/StickyLegacyJourney.vue';
 import { howItWorks, register } from '@/routes';
 import { index as eventsIndex } from '@/routes/events';
 import type {
@@ -81,17 +82,19 @@ TU HISTORIA NO."
     <EditorialMoment />
 
     <!-- El ecosistema, como secuencia conectada -->
-    <section class="border-t border-white/10 py-24 sm:py-28">
-        <Reveal as="div" class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+    <section class="border-t border-white/10 pt-20 pb-10 sm:pt-24">
+        <Reveal
+            as="div"
+            class="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8"
+        >
             <SectionHeading
                 eyebrow="El concepto"
-                title="MEDALLA → PLACA → LEGACY CODE → LEGACY PROFILE"
-                description="Cada medalla guarda mucho más que una meta. Guarda tiempo, esfuerzo, personas, lugares y una historia. Finisher Legacy conecta ese recuerdo físico con su historia digital."
-                class="mb-16"
+                title="De la medalla al Legacy"
+                description="Cada medalla guarda mucho más que una meta. Sigue el scroll: es la misma historia, transformándose."
             />
-            <JourneyExperience />
         </Reveal>
     </section>
+    <StickyLegacyJourney />
 
     <!-- Legacy Code -->
     <section class="border-t border-white/10 bg-fl-graphite/30 py-24 sm:py-28">
@@ -139,6 +142,19 @@ Muchas carreras son un Legacy."
                 description="Cada Legacy Profile reúne tus medallas, tus tiempos y las historias detrás de cada meta. Público si tú lo decides, siempre tuyo."
             />
             <LegacyProfileShowcase :profile="legacyProfile" />
+        </Reveal>
+    </section>
+
+    <!-- Timeline -->
+    <section class="border-t border-white/10 py-24 sm:py-28">
+        <Reveal as="div" class="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+            <SectionHeading
+                eyebrow="Tu historia crece"
+                title="Tu Legacy crece contigo"
+                description="Cada carrera que vinculas se suma a tu Legacy Profile. Así se ve con el tiempo."
+                class="mb-16"
+            />
+            <LegacyTimeline />
         </Reveal>
     </section>
 

@@ -58,6 +58,23 @@ function resetTilt() {
              public/media/home/hero/README.md for the asset contract. -->
         <HomeHeroMedia />
 
+        <!-- Giant background numerals — art direction, not a data table
+             (brand system §23.5): the race stats become part of the scene
+             instead of sitting in a tidy row. -->
+        <div
+            class="legacy-numeric pointer-events-none absolute inset-0 hidden overflow-hidden opacity-[0.06] select-none lg:block"
+            aria-hidden="true"
+        >
+            <span
+                class="absolute -top-10 -right-16 text-[16rem] leading-none font-black tracking-tighter text-white xl:text-[20rem]"
+                >42.195</span
+            >
+            <span
+                class="absolute bottom-0 -left-10 text-[9rem] leading-none font-black tracking-tighter text-white xl:text-[11rem]"
+                >03:42:18</span
+            >
+        </div>
+
         <div
             class="relative mx-auto grid w-full max-w-7xl gap-16 px-4 py-28 pt-32 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8 lg:pt-28"
         >
@@ -116,20 +133,6 @@ function resetTilt() {
                 <p class="text-sm text-white/60">
                     Tu Legacy ID te acompaña carrera tras carrera.
                 </p>
-
-                <div
-                    class="legacy-numeric flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/10 pt-5 text-sm text-white/40"
-                >
-                    <span
-                        class="text-[10px] font-semibold tracking-[0.2em] text-white/25 uppercase"
-                        >Vista previa</span
-                    >
-                    <span class="text-fl-gold-soft">42.195 KM</span>
-                    <span aria-hidden="true">·</span>
-                    <span>03:42:18</span>
-                    <span aria-hidden="true">·</span>
-                    <span>5:16 / KM</span>
-                </div>
             </div>
 
             <div
