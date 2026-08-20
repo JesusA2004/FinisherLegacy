@@ -1,13 +1,17 @@
 <script setup lang="ts">
+/**
+ * Full-bleed cinematic hero: video/CSS scene as the only visual, no product
+ * mockup competing with it (StickyLegacyJourney is where the plate/QR/
+ * profile actually get shown, right below). Single column so the video
+ * carries the scene the way a real campaign hero does, not a two-column
+ * SaaS layout with a card floating on the side.
+ */
 import { Link } from '@inertiajs/vue3';
 import type { InertiaLinkProps } from '@inertiajs/vue3';
-import { Award, IdCard, Medal, QrCode } from '@lucide/vue';
-import { useTemplateRef } from 'vue';
 import MagneticButton from '@/components/public/MagneticButton.vue';
 import HomeHeroMedia from '@/components/public/media/HomeHeroMedia.vue';
 import ScrollCueButton from '@/components/public/ScrollCueButton.vue';
 import { Button } from '@/components/ui/button';
-import { useReducedMotion } from '@/composables/useReducedMotion';
 
 defineProps<{
     title: string;
@@ -17,37 +21,6 @@ defineProps<{
     secondaryLabel: string;
     secondaryHref: NonNullable<InertiaLinkProps['href']>;
 }>();
-
-const chain = [
-    { icon: Medal, label: 'Medalla física', accent: 'gold' as const },
-    { icon: Award, label: 'Placa Legacy', accent: 'gold' as const },
-    { icon: QrCode, label: 'Legacy Code', accent: 'gold-soft' as const },
-    { icon: IdCard, label: 'Legacy Profile', accent: 'gold-soft' as const },
-];
-
-// Very subtle cursor-driven depth on the plate/code/profile stack — a hint
-// of dimensionality, never enough to fight legibility. Disabled entirely
-// under prefers-reduced-motion (brand system §41 + §46).
-const prefersReducedMotion = useReducedMotion();
-const stackEl = useTemplateRef<HTMLElement>('stack');
-
-function handlePointerMove(event: PointerEvent) {
-    if (prefersReducedMotion.value || !stackEl.value) {
-        return;
-    }
-
-    const rect = stackEl.value.getBoundingClientRect();
-    const relX = (event.clientX - rect.left) / rect.width - 0.5;
-    const relY = (event.clientY - rect.top) / rect.height - 0.5;
-
-    stackEl.value.style.setProperty('--tilt-x', `${relY * -4}deg`);
-    stackEl.value.style.setProperty('--tilt-y', `${relX * 4}deg`);
-}
-
-function resetTilt() {
-    stackEl.value?.style.setProperty('--tilt-x', '0deg');
-    stackEl.value?.style.setProperty('--tilt-y', '0deg');
-}
 </script>
 
 <template>
@@ -62,7 +35,7 @@ function resetTilt() {
              (brand system §23.5): the race stats become part of the scene
              instead of sitting in a tidy row. -->
         <div
-            class="legacy-numeric pointer-events-none absolute inset-0 hidden overflow-hidden opacity-[0.06] select-none lg:block"
+            class="legacy-numeric pointer-events-none absolute inset-0 hidden overflow-hidden opacity-[0.07] select-none lg:block"
             aria-hidden="true"
         >
             <span
@@ -70,13 +43,13 @@ function resetTilt() {
                 >42.195</span
             >
             <span
-                class="absolute bottom-0 -left-10 text-[9rem] leading-none font-black tracking-tighter text-white xl:text-[11rem]"
+                class="absolute bottom-10 -left-10 text-[9rem] leading-none font-black tracking-tighter text-white xl:text-[11rem]"
                 >03:42:18</span
             >
         </div>
 
         <div
-            class="relative mx-auto grid w-full max-w-7xl gap-16 px-4 py-28 pt-32 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8 lg:pt-28"
+            class="relative mx-auto w-full max-w-4xl px-4 py-28 pt-32 sm:px-6 lg:px-8"
         >
             <div class="flex flex-col items-start gap-8">
                 <span
@@ -90,7 +63,8 @@ function resetTilt() {
                 </span>
 
                 <h1
-                    class="text-4xl leading-[1.05] font-black tracking-tight text-white sm:text-5xl lg:text-6xl"
+                    class="leading-[0.95] font-black tracking-tight text-white"
+                    style="font-size: clamp(3rem, 8vw, 8rem)"
                 >
                     <template
                         v-for="(line, index) in title.split('\n')"
@@ -106,7 +80,7 @@ function resetTilt() {
                     </template>
                 </h1>
 
-                <p class="max-w-lg text-lg leading-relaxed text-white/60">
+                <p class="max-w-lg text-lg leading-relaxed text-white/70">
                     {{ subtitle }}
                 </p>
 
@@ -133,58 +107,6 @@ function resetTilt() {
                 <p class="text-sm text-white/60">
                     Tu Legacy ID te acompaña carrera tras carrera.
                 </p>
-            </div>
-
-            <div
-                ref="stack"
-                class="relative mx-auto w-full max-w-sm lg:mx-0 lg:ml-auto"
-                style="--tilt-x: 0deg; --tilt-y: 0deg; perspective: 1200px"
-                @pointermove="handlePointerMove"
-                @pointerleave="resetTilt"
-            >
-                <div
-                    class="absolute -inset-10 rounded-[2.5rem] bg-gradient-to-br from-fl-gold/20 via-transparent to-fl-gold-soft/10 blur-3xl"
-                />
-
-                <div
-                    class="relative flex flex-col gap-4 transition-transform duration-300 ease-out"
-                    style="
-                        transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
-                        transform-style: preserve-3d;
-                    "
-                >
-                    <template v-for="(step, index) in chain" :key="step.label">
-                        <div
-                            class="flex items-center gap-4 rounded-2xl border bg-fl-graphite/70 px-5 py-4 backdrop-blur-sm transition-transform duration-300"
-                            :class="
-                                step.accent === 'gold-soft'
-                                    ? 'border-fl-gold-soft/20'
-                                    : 'border-fl-gold/25'
-                            "
-                            :style="{
-                                transform: `translateZ(${(chain.length - index) * 6}px) translateX(${index * 10}px)`,
-                            }"
-                        >
-                            <div
-                                class="flex size-11 shrink-0 items-center justify-center rounded-full border"
-                                :class="
-                                    step.accent === 'gold-soft'
-                                        ? 'border-fl-gold-soft/30 text-fl-gold-soft'
-                                        : 'border-fl-gold/40 text-fl-gold-soft'
-                                "
-                            >
-                                <component :is="step.icon" class="size-5" />
-                            </div>
-                            <span class="text-sm font-medium text-white/90">{{
-                                step.label
-                            }}</span>
-                        </div>
-                        <div
-                            v-if="index < chain.length - 1"
-                            class="legacy-line-v ml-9 h-6"
-                        />
-                    </template>
-                </div>
             </div>
         </div>
 

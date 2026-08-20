@@ -1,11 +1,14 @@
 <script setup lang="ts">
 /**
- * MEDALLA → PLACA → LEGACY CODE → LEGACY PROFILE as real sticky
- * storytelling: one ~300vh scroll region with a pinned viewport where the
- * central object morphs through the four stages and the side text
- * syncs to it. Replaces the old four-icon stepper (JourneyExperience.vue) —
- * that component is now unused; not deleted in case another page wants the
- * simpler static version later.
+ * MEDALLA → PLACA → LEGACY CODE → LEGACY PROFILE as one object evolving,
+ * not four different shapes taking turns. A single frame (same metal
+ * material, same light sweep, same pointer-tilt) morphs from a circular
+ * medal into a rectangular plate — border-radius and aspect-ratio driven
+ * directly by scroll progress, no CSS transition fighting the rAF loop —
+ * while only the CONTENT inside crossfades per stage. ~300vh scroll region
+ * with a pinned viewport. Replaces the old four-icon stepper
+ * (JourneyExperience.vue) — that component is now unused; not deleted in
+ * case another page wants the simpler static version later.
  *
  * Desktop only (lg+). Mobile gets a plain vertical sequence — sticky-pin
  * storytelling is a wide-viewport pattern, and forcing it into a narrow
@@ -49,6 +52,7 @@ const usesSticky = computed(
 );
 
 const wrapperEl = useTemplateRef<HTMLElement>('wrapper');
+const frameEl = useTemplateRef<HTMLElement>('frame');
 const progress = ref(0); // 0..1 across the whole pinned region
 let rafId: number | null = null;
 
@@ -89,59 +93,68 @@ onBeforeUnmount(() => {
     }
 });
 
-// Which stage is active, and how far into it (0..1) — drives the zoom /
-// spin / blur settle on the shape and the fill of the side progress line.
+// Which stage is active, and how far into it (0..1).
 const stageFloat = computed(() => progress.value * stages.length);
 const activeIndex = computed(() =>
     Math.min(stages.length - 1, Math.floor(stageFloat.value)),
 );
 const localT = computed(() => stageFloat.value - activeIndex.value);
 
-// One shared recipe for all 4 shapes instead of four near-identical inline
-// ternary blocks: each shape is "entering" while the previous stage is in
-// its back half, fully "settled" while its own stage is active, then
-// "leaving" (spin + blur out) once the stage moves past it. The last shape
-// (Legacy Profile) never leaves — it's the destination.
-function shapeStyle(index: number) {
+// The frame itself is the thing that "becomes" a plate: a perfect circle
+// (medal) morphing into a rounded rectangle (plate/QR/profile) across
+// stage 0. No CSS transition on these — progress already updates every
+// scroll frame via rAF, so a transition would only lag behind it.
+const frameStyle = computed(() => {
+    const inMedalStage = activeIndex.value === 0;
+    const t = inMedalStage ? localT.value : 1;
+    const radius = 999 - t * 967; // 999px (circle) → 32px (rounded-2xl)
+    const aspect = 1 + t * 0.5; // 1/1 (circle) → 3/2 (plate)
+    const wobble = Math.sin(stageFloat.value * 1.4) * 2.5;
+
+    return {
+        borderRadius: `${radius}px`,
+        aspectRatio: `${aspect}`,
+        transform: `rotate(${wobble}deg)`,
+    };
+});
+
+// Content inside the frame crossfades between the 4 stages — no
+// independent scale/rotate here, since the frame's own morph already
+// carries the "one object transforming" read.
+function contentStyle(index: number) {
     const isLast = index === stages.length - 1;
     const active = activeIndex.value;
     const t = localT.value;
 
     if (active === index) {
-        const leaveT = isLast ? 0 : t;
+        const leave = isLast ? 0 : t;
 
         return {
-            opacity: isLast ? 1 : 1 - leaveT * 0.95,
-            transform: `scale(${1 + leaveT * 0.35}) rotate(${leaveT * 10}deg)`,
-            filter: `blur(${leaveT * 5}px)`,
+            opacity: isLast ? 1 : 1 - leave,
+            filter: `blur(${leave * 4}px)`,
         };
     }
 
     if (active === index - 1) {
-        return {
-            opacity: t,
-            transform: `scale(${0.75 + t * 0.25}) rotate(${(1 - t) * -10}deg)`,
-            filter: `blur(${(1 - t) * 5}px)`,
-        };
+        return { opacity: t, filter: `blur(${(1 - t) * 4}px)` };
     }
 
-    return {
-        opacity: 0,
-        transform: 'scale(0.65) rotate(0deg)',
-        filter: 'blur(6px)',
-    };
+    return { opacity: 0, filter: 'blur(4px)' };
 }
 
-// Ambient glow behind the object drifts and recolors slightly per stage —
-// cheap way to make the whole scene feel alive between the shape morphs.
-const glowStyle = computed(() => {
-    const hueShift = stageFloat.value * 6; // deg, subtle
+// Pointer tilt on the frame, on top of the scroll-driven shape morph — the
+// same "product you can touch" feel the hero plate has.
+function handlePointerMove(event: PointerEvent) {
+    if (prefersReducedMotion.value || !frameEl.value) {
+        return;
+    }
 
-    return {
-        transform: `translate(${Math.sin(stageFloat.value) * 6}%, ${Math.cos(stageFloat.value * 0.7) * 6}%) scale(${1 + Math.sin(stageFloat.value * 1.3) * 0.08})`,
-        filter: `hue-rotate(${hueShift}deg)`,
-    };
-});
+    const rect = frameEl.value.getBoundingClientRect();
+    const relX = (event.clientX - rect.left) / rect.width;
+    const relY = (event.clientY - rect.top) / rect.height;
+    frameEl.value.style.setProperty('--glare-x', `${relX * 100}%`);
+    frameEl.value.style.setProperty('--glare-y', `${relY * 100}%`);
+}
 </script>
 
 <template>
@@ -153,136 +166,128 @@ const glowStyle = computed(() => {
             <div
                 class="mx-auto grid w-full max-w-6xl grid-cols-2 items-center gap-16 px-4 sm:px-6 lg:px-8"
             >
-                <!-- Central morphing object -->
-                <div
-                    class="relative mx-auto flex size-80 items-center justify-center lg:size-[26rem] xl:size-[30rem]"
-                    aria-hidden="true"
-                >
+                <!-- The object: one frame, evolving -->
+                <div class="relative mx-auto w-full max-w-md">
                     <div
-                        class="absolute inset-0 rounded-full bg-gradient-to-br from-fl-gold/25 via-fl-gold-soft/10 to-transparent blur-3xl transition-transform duration-500 ease-out"
-                        :style="glowStyle"
+                        class="absolute -inset-16 rounded-full bg-gradient-to-br from-fl-gold/25 via-fl-gold-soft/10 to-transparent blur-3xl"
+                        :style="{
+                            opacity: activeIndex === 2 ? 0.7 : 0.4,
+                        }"
                     />
 
-                    <!-- Medal -->
+                    <!-- Orbit ring — only reads while the frame is still a medal -->
                     <div
-                        class="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out"
-                        :style="shapeStyle(0)"
-                    >
-                        <div class="relative flex items-center justify-center">
-                            <div
-                                class="fl-orbit absolute size-64 rounded-full border border-dashed border-fl-gold/25 lg:size-72"
-                            />
-                            <div
-                                class="fl-medal-pulse flex size-56 items-center justify-center rounded-full border-4 border-fl-gold/50 bg-gradient-to-br from-fl-graphite-light to-fl-black shadow-[0_0_80px_-10px_rgba(207,171,89,0.6)] lg:size-64"
-                            >
-                                <Medal
-                                    class="size-20 text-fl-gold-soft lg:size-24"
-                                />
-                            </div>
-                            <!-- Ribbon -->
-                            <div
-                                class="absolute top-[85%] left-1/2 flex -translate-x-1/2 gap-1"
-                                aria-hidden="true"
-                            >
-                                <span
-                                    class="h-16 w-6 bg-fl-gold/40"
-                                    style="
-                                        clip-path: polygon(
-                                            0 0,
-                                            100% 0,
-                                            100% 85%,
-                                            50% 100%,
-                                            0 85%
-                                        );
-                                        transform: rotate(-8deg);
-                                    "
-                                />
-                                <span
-                                    class="h-16 w-6 bg-fl-gold-soft/30"
-                                    style="
-                                        clip-path: polygon(
-                                            0 0,
-                                            100% 0,
-                                            100% 85%,
-                                            50% 100%,
-                                            0 85%
-                                        );
-                                        transform: rotate(8deg);
-                                    "
-                                />
-                            </div>
-                        </div>
-                    </div>
+                        class="fl-orbit pointer-events-none absolute top-1/2 left-1/2 size-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-fl-gold/25 transition-opacity duration-500"
+                        :style="{
+                            opacity: activeIndex === 0 ? 1 - localT : 0,
+                        }"
+                    />
 
-                    <!-- Plate -->
                     <div
-                        class="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out"
-                        :style="shapeStyle(1)"
+                        ref="frame"
+                        class="fl-frame-sweep relative mx-auto w-full overflow-hidden border border-white/15 p-8 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.75)] sm:p-10"
+                        style="
+                            --glare-x: 50%;
+                            --glare-y: 30%;
+                            background:
+                                repeating-linear-gradient(
+                                    100deg,
+                                    rgba(255, 255, 255, 0.05) 0px,
+                                    rgba(255, 255, 255, 0.05) 1px,
+                                    transparent 1px,
+                                    transparent 3px
+                                ),
+                                radial-gradient(
+                                    circle at var(--glare-x) var(--glare-y),
+                                    rgba(255, 255, 255, 0.16),
+                                    transparent 45%
+                                ),
+                                linear-gradient(
+                                    160deg,
+                                    #3a3a3d 0%,
+                                    #232326 55%,
+                                    #17171a 100%
+                                );
+                        "
+                        :style="frameStyle"
+                        @pointermove="handlePointerMove"
                     >
                         <div
-                            class="fl-shine fl-plate-shine relative flex aspect-[3/2] w-72 flex-col justify-between overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-[#3a3a3d] via-[#232326] to-[#17171a] p-6 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.8)] lg:w-80"
+                            class="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent"
+                        />
+
+                        <!-- Medal -->
+                        <div
+                            class="absolute inset-0 flex flex-col items-center justify-center gap-3"
+                            :style="contentStyle(0)"
+                        >
+                            <Medal class="size-16 text-fl-gold-soft" />
+                            <span
+                                class="text-xs font-semibold tracking-[0.3em] text-fl-gold-soft uppercase"
+                                >El logro</span
+                            >
+                        </div>
+
+                        <!-- Plate -->
+                        <div
+                            class="absolute inset-0 flex flex-col justify-between p-2"
+                            :style="contentStyle(1)"
                         >
                             <p
-                                class="text-[11px] font-semibold tracking-[0.3em] text-fl-gold-soft uppercase"
+                                class="text-xs font-semibold tracking-[0.35em] text-fl-gold-soft uppercase"
                             >
                                 Finisher · Legacy
                             </p>
                             <div class="flex items-end justify-between">
                                 <span
-                                    class="legacy-numeric text-lg font-semibold text-white/80"
+                                    class="legacy-numeric text-2xl font-bold text-white sm:text-3xl"
                                     >03:42:18</span
                                 >
-                                <Award class="size-10 text-fl-gold-soft" />
+                                <Award class="size-8 text-fl-gold-soft" />
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Legacy Code (QR) -->
-                    <div
-                        class="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out"
-                        :style="shapeStyle(2)"
-                    >
+                        <!-- Legacy Code (QR) -->
                         <div
-                            class="relative grid w-56 grid-cols-7 gap-1 rounded-xl border border-white/10 bg-fl-black p-5 shadow-[0_0_60px_-10px_rgba(224,202,137,0.4)] lg:w-64"
+                            class="absolute inset-0 flex items-center justify-center"
+                            :style="contentStyle(2)"
                         >
-                            <span
-                                v-for="n in 49"
-                                :key="n"
-                                class="aspect-square rounded-[1px]"
-                                :class="
-                                    [
-                                        1, 5, 8, 12, 15, 20, 24, 27, 31, 36, 40,
-                                        44, 47,
-                                    ].includes(n)
-                                        ? 'bg-fl-gold-soft'
-                                        : 'bg-white/5'
-                                "
-                            />
-                            <span
-                                class="fl-qr-scan absolute inset-x-3 h-0.5 rounded-full bg-fl-gold-soft shadow-[0_0_10px_2px_rgba(224,202,137,0.8)]"
-                            />
+                            <div class="relative grid w-40 grid-cols-7 gap-1">
+                                <span
+                                    v-for="n in 49"
+                                    :key="n"
+                                    class="aspect-square rounded-[1px]"
+                                    :class="
+                                        [
+                                            1, 5, 8, 12, 15, 20, 24, 27, 31, 36,
+                                            40, 44, 47,
+                                        ].includes(n)
+                                            ? 'bg-fl-gold-soft'
+                                            : 'bg-white/10'
+                                    "
+                                />
+                                <span
+                                    class="fl-qr-scan absolute inset-x-2 h-0.5 rounded-full bg-fl-gold-soft shadow-[0_0_10px_2px_rgba(224,202,137,0.8)]"
+                                />
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Legacy Profile -->
-                    <div
-                        class="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-out"
-                        :style="shapeStyle(3)"
-                    >
+                        <!-- Legacy Profile -->
                         <div
-                            class="flex w-64 flex-col items-center gap-4 rounded-2xl border border-white/10 bg-fl-graphite/70 p-8 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.7)] lg:w-72"
+                            class="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                            :style="contentStyle(3)"
                         >
                             <div
-                                class="fl-medal-pulse flex size-16 items-center justify-center rounded-full border-2 border-fl-gold/40 bg-fl-black text-fl-gold-soft"
+                                class="flex size-14 items-center justify-center rounded-full border-2 border-fl-gold/40 bg-black/30 text-fl-gold-soft"
                             >
-                                <IdCard class="size-7" />
+                                <IdCard class="size-6" />
                             </div>
                             <div
-                                class="legacy-numeric text-base font-semibold text-white"
+                                class="legacy-numeric text-sm font-semibold text-white"
                             >
                                 12 medallas
                             </div>
-                            <div class="h-2 w-full rounded-full bg-white/10">
+                            <div class="h-1.5 w-40 rounded-full bg-white/15">
                                 <div
                                     class="fl-profile-fill h-full rounded-full bg-gradient-to-r from-fl-gold to-fl-gold-soft"
                                     :style="{
@@ -368,44 +373,30 @@ const glowStyle = computed(() => {
 }
 @keyframes fl-orbit-spin {
     to {
-        transform: rotate(360deg);
+        transform: translate(-50%, -50%) rotate(360deg);
     }
 }
 
-.fl-medal-pulse {
-    animation: fl-medal-pulse 3.2s ease-in-out infinite;
-}
-@keyframes fl-medal-pulse {
-    0%,
-    100% {
-        box-shadow: 0 0 0 0 color-mix(in srgb, var(--fl-gold) 35%, transparent);
-    }
-    50% {
-        box-shadow:
-            0 0 0 14px transparent,
-            0 0 40px -4px color-mix(in srgb, var(--fl-gold) 25%, transparent);
-    }
-}
-
-.fl-plate-shine::before {
+.fl-frame-sweep::before {
     content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(
         115deg,
-        transparent 30%,
-        rgba(255, 255, 255, 0.16) 48%,
-        transparent 66%
+        transparent 35%,
+        rgba(255, 255, 255, 0.14) 50%,
+        transparent 65%
     );
     transform: translateX(-130%);
-    animation: fl-plate-sweep 3.6s ease-in-out infinite;
+    animation: fl-frame-sweep 4.5s ease-in-out infinite;
+    pointer-events: none;
 }
-@keyframes fl-plate-sweep {
+@keyframes fl-frame-sweep {
     0%,
-    30% {
+    35% {
         transform: translateX(-130%);
     }
-    70%,
+    75%,
     100% {
         transform: translateX(130%);
     }
@@ -453,8 +444,7 @@ const glowStyle = computed(() => {
 
 @media (prefers-reduced-motion: reduce) {
     .fl-orbit,
-    .fl-medal-pulse,
-    .fl-plate-shine::before,
+    .fl-frame-sweep::before,
     .fl-qr-scan {
         animation: none;
     }
