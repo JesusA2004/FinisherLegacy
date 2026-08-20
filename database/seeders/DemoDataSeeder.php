@@ -508,7 +508,7 @@ class DemoDataSeeder extends Seeder
                 'delivered_at' => now()->subDay(),
             ]);
             $plate->latestProductionJob?->update([
-                'status' => ProductionJobStatus::Completed,
+                'status' => ProductionJobStatus::Delivered,
                 'queued_at' => now()->subDays(2),
                 'started_at' => now()->subDays(2),
                 'completed_at' => now()->subDays(2),
@@ -531,7 +531,7 @@ class DemoDataSeeder extends Seeder
         ]);
 
         $plate->latestProductionJob?->update([
-            'status' => ProductionJobStatus::Completed,
+            'status' => ProductionJobStatus::Delivered,
             'queued_at' => now()->subHours(2),
             'started_at' => now()->subHour(),
             'completed_at' => now(),
@@ -556,7 +556,7 @@ class DemoDataSeeder extends Seeder
             ]);
 
             $plate->latestProductionJob?->update([
-                'status' => ProductionJobStatus::Completed,
+                'status' => ProductionJobStatus::Delivered,
                 'queued_at' => now()->subHours(4),
                 'started_at' => now()->subHours(3.5),
                 'completed_at' => now()->subHours(3),

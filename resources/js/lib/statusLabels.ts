@@ -86,12 +86,30 @@ export const reprintStatus: StatusMap = {
 
 export const productionJobStatus: StatusMap = {
     queued: { label: 'En cola', class: 'border-sky-500/30 text-sky-400' },
-    processing: {
-        label: 'Procesando',
+    assigned: { label: 'Asignada', class: 'border-fl-gold/30 text-fl-gold' },
+    preparing: { label: 'Preparando', class: 'border-fl-gold/30 text-fl-gold' },
+    engraving_front: {
+        label: 'Grabando frente',
         class: 'border-fl-gold/30 text-fl-gold',
     },
-    completed: {
-        label: 'Completado',
+    awaiting_flip: {
+        label: 'Voltea la placa',
+        class: 'border-amber-500/30 text-amber-400',
+    },
+    engraving_back: {
+        label: 'Grabando reverso',
+        class: 'border-fl-gold/30 text-fl-gold',
+    },
+    verifying_qr: {
+        label: 'Verificando QR',
+        class: 'border-amber-500/30 text-amber-400',
+    },
+    ready: {
+        label: 'Lista',
+        class: 'border-emerald-500/30 text-emerald-400',
+    },
+    delivered: {
+        label: 'Entregada',
         class: 'border-emerald-500/30 text-emerald-400',
     },
     failed: { label: 'Falló', class: 'border-red-500/30 text-red-400' },

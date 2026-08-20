@@ -82,12 +82,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('can:production.access')->prefix('production')->name('production.')->group(function () {
         Route::get('/', [ProductionController::class, 'index'])->name('index');
-        Route::patch('plates/{plate}/status', [ProductionController::class, 'updateStatus'])
-            ->middleware('can:production.manage')
-            ->name('plates.status');
-        Route::patch('plates/{plate}/checklist', [ProductionController::class, 'updateChecklist'])
-            ->middleware('can:production.manage')
-            ->name('plates.checklist');
+
+        // Manual/web fallback for the same physical workflow the Device
+        // API drives (docs/adr/0003-production-state-machine.md §45) —
+        // every route here calls the same Actions as the Device API.
+        Route::middleware('can:production.manage')->prefix('jobs/{job}')->name('jobs.')->group(function () {
+            Route::patch('prepare', [ProductionController::class, 'prepare'])->name('prepare');
+            Route::patch('front/start', [ProductionController::class, 'frontStart'])->name('front.start');
+            Route::patch('front/complete', [ProductionController::class, 'frontComplete'])->name('front.complete');
+            Route::patch('flip/confirm', [ProductionController::class, 'flipConfirm'])->name('flip.confirm');
+            Route::patch('back/start', [ProductionController::class, 'backStart'])->name('back.start');
+            Route::patch('back/complete', [ProductionController::class, 'backComplete'])->name('back.complete');
+            Route::post('qr/verify', [ProductionController::class, 'qrVerify'])->name('qr.verify');
+            Route::patch('deliver', [ProductionController::class, 'deliver'])->name('deliver');
+            Route::post('fail', [ProductionController::class, 'fail'])->name('fail');
+            Route::patch('cancel', [ProductionController::class, 'cancel'])->name('cancel');
+        });
     });
 
     // Production file downloads: gated by plates.view alone (not the wider

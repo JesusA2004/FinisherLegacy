@@ -23,7 +23,11 @@ class ProductionDeviceFactory extends Factory
             'machine_profile_id' => null,
             'event_edition_id' => null,
             'status' => ProductionDeviceStatus::Active,
-            'last_seen_at' => null,
+            // A factory-made device defaults to "recently seen" (online) —
+            // Slice 2 requires a device to be online before it can claim a
+            // job (docs/adr/0003 §81). Tests exercising the offline path
+            // override this explicitly (`->create(['last_seen_at' => null])`).
+            'last_seen_at' => now(),
             'app_version' => '1.0.0-mock',
             'capabilities' => [
                 'laser_type' => 'fiber',

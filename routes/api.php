@@ -103,9 +103,47 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('{job}/claim', [ProductionJobController::class, 'claim'])
                 ->middleware(['ability:production:claim', 'device.idempotent'])
                 ->name('claim');
+            Route::post('{job}/release', [ProductionJobController::class, 'release'])
+                ->middleware(['ability:production:claim', 'device.idempotent'])
+                ->name('release');
             Route::get('{job}/artifact/{face}', [ProductionJobController::class, 'artifact'])
                 ->middleware('ability:production:read')
                 ->name('artifact');
+
+            // Slice 2 (docs/adr/0003) — physical workflow. `production:update`
+            // gates coordination steps, `production:engrave` gates the four
+            // steps that represent actual laser activity — see
+            // App\Enums\DeviceAbility.
+            Route::post('{job}/prepare', [ProductionJobController::class, 'prepare'])
+                ->middleware(['ability:production:update', 'device.idempotent'])
+                ->name('prepare');
+            Route::post('{job}/front/start', [ProductionJobController::class, 'frontStart'])
+                ->middleware(['ability:production:engrave', 'device.idempotent'])
+                ->name('front.start');
+            Route::post('{job}/front/complete', [ProductionJobController::class, 'frontComplete'])
+                ->middleware(['ability:production:engrave', 'device.idempotent'])
+                ->name('front.complete');
+            Route::post('{job}/flip/confirm', [ProductionJobController::class, 'flipConfirm'])
+                ->middleware(['ability:production:update', 'device.idempotent'])
+                ->name('flip.confirm');
+            Route::post('{job}/back/start', [ProductionJobController::class, 'backStart'])
+                ->middleware(['ability:production:engrave', 'device.idempotent'])
+                ->name('back.start');
+            Route::post('{job}/back/complete', [ProductionJobController::class, 'backComplete'])
+                ->middleware(['ability:production:engrave', 'device.idempotent'])
+                ->name('back.complete');
+            Route::post('{job}/qr/verify', [ProductionJobController::class, 'qrVerify'])
+                ->middleware(['ability:production:update', 'device.idempotent'])
+                ->name('qr.verify');
+            Route::post('{job}/deliver', [ProductionJobController::class, 'deliver'])
+                ->middleware(['ability:production:update', 'device.idempotent'])
+                ->name('deliver');
+            Route::post('{job}/fail', [ProductionJobController::class, 'fail'])
+                ->middleware(['ability:production:update', 'device.idempotent'])
+                ->name('fail');
+            Route::post('{job}/cancel', [ProductionJobController::class, 'cancel'])
+                ->middleware(['ability:production:update', 'device.idempotent'])
+                ->name('cancel');
         });
     });
 });

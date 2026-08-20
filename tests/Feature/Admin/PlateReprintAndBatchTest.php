@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\DeviceAbility;
 use App\Enums\EditionStatus;
 use App\Enums\EventStatus;
 use App\Enums\LegacyCodeStatus;
@@ -16,6 +17,7 @@ use App\Models\LegacyCode;
 use App\Models\Plate;
 use App\Models\PlateTemplate;
 use App\Models\PlateTemplateVersion;
+use App\Models\ProductionDevice;
 use App\Models\ProductionJob;
 use App\Models\User;
 use App\Services\PlateGenerationService;
@@ -59,7 +61,7 @@ function makeReadyPlate(PlateTemplateVersion $version): Plate
 
     ProductionJob::create([
         'plate_id' => $plate->id,
-        'status' => ProductionJobStatus::Completed,
+        'status' => ProductionJobStatus::Ready,
         'queued_at' => now(),
     ]);
 
@@ -192,6 +194,44 @@ test('event_operator cannot reprint (plates.manage required, only plates.view gr
         'reason' => 'x',
         'use_original' => true,
     ])->assertForbidden();
+});
+
+test('a reprint job gets its own fresh artifact, same legacy code and template version, once claimed', function () {
+    // makeReadyPlate's original job is already `ready` (grabado y
+    // entregable) — not claimable itself, which is correct: only the
+    // reprint (a fresh `queued` job) should be.
+    $plate = makeReadyPlate($this->version);
+    $originalJob = $plate->latestProductionJob;
+    $device = ProductionDevice::factory()->create();
+    $token = $device->createToken('test', DeviceAbility::all())->plainTextToken;
+
+    $this->actingAs($this->admin)->post(route('admin.plates.reprint', $plate), [
+        'reason' => 'Placa dañada en tránsito',
+        'use_original' => true,
+    ])->assertRedirect();
+
+    // Not `latestProductionJob` here: both jobs can share the same
+    // second-precision `created_at` in a fast test run, which makes that
+    // relation's tiebreak ambiguous — resolve the new one unambiguously
+    // by excluding the known original id instead.
+    $reprintJob = ProductionJob::where('plate_id', $plate->id)->where('id', '!=', $originalJob->id)->firstOrFail();
+    expect($reprintJob->id)->not->toBe($originalJob->id)
+        ->and($reprintJob->status->value)->toBe('queued')
+        ->and($reprintJob->artifact)->toBeNull();
+
+    // Switching from web session auth (admin, above) to a Sanctum bearer
+    // token — the guard must be forgotten or it can keep resolving the
+    // previous request's identity (see EnsureProductionDeviceToken tests
+    // for the same gotcha).
+    $this->app['auth']->forgetGuards();
+
+    $claim = $this->withToken($token)->postJson("/api/v1/production/jobs/{$reprintJob->id}/claim");
+    $claim->assertOk();
+
+    $reprintArtifact = $reprintJob->fresh()->artifact;
+    expect($reprintArtifact)->not->toBeNull()
+        ->and($reprintArtifact->plate_template_version_id)->toBe($plate->plate_template_version_id)
+        ->and($claim->json('data.plate.legacy_code'))->toBe($plate->legacyCode->code);
 });
 
 test('admin can batch-export a small set of plates as a single zip with a manifest', function () {

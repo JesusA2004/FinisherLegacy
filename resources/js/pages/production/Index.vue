@@ -1,36 +1,86 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { ArrowRight, Ban, Check, Download, PackageOpen } from '@lucide/vue';
+import { Ban, Download, PackageOpen, QrCode } from '@lucide/vue';
 import { ref } from 'vue';
 import { exportMethod as exportFace } from '@/actions/App/Http/Controllers/Admin/PlateController';
 import {
-    updateChecklist,
-    updateStatus,
+    backComplete,
+    backStart,
+    cancel,
+    deliver,
+    flipConfirm,
+    frontComplete,
+    frontStart,
+    prepare,
+    qrVerify,
 } from '@/actions/App/Http/Controllers/ProductionController';
 import HelpPopover from '@/components/HelpPopover.vue';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 
-type ChecklistItem = 'front' | 'back' | 'qr';
+type ManualAction =
+    | 'prepare'
+    | 'start_front'
+    | 'complete_front'
+    | 'confirm_flip'
+    | 'start_back'
+    | 'complete_back'
+    | 'verify_qr'
+    | 'deliver'
+    | null;
 
 type Card = {
     id: number;
+    status: string;
+    manual_action: ManualAction;
     serial_number: string;
     athlete_name: string;
     bib_number: string | null;
     event_name: string | null;
-    status: string;
     legacy_code: string | null;
     generation_mode: string;
     updated_at: string | null;
     download_format: string;
     download_dpi: number;
-    checklist: Record<ChecklistItem, boolean>;
+    device: { name: string; online: boolean } | null;
+    checklist: Record<'front' | 'back' | 'qr', boolean>;
+    error_message: string | null;
 };
 
-const checklistLabels: Record<ChecklistItem, string> = {
-    front: 'Frente',
-    back: 'Reverso',
-    qr: 'QR',
+const statusLabels: Record<string, string> = {
+    queued: 'Pendiente',
+    assigned: 'Asignada',
+    preparing: 'Preparando',
+    engraving_front: 'Grabando frente',
+    awaiting_flip: 'VOLTEA LA PLACA',
+    engraving_back: 'Grabando reverso',
+    verifying_qr: 'Verificando QR',
+    ready: 'Lista',
+    delivered: 'Entregada',
+    failed: 'Falló',
+    cancelled: 'Cancelada',
+};
+
+const actionMeta: Record<
+    Exclude<ManualAction, null>,
+    { fn: (job: number) => { url: string; method: string }; label: string }
+> = {
+    prepare: { fn: prepare, label: 'Iniciar preparación' },
+    start_front: { fn: frontStart, label: 'Iniciar frente' },
+    complete_front: { fn: frontComplete, label: 'Confirmar frente grabado' },
+    confirm_flip: { fn: flipConfirm, label: 'Confirmar placa volteada' },
+    start_back: { fn: backStart, label: 'Iniciar reverso' },
+    complete_back: { fn: backComplete, label: 'Confirmar reverso grabado' },
+    verify_qr: { fn: qrVerify, label: 'Verificar QR' },
+    deliver: { fn: deliver, label: 'Marcar entregada' },
 };
 
 function quickDownloadUrl(card: Card): string {
@@ -49,74 +99,71 @@ const { columns } = defineProps<{
     >;
 }>();
 
-const columnMeta: Record<
-    string,
-    { title: string; next: string | null; nextLabel: string; accent: string }
-> = {
-    pending: {
-        title: 'Pendiente',
-        next: 'processing',
-        nextLabel: 'Iniciar producción',
-        accent: 'bg-white/30',
-    },
-    processing: {
-        title: 'En proceso',
-        next: 'ready',
-        nextLabel: 'Marcar lista',
-        accent: 'bg-amber-400',
-    },
-    ready: {
-        title: 'Lista',
-        next: 'delivered',
-        nextLabel: 'Marcar entregada',
-        accent: 'bg-sky-400',
-    },
-    delivered: {
-        title: 'Entregada',
-        next: null,
-        nextLabel: '',
-        accent: 'bg-emerald-400',
-    },
-    issue: {
-        title: 'Incidencia',
-        next: null,
-        nextLabel: '',
-        accent: 'bg-red-400',
-    },
+const columnTitles: Record<string, string> = {
+    pending: 'Pendiente',
+    processing: 'En proceso',
+    ready: 'Lista',
+    delivered: 'Entregada',
+    issue: 'Incidencia',
 };
 
 const pendingIds = ref(new Set<number>());
+const qrDialogOpen = ref(false);
+const qrDialogCard = ref<Card | null>(null);
+const qrValue = ref('');
 
-function withPending(plateId: number, status: string) {
-    pendingIds.value.add(plateId);
-    router.patch(
-        updateStatus(plateId).url,
-        { status },
+function runAction(card: Card) {
+    if (!card.manual_action) {
+        return;
+    }
+
+    if (card.manual_action === 'verify_qr') {
+        qrDialogCard.value = card;
+        qrValue.value = '';
+        qrDialogOpen.value = true;
+
+        return;
+    }
+
+    const { fn } = actionMeta[card.manual_action];
+    const { url, method } = fn(card.id);
+    pendingIds.value.add(card.id);
+    router.visit(url, {
+        method: method as 'patch' | 'post',
+        preserveScroll: true,
+        onFinish: () => pendingIds.value.delete(card.id),
+    });
+}
+
+function submitQr() {
+    if (!qrDialogCard.value) {
+        return;
+    }
+
+    const jobId = qrDialogCard.value.id;
+    pendingIds.value.add(jobId);
+
+    router.post(
+        qrVerify(jobId).url,
+        { decoded_value: qrValue.value },
         {
             preserveScroll: true,
-            onFinish: () => pendingIds.value.delete(plateId),
+            onSuccess: () => (qrDialogOpen.value = false),
+            onFinish: () => pendingIds.value.delete(jobId),
         },
     );
 }
 
-function advance(plateId: number, next: string) {
-    withPending(plateId, next);
-}
-
-function cancel(plateId: number) {
-    withPending(plateId, 'cancelled');
-}
-
-function toggleChecklist(card: Card, item: ChecklistItem) {
+function cancelJob(jobId: number) {
+    pendingIds.value.add(jobId);
     router.patch(
-        updateChecklist(card.id).url,
-        { item, checked: !card.checklist[item] },
-        { preserveScroll: true },
+        cancel(jobId).url,
+        {},
+        {
+            preserveScroll: true,
+            onFinish: () => pendingIds.value.delete(jobId),
+        },
     );
-}
-
-function checklistComplete(card: Card): boolean {
-    return card.checklist.front && card.checklist.back && card.checklist.qr;
 }
 </script>
 
@@ -127,8 +174,8 @@ function checklistComplete(card: Card): boolean {
         <h1 class="mb-6 flex items-center gap-1.5 text-xl font-bold text-white">
             Producción
             <HelpPopover
-                title="Archivo para láser"
-                text="SVG es el formato recomendado para importar al software de la máquina láser: es vectorial, así que nunca pierde nitidez sin importar el tamaño físico de la placa."
+                title="Flujo físico de grabado"
+                text="Cada tarjeta es un trabajo de producción — Asignada → Preparando → Grabando frente → Voltea la placa → Grabando reverso → Verificando QR → Lista → Entregada. Una estación (Device API) o un operador manual pueden avanzarlo, con las mismas reglas."
             />
         </h1>
 
@@ -149,25 +196,13 @@ function checklistComplete(card: Card): boolean {
                 <p
                     class="mb-3 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-white/50 uppercase"
                 >
-                    <span
-                        class="size-1.5 rounded-full"
-                        :class="columnMeta[key].accent"
-                    />
-                    {{ columnMeta[key].title }}
+                    {{ columnTitles[key] }}
                     <span class="text-white/30"
                         >({{ columns[key]?.length ?? 0 }})</span
                     >
                 </p>
 
-                <TransitionGroup
-                    tag="div"
-                    class="relative space-y-2"
-                    enter-active-class="transition duration-300 ease-out"
-                    enter-from-class="opacity-0 -translate-y-2 scale-95"
-                    leave-active-class="absolute w-full transition duration-200 ease-in"
-                    leave-to-class="opacity-0 translate-x-3 scale-95"
-                    move-class="transition duration-300 ease-out"
-                >
+                <div class="relative space-y-2">
                     <div
                         v-for="card in columns[key]"
                         :key="card.id"
@@ -195,7 +230,7 @@ function checklistComplete(card: Card): boolean {
                             </p>
                             <a
                                 :href="quickDownloadUrl(card)"
-                                :title="`Descargar ${card.download_format.toUpperCase()} (frente)`"
+                                :title="`Descargar ${card.download_format.toUpperCase()} (frente) — respaldo manual`"
                                 class="text-white/30 hover:text-fl-gold"
                                 target="_blank"
                             >
@@ -203,71 +238,70 @@ function checklistComplete(card: Card): boolean {
                             </a>
                         </div>
 
-                        <div
-                            v-if="key === 'processing'"
-                            class="mt-2 flex gap-1"
+                        <p
+                            v-if="key === 'processing' || key === 'issue'"
+                            class="mt-2 text-center text-sm font-bold text-fl-gold"
                         >
-                            <button
-                                v-for="item in ['front', 'back', 'qr'] as const"
-                                :key="item"
-                                type="button"
-                                class="fl-focus-glow flex flex-1 items-center justify-center gap-1 rounded-md border px-1 py-1 text-[10px] font-medium transition-colors active:scale-95"
-                                :class="
-                                    card.checklist[item]
-                                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
-                                        : 'border-white/10 text-white/40 hover:border-white/25'
-                                "
-                                @click="toggleChecklist(card, item)"
-                            >
-                                <Check
-                                    v-if="card.checklist[item]"
-                                    class="size-3"
-                                />
-                                {{ checklistLabels[item] }}
-                            </button>
-                        </div>
+                            {{ statusLabels[card.status] ?? card.status }}
+                        </p>
 
-                        <div
-                            v-if="columnMeta[key].next"
-                            class="mt-2 flex gap-1.5"
+                        <p
+                            v-if="card.device"
+                            class="mt-1 flex items-center justify-center gap-1 text-[10px] text-white/40"
                         >
+                            <span
+                                class="size-1.5 rounded-full"
+                                :class="
+                                    card.device.online
+                                        ? 'bg-emerald-400'
+                                        : 'bg-white/30'
+                                "
+                            />
+                            Estación: {{ card.device.name }}
+                        </p>
+
+                        <p
+                            v-if="card.error_message"
+                            class="mt-1 text-[10px] text-red-400"
+                        >
+                            {{ card.error_message }}
+                        </p>
+
+                        <div class="mt-2 flex gap-1.5">
                             <button
+                                v-if="card.manual_action"
                                 type="button"
                                 class="fl-focus-glow flex flex-1 items-center justify-center gap-1 rounded-md bg-fl-gold px-2 py-1.5 text-[11px] font-medium text-fl-black transition-transform active:scale-95 disabled:pointer-events-none disabled:opacity-60"
-                                :disabled="
-                                    pendingIds.has(card.id) ||
-                                    (key === 'processing' &&
-                                        !checklistComplete(card))
-                                "
-                                :title="
-                                    key === 'processing' &&
-                                    !checklistComplete(card)
-                                        ? 'Confirma frente, reverso y QR antes de marcar lista'
-                                        : undefined
-                                "
-                                @click="advance(card.id, columnMeta[key].next!)"
+                                :disabled="pendingIds.has(card.id)"
+                                @click="runAction(card)"
                             >
                                 <Spinner
                                     v-if="pendingIds.has(card.id)"
                                     class="size-3"
                                 />
                                 <template v-else>
-                                    {{ columnMeta[key].nextLabel }}
-                                    <ArrowRight class="size-3" />
+                                    <QrCode
+                                        v-if="
+                                            card.manual_action === 'verify_qr'
+                                        "
+                                        class="size-3"
+                                    />
+                                    {{ actionMeta[card.manual_action].label }}
                                 </template>
                             </button>
                             <button
+                                v-if="key === 'pending' || key === 'processing'"
                                 type="button"
                                 class="fl-focus-glow flex items-center justify-center rounded-md border border-white/10 px-2 py-1.5 text-white/40 transition-colors hover:border-red-400/30 hover:text-red-400 disabled:pointer-events-none disabled:opacity-60"
                                 :disabled="pendingIds.has(card.id)"
                                 aria-label="Cancelar"
-                                @click="cancel(card.id)"
+                                @click="cancelJob(card.id)"
                             >
                                 <Ban class="size-3.5" />
                             </button>
                         </div>
                     </div>
-                </TransitionGroup>
+                </div>
 
                 <div
                     v-if="!columns[key]?.length"
@@ -278,5 +312,36 @@ function checklistComplete(card: Card): boolean {
                 </div>
             </div>
         </div>
+
+        <Dialog v-model:open="qrDialogOpen">
+            <DialogContent
+                class="dark border-white/10 bg-fl-graphite text-white"
+            >
+                <DialogHeader>
+                    <DialogTitle>Verificar QR</DialogTitle>
+                </DialogHeader>
+                <div class="space-y-2">
+                    <p class="text-xs text-white/50">
+                        Escanea o pega el valor leído del QR del reverso de
+                        {{ qrDialogCard?.serial_number }}.
+                    </p>
+                    <Input
+                        v-model="qrValue"
+                        placeholder="https://finisherlegacy.com/l/FL-XXXXXXX"
+                        class="border-white/10 bg-fl-black text-white"
+                        @keyup.enter="submitQr"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button
+                        class="bg-fl-gold text-fl-black hover:bg-fl-gold-soft"
+                        :disabled="!qrValue"
+                        @click="submitQr"
+                    >
+                        Verificar
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </div>
 </template>

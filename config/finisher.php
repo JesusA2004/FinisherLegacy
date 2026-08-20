@@ -100,10 +100,12 @@ return [
     'device_online_timeout_seconds' => env('FINISHER_DEVICE_ONLINE_TIMEOUT_SECONDS', 90),
 
     // How long a claimed ProductionJob's lease lasts before it becomes
-    // reclaimable by another device. Deliberately does NOT apply to jobs
-    // whose physical engraving is already in progress — Slice 1 has no
-    // engraving-progress state yet (see docs/adr/0002), so today this only
-    // protects the queued -> claimed window, which is safe to reclaim.
+    // reclaimable by another device — ONLY while the job is Assigned or
+    // Preparing (ProductionJob::isSafeToRelease()). Once physical
+    // engraving starts (engraving_front onward) the lease stops mattering
+    // entirely: there is real, irreversible physical state on the plate,
+    // so a job is never auto-reclaimed out from under a device past that
+    // point — see docs/adr/0003-production-state-machine.md §Lease.
     'device_lease_seconds' => env('FINISHER_DEVICE_LEASE_SECONDS', 900),
 
     // How long a pairing code/poll token stays valid before a desktop must
@@ -119,4 +121,10 @@ return [
     // How long a stored device idempotency response is honored before a
     // repeated Idempotency-Key is treated as a new request.
     'idempotency_ttl_seconds' => env('FINISHER_IDEMPOTENCY_TTL_SECONDS', 86400),
+
+    // Private disk (never a public URL) for frozen ProductionArtifact
+    // files — served only through the authenticated, ownership-checked
+    // Device API artifact endpoint. See
+    // App\Services\Production\ProductionArtifactService.
+    'production_artifact_disk' => env('FINISHER_PRODUCTION_ARTIFACT_DISK', 'local'),
 ];

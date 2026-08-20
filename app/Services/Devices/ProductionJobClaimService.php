@@ -7,6 +7,8 @@ use App\Exceptions\Devices\NoProductionJobAvailableException;
 use App\Exceptions\Devices\ProductionJobAlreadyClaimedException;
 use App\Models\ProductionDevice;
 use App\Models\ProductionJob;
+use App\Services\Production\PlateProductionCoordinator;
+use App\Services\Production\ProductionArtifactService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -19,13 +21,18 @@ use Illuminate\Support\Facades\DB;
  * database engine happens to re-evaluate a filter after a blocked lock is
  * granted — see docs/adr/0002 for why that distinction matters.
  *
- * Deliberately does not change `ProductionJob.status` or `Plate.status` —
- * see the migration comment on `production_device_id`/`claimed_at`/
- * `lease_expires_at` and docs/adr/0002 §Deuda. This slice only proves who
- * holds the job, not a new production state machine.
+ * Since Slice 2 (docs/adr/0003), a successful claim also moves the job to
+ * `assigned` and freezes its ProductionArtifact — see docs/adr/0003 §31,
+ * the flow diagram this mirrors exactly (claim -> artifact congelado ->
+ * prepare).
  */
 class ProductionJobClaimService
 {
+    public function __construct(
+        private readonly ProductionArtifactService $artifacts,
+        private readonly PlateProductionCoordinator $coordinator,
+    ) {}
+
     /**
      * Read-only — the best candidate a device could claim next, or null.
      * Never assigns anything; GET /production/jobs/next is a peek.
@@ -52,30 +59,46 @@ class ProductionJobClaimService
                 throw new NoProductionJobAvailableException;
             }
 
-            if ($locked->status !== ProductionJobStatus::Queued) {
-                throw new ProductionJobAlreadyClaimedException;
+            // Idempotent for the device that already holds a still-live
+            // claim on it (Assigned/Preparing) — a retried claim call
+            // (dropped connection, desktop retry) just refreshes the lease
+            // instead of erroring or re-generating anything.
+            $alreadyMine = $locked->production_device_id === $device->id
+                && in_array($locked->status, [ProductionJobStatus::Assigned, ProductionJobStatus::Preparing], true);
+
+            if (! $alreadyMine) {
+                // Otherwise claimable only if genuinely unclaimed (queued),
+                // or safely reclaimable because a previous claim's lease
+                // lapsed before any physical work started — see
+                // ProductionJob::isSafeToRelease()/hasClaimableLease() and
+                // docs/adr/0003-production-state-machine.md §Lease.
+                $claimable = $locked->status === ProductionJobStatus::Queued
+                    || ($locked->isSafeToRelease() && $locked->hasClaimableLease());
+
+                if (! $claimable) {
+                    throw new ProductionJobAlreadyClaimedException;
+                }
+
+                $locked->update([
+                    'production_device_id' => $device->id,
+                    'claimed_at' => now(),
+                    'lease_expires_at' => now()->addSeconds((int) config('finisher.device_lease_seconds', 900)),
+                    'status' => ProductionJobStatus::Assigned,
+                ]);
+                $locked->refresh();
+                $this->coordinator->sync($locked);
+
+                activity()
+                    ->causedBy($device)
+                    ->performedOn($locked)
+                    ->withProperties(['production_device_id' => $device->id])
+                    ->log('Trabajo de producción reclamado por una estación.');
+            } else {
+                $locked->update(['lease_expires_at' => now()->addSeconds((int) config('finisher.device_lease_seconds', 900))]);
+                $locked->refresh();
             }
 
-            // Idempotent for the device that already holds it — a retried
-            // claim call (dropped connection, desktop retry) just refreshes
-            // the lease instead of erroring.
-            if ($locked->production_device_id !== null
-                && $locked->production_device_id !== $device->id
-                && ! $locked->hasClaimableLease()) {
-                throw new ProductionJobAlreadyClaimedException;
-            }
-
-            $locked->update([
-                'production_device_id' => $device->id,
-                'claimed_at' => now(),
-                'lease_expires_at' => now()->addSeconds((int) config('finisher.device_lease_seconds', 900)),
-            ]);
-
-            activity()
-                ->causedBy($device)
-                ->performedOn($locked)
-                ->withProperties(['production_device_id' => $device->id])
-                ->log('Trabajo de producción reclamado por una estación.');
+            $this->artifacts->ensureGenerated($locked);
 
             return $locked->fresh();
         });
@@ -89,6 +112,11 @@ class ProductionJobClaimService
         return ProductionJob::query()
             ->where('status', ProductionJobStatus::Queued)
             ->where(fn (Builder $q) => $q->whereNull('production_device_id')->orWhere('lease_expires_at', '<=', now()))
-            ->when($device->event_edition_id, fn (Builder $q, int $editionId) => $q->where('event_edition_id', $editionId));
+            ->when($device->event_edition_id, fn (Builder $q, int $editionId) => $q->where('event_edition_id', $editionId))
+            ->when($device->machine_profile_id, fn (Builder $q, int $profileId) => $q->where(function (Builder $q) use ($profileId) {
+                // A job with no machine_profile_id is generic/compatible
+                // with any station — see docs/adr/0003 §59.
+                $q->whereNull('machine_profile_id')->orWhere('machine_profile_id', $profileId);
+            }));
     }
 }

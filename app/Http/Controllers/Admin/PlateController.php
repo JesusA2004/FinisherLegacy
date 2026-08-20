@@ -14,7 +14,6 @@ use App\Models\User;
 use App\Services\PlateExportService;
 use App\Services\PlateSnapshotBuilder;
 use App\Services\PlateTemplateRenderService;
-use App\Services\ProductionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -28,7 +27,6 @@ class PlateController extends Controller
 {
     public function __construct(
         private readonly PlateExportService $exports,
-        private readonly ProductionService $production,
         private readonly PlateSnapshotBuilder $snapshotBuilder,
     ) {}
 
@@ -171,9 +169,11 @@ class PlateController extends Controller
 
             // Reprinting always reuses the plate's existing legacy_code_id — a new
             // Legacy Code is only ever created for an explicit administrative
-            // exception, never as a side effect of a reprint.
-            $this->production->transition($plate, PlateStatus::Reprint, $request->user());
-            $this->production->transition($plate->fresh(), PlateStatus::Queued, $request->user());
+            // exception, never as a side effect of a reprint. The brief
+            // Reprint -> Queued dance is a simple product-status marker,
+            // not a ProductionJob state — see docs/adr/0003 §Reprint.
+            $plate->update(['status' => PlateStatus::Reprint]);
+            $plate->update(['status' => PlateStatus::Queued]);
 
             ProductionJob::create([
                 'plate_id' => $plate->id,

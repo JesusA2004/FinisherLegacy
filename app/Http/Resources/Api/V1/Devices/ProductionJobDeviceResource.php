@@ -21,9 +21,13 @@ class ProductionJobDeviceResource extends JsonResource
 
         return [
             'job_id' => $payload->jobId,
-            'plate_id' => $payload->plateId,
-            'serial' => $payload->serial,
-            'legacy_code' => $payload->legacyCode,
+            'status' => $payload->status,
+            'next_action' => $payload->nextAction,
+            'plate' => [
+                'id' => $payload->plateId,
+                'serial' => $payload->serial,
+                'legacy_code' => $payload->legacyCode,
+            ],
             'dimensions' => $payload->dimensions,
             'front' => $payload->front,
             'back' => $payload->back,

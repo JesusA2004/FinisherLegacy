@@ -2,8 +2,11 @@
 
 use App\Enums\PlateGenerationMode;
 use App\Enums\PlateStatus;
+use App\Enums\PlateTemplateVersionStatus;
 use App\Models\LegacyCode;
 use App\Models\Plate;
+use App\Models\PlateTemplate;
+use App\Models\PlateTemplateVersion;
 use App\Models\ProductionJob;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -15,17 +18,45 @@ beforeEach(function () {
     $this->productionUser->assignRole('production_operator');
 });
 
-function plateWithJob(PlateStatus $status): Plate
+function producibleJob(): ProductionJob
 {
+    $template = PlateTemplate::factory()->create(['width_mm' => 60, 'height_mm' => 40]);
+    $version = PlateTemplateVersion::factory()->create([
+        'plate_template_id' => $template->id,
+        'status' => PlateTemplateVersionStatus::Published,
+        'front_configuration' => ['elements' => []],
+        'back_configuration' => ['elements' => []],
+    ]);
+
     $plate = Plate::factory()->create([
         'generation_mode' => PlateGenerationMode::Quick,
-        'status' => $status,
+        'status' => PlateStatus::Queued,
+        'plate_template_id' => $template->id,
+        'plate_template_version_id' => $version->id,
     ]);
     $legacyCode = LegacyCode::factory()->create(['plate_id' => $plate->id]);
     $plate->update(['legacy_code_id' => $legacyCode->id]);
-    ProductionJob::factory()->create(['plate_id' => $plate->id, 'status' => 'queued']);
 
-    return $plate->fresh();
+    return ProductionJob::factory()->create(['plate_id' => $plate->id, 'status' => 'queued']);
+}
+
+function advanceToStatus(User $actor, ProductionJob $job, string $status): void
+{
+    match ($status) {
+        'assigned', 'preparing' => test()->actingAs($actor)->patch(route('production.jobs.prepare', $job)),
+        'engraving_front' => test()->actingAs($actor)->patch(route('production.jobs.front.start', $job)),
+        'awaiting_flip' => test()->actingAs($actor)->patch(route('production.jobs.front.complete', $job)),
+        'engraving_back' => (function () use ($actor, $job) {
+            test()->actingAs($actor)->patch(route('production.jobs.flip.confirm', $job));
+            test()->actingAs($actor)->patch(route('production.jobs.back.start', $job));
+        })(),
+        'verifying_qr' => test()->actingAs($actor)->patch(route('production.jobs.back.complete', $job)),
+        'ready' => test()->actingAs($actor)->post(route('production.jobs.qr.verify', $job), [
+            'decoded_value' => route('legacy-code.show', $job->plate->fresh()->legacyCode->code),
+        ]),
+        'delivered' => test()->actingAs($actor)->patch(route('production.jobs.deliver', $job)),
+        default => null,
+    };
 }
 
 test('production routes are blocked without the production.access permission', function () {
@@ -34,11 +65,21 @@ test('production routes are blocked without the production.access permission', f
     $this->actingAs($user)->get(route('production.index'))->assertForbidden();
 });
 
-test('the kanban groups plates into the right columns', function () {
-    plateWithJob(PlateStatus::Queued);
-    plateWithJob(PlateStatus::Processing);
-    plateWithJob(PlateStatus::Ready);
-    plateWithJob(PlateStatus::Delivered);
+test('the kanban groups jobs into the right columns', function () {
+    producibleJob(); // queued -> pending
+
+    $processing = producibleJob();
+    advanceToStatus($this->productionUser, $processing, 'preparing');
+
+    $ready = producibleJob();
+    foreach (['preparing', 'engraving_front', 'awaiting_flip', 'engraving_back', 'verifying_qr', 'ready'] as $status) {
+        advanceToStatus($this->productionUser, $ready, $status);
+    }
+
+    $delivered = producibleJob();
+    foreach (['preparing', 'engraving_front', 'awaiting_flip', 'engraving_back', 'verifying_qr', 'ready', 'delivered'] as $status) {
+        advanceToStatus($this->productionUser, $delivered, $status);
+    }
 
     $response = $this->actingAs($this->productionUser)->get(route('production.index'));
 
@@ -52,97 +93,60 @@ test('the kanban groups plates into the right columns', function () {
     );
 });
 
-test('a plate can advance from queued to processing to ready to delivered once the checklist is complete', function () {
-    $plate = plateWithJob(PlateStatus::Queued);
+test('a job advances through the full physical workflow to delivered', function () {
+    $job = producibleJob();
 
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'processing'])
-        ->assertRedirect();
-    expect($plate->fresh()->status)->toBe(PlateStatus::Processing);
-
-    foreach (['front', 'back', 'qr'] as $item) {
-        $this->actingAs($this->productionUser)
-            ->patch(route('production.plates.checklist', $plate), ['item' => $item, 'checked' => true])
-            ->assertRedirect();
+    foreach (['preparing', 'engraving_front', 'awaiting_flip', 'engraving_back', 'verifying_qr', 'ready', 'delivered'] as $status) {
+        advanceToStatus($this->productionUser, $job, $status);
     }
 
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'ready'])
-        ->assertRedirect();
-    expect($plate->fresh()->status)->toBe(PlateStatus::Ready);
-
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'delivered'])
-        ->assertRedirect();
-    expect($plate->fresh()->status)->toBe(PlateStatus::Delivered)
-        ->and($plate->fresh()->delivered_at)->not->toBeNull();
-
-    $job = $plate->fresh()->latestProductionJob;
-    expect($job->status->value)->toBe('completed');
+    $job->refresh();
+    expect($job->status->value)->toBe('delivered')
+        ->and($job->front_engraved_at)->not->toBeNull()
+        ->and($job->back_engraved_at)->not->toBeNull()
+        ->and($job->qr_verified_at)->not->toBeNull()
+        ->and($job->plate->fresh()->status)->toBe(PlateStatus::Delivered);
 });
 
-test('marking a plate ready is blocked until front, back, and QR are all checked off', function () {
-    $plate = plateWithJob(PlateStatus::Processing);
+test('a job cannot skip straight from queued to ready', function () {
+    $job = producibleJob();
 
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'ready'])
-        ->assertSessionHasErrors('status');
-    expect($plate->fresh()->status)->toBe(PlateStatus::Processing);
+    $response = $this->actingAs($this->productionUser)->post(route('production.jobs.qr.verify', $job), [
+        'decoded_value' => 'anything',
+    ]);
 
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.checklist', $plate), ['item' => 'front', 'checked' => true]);
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.checklist', $plate), ['item' => 'back', 'checked' => true]);
-
-    // Still missing "qr" — still blocked.
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'ready'])
-        ->assertSessionHasErrors('status');
-
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.checklist', $plate), ['item' => 'qr', 'checked' => true]);
-
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'ready'])
-        ->assertRedirect();
-    expect($plate->fresh()->status)->toBe(PlateStatus::Ready);
+    $response->assertRedirect();
+    expect($job->fresh()->status->value)->toBe('queued');
 });
 
-test('a checklist item can be unchecked again', function () {
-    $plate = plateWithJob(PlateStatus::Processing);
+test('back cannot start before the flip is confirmed', function () {
+    $job = producibleJob();
+    advanceToStatus($this->productionUser, $job, 'preparing');
+    advanceToStatus($this->productionUser, $job, 'engraving_front');
+    advanceToStatus($this->productionUser, $job, 'awaiting_flip');
 
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.checklist', $plate), ['item' => 'front', 'checked' => true]);
-    expect($plate->fresh()->latestProductionJob->front_engraved_at)->not->toBeNull();
+    $this->actingAs($this->productionUser)->patch(route('production.jobs.back.start', $job))->assertRedirect();
 
-    $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.checklist', $plate), ['item' => 'front', 'checked' => false]);
-    expect($plate->fresh()->latestProductionJob->front_engraved_at)->toBeNull();
+    expect($job->fresh()->status->value)->toBe('awaiting_flip');
 });
 
-test('a plate cannot skip straight from queued to delivered', function () {
-    $plate = plateWithJob(PlateStatus::Queued);
+test('a wrong QR scan keeps the job in verifying_qr', function () {
+    $job = producibleJob();
+    foreach (['preparing', 'engraving_front', 'awaiting_flip', 'engraving_back', 'verifying_qr'] as $status) {
+        advanceToStatus($this->productionUser, $job, $status);
+    }
 
-    $response = $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'delivered']);
+    $this->actingAs($this->productionUser)->post(route('production.jobs.qr.verify', $job), [
+        'decoded_value' => route('legacy-code.show', 'FL-WRONGCODE'),
+    ])->assertRedirect();
 
-    $response->assertSessionHasErrors('status');
-    expect($plate->fresh()->status)->toBe(PlateStatus::Queued);
+    expect($job->fresh()->status->value)->toBe('verifying_qr')
+        ->and($job->fresh()->qr_verified_at)->toBeNull();
 });
 
-test('a delivered plate cannot move backwards', function () {
-    $plate = plateWithJob(PlateStatus::Delivered);
-
-    $response = $this->actingAs($this->productionUser)
-        ->patch(route('production.plates.status', $plate), ['status' => 'processing']);
-
-    $response->assertSessionHasErrors('status');
-});
-
-test('the board stays on a bounded query budget with ~30 plates in production', function () {
+test('the board stays on a bounded query budget with ~30 jobs in production', function () {
     foreach (range(1, 30) as $i) {
-        $status = [PlateStatus::Queued, PlateStatus::Processing, PlateStatus::Ready, PlateStatus::Delivered][$i % 4];
-        plateWithJob($status);
+        producibleJob();
     }
 
     DB::enableQueryLog();
@@ -153,18 +157,17 @@ test('the board stays on a bounded query budget with ~30 plates in production', 
     DB::disableQueryLog();
 
     $response->assertOk();
-    // A handful of fixed queries (auth, permissions, the eager-loaded plate
-    // query itself) — must NOT scale with the number of plates, or the
-    // board will crawl once a real event's production volume lands here.
+    // A handful of fixed queries (auth, permissions, the eager-loaded job
+    // query itself) — must NOT scale with the number of jobs.
     expect($queryCount)->toBeLessThan(15);
 });
 
-test('production.view alone cannot mutate plate status', function () {
+test('production.view alone cannot mutate a job', function () {
     $viewer = User::factory()->create();
     $viewer->givePermissionTo(['production.access', 'production.view']);
-    $plate = plateWithJob(PlateStatus::Queued);
+    $job = producibleJob();
 
     $this->actingAs($viewer)
-        ->patch(route('production.plates.status', $plate), ['status' => 'processing'])
+        ->patch(route('production.jobs.prepare', $job))
         ->assertForbidden();
 });

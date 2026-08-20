@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\ProductionActor;
 use App\Enums\ProductionDeviceStatus;
 use Database\Factories\ProductionDeviceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -28,7 +29,7 @@ use Spatie\Activitylog\Support\LogOptions;
     'uuid', 'name', 'station_code', 'machine_profile_id', 'event_edition_id',
     'status', 'last_seen_at', 'app_version', 'capabilities', 'metadata',
 ])]
-class ProductionDevice extends Authenticatable
+class ProductionDevice extends Authenticatable implements ProductionActor
 {
     /** @use HasFactory<ProductionDeviceFactory> */
     use HasApiTokens, HasFactory, LogsActivity;
@@ -79,5 +80,10 @@ class ProductionDevice extends Authenticatable
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()->logFillable()->logOnlyDirty()->dontLogEmptyChanges();
+    }
+
+    public function productionActorLabel(): string
+    {
+        return "la estación {$this->name}";
     }
 }

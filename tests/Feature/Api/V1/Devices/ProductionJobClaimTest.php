@@ -54,14 +54,19 @@ test('a device sees the queued job via the next peek and can claim it', function
     $next = $this->withToken($token)->getJson('/api/v1/production/jobs/next');
     $next->assertOk();
     $next->assertJsonPath('data.job_id', $job->id);
-    $next->assertJsonStructure(['data' => ['front' => ['download_url', 'sha256'], 'back' => ['download_url', 'sha256', 'transform']]]);
+    // An unclaimed job peeked via `next` has no artifact yet (docs/adr/0003
+    // §Artifact) — front/back are null until claimed.
+    $next->assertJsonPath('data.front', null);
+    $next->assertJsonPath('data.back', null);
 
     $claim = $this->withToken($token)->postJson("/api/v1/production/jobs/{$job->id}/claim");
     $claim->assertOk();
+    $claim->assertJsonStructure(['data' => ['front' => ['download_url', 'sha256'], 'back' => ['download_url', 'sha256', 'transform']]]);
 
     expect($job->fresh()->production_device_id)->toBe($device->id)
         ->and($job->fresh()->claimed_at)->not->toBeNull()
-        ->and($job->fresh()->lease_expires_at)->not->toBeNull();
+        ->and($job->fresh()->lease_expires_at)->not->toBeNull()
+        ->and($job->fresh()->status->value)->toBe('assigned');
 });
 
 test('two devices racing for the same job — only one wins the claim', function () {

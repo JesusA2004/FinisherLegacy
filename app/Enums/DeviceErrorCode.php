@@ -27,4 +27,17 @@ enum DeviceErrorCode: string
     case ProductionJobNotFound = 'PRODUCTION_JOB_NOT_FOUND';
     case ProductionJobAlreadyClaimed = 'PRODUCTION_JOB_ALREADY_CLAIMED';
     case ProductionJobForbidden = 'PRODUCTION_JOB_FORBIDDEN';
+
+    // Slice 2 — production state machine (docs/adr/0003)
+    case InvalidProductionTransition = 'INVALID_PRODUCTION_TRANSITION';
+    case JobNotAssigned = 'JOB_NOT_ASSIGNED';
+    case JobOwnedByOtherDevice = 'JOB_OWNED_BY_OTHER_DEVICE';
+    case ArtifactNotReady = 'ARTIFACT_NOT_READY';
+    case FrontNotCompleted = 'FRONT_NOT_COMPLETED';
+    case FlipNotConfirmed = 'FLIP_NOT_CONFIRMED';
+    case BackNotCompleted = 'BACK_NOT_COMPLETED';
+    case QrVerificationFailed = 'QR_VERIFICATION_FAILED';
+    case JobAlreadyCompleted = 'JOB_ALREADY_COMPLETED';
+    case JobFailed = 'JOB_FAILED';
+    case DeviceLeaseExpired = 'DEVICE_LEASE_EXPIRED';
 }

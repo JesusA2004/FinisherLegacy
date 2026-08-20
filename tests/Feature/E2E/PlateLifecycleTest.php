@@ -34,6 +34,28 @@ function e2eEdition(): EventEdition
     return $edition->fresh();
 }
 
+/**
+ * Drives a plate's ProductionJob through the full manual/web workflow
+ * (docs/adr/0003-production-state-machine.md §45) — queued all the way to
+ * delivered, scanning the plate's real Legacy Code at the QR step.
+ */
+function runManualProductionFlow(User $admin, Plate $plate): void
+{
+    $job = $plate->fresh()->latestProductionJob;
+
+    test()->actingAs($admin)->patch(route('production.jobs.prepare', $job))->assertRedirect();
+    test()->actingAs($admin)->patch(route('production.jobs.front.start', $job))->assertRedirect();
+    test()->actingAs($admin)->patch(route('production.jobs.front.complete', $job))->assertRedirect();
+    test()->actingAs($admin)->patch(route('production.jobs.flip.confirm', $job))->assertRedirect();
+    test()->actingAs($admin)->patch(route('production.jobs.back.start', $job))->assertRedirect();
+    test()->actingAs($admin)->patch(route('production.jobs.back.complete', $job))->assertRedirect();
+
+    $scanned = route('legacy-code.show', $plate->fresh()->legacyCode->code);
+    test()->actingAs($admin)->post(route('production.jobs.qr.verify', $job), ['decoded_value' => $scanned])->assertRedirect();
+
+    test()->actingAs($admin)->patch(route('production.jobs.deliver', $job))->assertRedirect();
+}
+
 test('template versioning: a plate keeps referencing the version it was printed with even after the event default moves to a newer version', function () {
     $edition = e2eEdition();
     $race = EventRace::factory()->create(['event_edition_id' => $edition->id]);
@@ -136,13 +158,9 @@ test('full integrated lifecycle: template to legacy profile', function () {
     $back->assertOk();
     expect($back->getContent())->toContain($plate->serial_number);
 
-    // 6. Production: queued -> processing -> ready -> delivered.
-    $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'processing']);
-    foreach (['front', 'back', 'qr'] as $item) {
-        $this->actingAs($this->admin)->patch(route('production.plates.checklist', $plate), ['item' => $item, 'checked' => true]);
-    }
-    $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'ready']);
-    $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'delivered']);
+    // 6. Production: queued -> ... -> ready -> delivered (the full physical
+    // workflow, docs/adr/0003).
+    runManualProductionFlow($this->admin, $plate);
     expect($plate->fresh()->status)->toBe(PlateStatus::Delivered);
 
     // 7. Legacy profile already resolves (athlete was known up front).
@@ -184,9 +202,7 @@ test('full quick-plate lifecycle: no database record to legacy id via claim', fu
     $this->actingAs($noRole)->get(route('admin.plates.export', [$plate, 'front', 'svg']))->assertForbidden();
     $this->actingAs($this->operator)->get(route('admin.plates.export', [$plate, 'front', 'svg']))->assertOk();
 
-    $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'processing']);
-    $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'ready']);
-    $this->actingAs($this->admin)->patch(route('production.plates.status', $plate), ['status' => 'delivered']);
+    runManualProductionFlow($this->admin, $plate);
 
     // Weeks later, someone scans the QR and claims it.
     $claimant = User::factory()->create();
