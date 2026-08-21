@@ -133,4 +133,13 @@ return [
     // Device API artifact endpoint. See
     // App\Services\Production\ProductionArtifactService.
     'production_artifact_disk' => env('FINISHER_PRODUCTION_ARTIFACT_DISK', 'local'),
+
+    // The /api/v1 contract version a client (future Desktop/Mobile) can
+    // check against — bumped only on a breaking change, not every deploy.
+    // `minimum_supported_client_version` is nullable and unenforced today
+    // (no client exists yet to reject) — it's the contract point Slice 6
+    // prepares for a future version-gate, never a value this backend
+    // guesses at (docs/api/v1.md §Versión).
+    'api_version' => '1.0',
+    'minimum_supported_client_version' => env('FINISHER_MINIMUM_SUPPORTED_CLIENT_VERSION'),
 ];

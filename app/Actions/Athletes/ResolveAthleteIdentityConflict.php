@@ -23,7 +23,10 @@ class ResolveAthleteIdentityConflict
     ) {}
 
     /**
-     * @param  'link_existing'|'create_new'|'ignore'  $resolution
+     * @param  string  $resolution  'link_existing'|'create_new'|'ignore' — kept as a plain `string` (not a
+     *                              literal-union type) so the `default` arm below stays reachable: the caller
+     *                              (Admin\AthleteIdentityConflictController) already validates this via
+     *                              `Rule::in()`, but this Action has no other guard against a bad value.
      */
     public function handle(AthleteIdentityConflict $conflict, string $resolution, User $actor, ?Athlete $chosenAthlete = null): AthleteIdentityConflict
     {

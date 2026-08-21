@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Enums\EditionStatus;
+use App\Exceptions\PlateAlreadyExistsException;
 use App\Exceptions\PlateTemplateMissingException;
 use App\Models\EventEdition;
 use App\Models\EventParticipant;
 use App\Models\Plate;
 use App\Queries\Operations\GetEventOperationsDashboard;
-use App\Services\PlateEligibilityService;
+use App\Queries\Operations\GetParticipantOperationsDetail;
+use App\Queries\Operations\SearchEventParticipants;
 use App\Services\PlateGenerationService;
 use App\Services\PlateSnapshotBuilder;
 use App\Services\PlateTemplateRenderService;
@@ -32,7 +34,6 @@ class OperatorController extends Controller
         private readonly PlateGenerationService $plates,
         private readonly PlateTemplateRenderService $renderer,
         private readonly PlateSnapshotBuilder $snapshotBuilder,
-        private readonly PlateEligibilityService $eligibility,
         private readonly GetEventOperationsDashboard $dashboard,
     ) {}
 
@@ -56,7 +57,7 @@ class OperatorController extends Controller
                 'name' => $activeEdition->event->name.' — '.$activeEdition->name,
                 'hasTemplate' => $activeEdition->defaultPlateTemplateVersion() !== null,
             ] : null,
-            'dashboard' => $activeEdition ? $this->dashboardPayload($activeEdition) : null,
+            'dashboard' => $activeEdition ? $this->dashboard->handle($activeEdition) : null,
         ]);
     }
 
@@ -69,28 +70,7 @@ class OperatorController extends Controller
         $activeEdition = $this->activeEdition($request);
         abort_unless($activeEdition !== null, 422);
 
-        return response()->json(['data' => $this->dashboardPayload($activeEdition)]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function dashboardPayload(EventEdition $edition): array
-    {
-        $data = $this->dashboard->handle($edition);
-
-        return [
-            'provider' => $data['provider'],
-            'data' => $data['data'],
-            'production' => $data['production'],
-            'stations' => $data['stations'],
-            'readiness' => [
-                'ready' => $data['readiness']->ready,
-                'checks' => $data['readiness']->checks,
-                'blocking_reasons' => $data['readiness']->blockingReasons,
-            ],
-            'metrics' => $data['metrics'],
-        ];
+        return response()->json(['data' => $this->dashboard->handle($activeEdition)]);
     }
 
     public function selectEvent(Request $request): RedirectResponse
@@ -102,28 +82,12 @@ class OperatorController extends Controller
         return back();
     }
 
-    public function search(Request $request): JsonResponse
+    public function search(Request $request, SearchEventParticipants $searchQuery): JsonResponse
     {
-        $editionId = $request->session()->get('operator_event_edition_id');
-        abort_unless($editionId, 422);
+        $activeEdition = $this->activeEdition($request);
+        abort_unless($activeEdition !== null, 422);
 
-        $query = trim((string) $request->query('q', ''));
-
-        if ($query === '') {
-            return response()->json(['data' => []]);
-        }
-
-        $participants = EventParticipant::query()
-            ->where('event_edition_id', $editionId)
-            ->where(function ($q) use ($query) {
-                $q->where('bib_number', $query)
-                    ->orWhere('full_name', 'like', "%{$query}%")
-                    ->orWhere('first_name', 'like', "%{$query}%")
-                    ->orWhere('last_name', 'like', "%{$query}%");
-            })
-            ->with(['eventRace', 'result'])
-            ->limit(20)
-            ->get();
+        $participants = $searchQuery->handle($activeEdition, (string) $request->query('q', ''));
 
         return response()->json([
             'data' => $participants->map(fn (EventParticipant $participant) => [
@@ -132,44 +96,43 @@ class OperatorController extends Controller
                 'full_name' => $participant->full_name,
                 'race' => $participant->eventRace?->name,
                 'has_result' => $participant->result !== null,
-                'has_plate' => Plate::where('event_participant_id', $participant->id)->exists(),
+                'has_plate' => (bool) $participant->plates_exists,
             ]),
         ]);
     }
 
-    public function showParticipant(EventParticipant $eventParticipant): Response
+    public function showParticipant(EventParticipant $eventParticipant, GetParticipantOperationsDetail $detail): Response
     {
-        $eventParticipant->load(['eventRace', 'eventEdition.event', 'result', 'user']);
-        $existingPlate = Plate::where('event_participant_id', $eventParticipant->id)->first();
-        $version = $eventParticipant->eventEdition->defaultPlateTemplateVersion($eventParticipant->event_race_id);
-        $eligibility = $this->eligibility->check($eventParticipant);
+        $data = $detail->handle($eventParticipant);
+        $participant = $data['participant'];
+        $version = $data['templateVersion'];
 
         return Inertia::render('operator/Participant', [
             'participant' => [
-                'id' => $eventParticipant->id,
-                'bib_number' => $eventParticipant->bib_number,
-                'full_name' => $eventParticipant->full_name,
-                'race' => $eventParticipant->eventRace?->name,
-                'official_time' => $eventParticipant->result?->official_time,
-                'pace' => $eventParticipant->result?->pace,
-                'result_status' => $eventParticipant->result?->status->value,
-                'manual_override' => $eventParticipant->result?->manual_override_at !== null,
+                'id' => $participant->id,
+                'bib_number' => $participant->bib_number,
+                'full_name' => $participant->full_name,
+                'race' => $participant->eventRace?->name,
+                'official_time' => $participant->result?->official_time,
+                'pace' => $participant->result?->pace,
+                'result_status' => $participant->result?->status->value,
+                'manual_override' => $participant->result?->manual_override_at !== null,
             ],
             'templateName' => $version ? "{$version->plateTemplate->name} — V{$version->version}" : null,
-            'existingPlate' => $existingPlate ? $this->plates->previewPayload($existingPlate) : null,
+            'existingPlate' => $data['existingPlate'] ? $this->plates->previewPayload($data['existingPlate']) : null,
             'eligibility' => [
-                'eligible' => $eligibility->eligible,
-                'reasons' => $eligibility->reasons,
+                'eligible' => $data['eligibility']->eligible,
+                'reasons' => $data['eligibility']->reasons,
             ],
         ]);
     }
 
     public function generateIntegratedPlate(EventParticipant $eventParticipant): RedirectResponse
     {
-        abort_if(Plate::where('event_participant_id', $eventParticipant->id)->exists(), 409, 'Esta persona ya tiene una placa generada.');
-
         try {
             $plate = $this->plates->generateIntegrated($eventParticipant);
+        } catch (PlateAlreadyExistsException $e) {
+            abort(409, $e->getMessage());
         } catch (PlateTemplateMissingException) {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'Este evento no tiene un molde de producción asignado. Configúralo antes de generar placas.']);
 

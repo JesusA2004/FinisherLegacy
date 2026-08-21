@@ -27,16 +27,26 @@ class GetEventOperationsDashboard
     ) {}
 
     /**
+     * A plain, already-flattened array — both Web (Inertia props) and the
+     * API (a JSON resource) render this directly, with zero
+     * transport-specific reshaping of `readiness` in either controller.
+     *
      * @return array<string, mixed>
      */
     public function handle(EventEdition $edition): array
     {
+        $readiness = $this->readiness->check($edition);
+
         return [
             'provider' => $this->providerStatus($edition),
             'data' => $this->dataStatus($edition),
             'production' => $this->productionStatus($edition),
             'stations' => $this->stationStatus($edition),
-            'readiness' => $this->readiness->check($edition),
+            'readiness' => [
+                'ready' => $readiness->ready,
+                'checks' => $readiness->checks,
+                'blocking_reasons' => $readiness->blockingReasons,
+            ],
             'metrics' => $this->metrics->handle($edition),
         ];
     }

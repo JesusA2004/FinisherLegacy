@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Integrations;
 
 use App\Enums\ExternalSyncType;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\V1\Integrations\SyncRunResource;
 use App\Jobs\SyncExternalEventJob;
 use App\Models\ExternalEventMapping;
 use App\Models\ExternalSyncRun;
@@ -44,7 +45,7 @@ class SyncController extends Controller
         $syncRun->load(['providerConnection', 'eventEdition.event', 'errors' => fn ($q) => $q->orderByDesc('created_at')->limit(100)]);
 
         return Inertia::render('admin/integrations/SyncRun', [
-            'run' => $this->present($syncRun),
+            'run' => (new SyncRunResource($syncRun))->toArray(request()),
             'errors' => $syncRun->errors->map(fn ($e) => [
                 'entity_type' => $e->entity_type,
                 'external_id' => $e->external_id,
@@ -61,33 +62,6 @@ class SyncController extends Controller
      */
     public function status(ExternalSyncRun $syncRun): JsonResponse
     {
-        return response()->json(['data' => $this->present($syncRun)]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function present(ExternalSyncRun $syncRun): array
-    {
-        return [
-            'id' => $syncRun->id,
-            'status' => $syncRun->status->value,
-            'sync_type' => $syncRun->sync_type->value,
-            'provider' => $syncRun->providerConnection->name,
-            'event' => $syncRun->eventEdition?->event?->name,
-            'edition' => $syncRun->eventEdition?->name,
-            'started_at' => $syncRun->started_at?->diffForHumans(),
-            'completed_at' => $syncRun->completed_at?->diffForHumans(),
-            'events_received' => $syncRun->events_received,
-            'participants_received' => $syncRun->participants_received,
-            'participants_created' => $syncRun->participants_created,
-            'participants_updated' => $syncRun->participants_updated,
-            'results_received' => $syncRun->results_received,
-            'results_created' => $syncRun->results_created,
-            'results_updated' => $syncRun->results_updated,
-            'splits_received' => $syncRun->splits_received,
-            'identity_conflicts' => $syncRun->identity_conflicts,
-            'errors_count' => $syncRun->errors_count,
-        ];
+        return response()->json(['data' => (new SyncRunResource($syncRun))->toArray(request())]);
     }
 }

@@ -1,0 +1,476 @@
+openapi: 3.0.3
+info:
+  title: Finisher Legacy API
+  version: "1.0"
+  description: >
+    Fase 1 del contrato /api/v1 — cubre solo las rutas realmente
+    implementadas (ver routes/api.php). No es una spec aspiracional:
+    cualquier endpoint documentado aquí existe y está probado. El Device
+    API completo vive documentado aparte en docs/device-api/v1.md y no se
+    repite en detalle aquí.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Event Ops
+  - name: Integrations
+  - name: Health
+  - name: Device
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness check público
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  api_version: { type: string, example: "1.0" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Emite un token de usuario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user: { $ref: "#/components/schemas/User" }
+                      token: { type: string }
+        "422":
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ValidationError" }
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: Usuario autenticado — permisos y atleta vinculado
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/User" }
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+
+  /event-ops/{eventEdition}:
+    get:
+      tags: [Event Ops]
+      summary: Dashboard operativo del evento
+      parameters:
+        - $ref: "#/components/parameters/EventEditionId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/EventOpsDashboard" }
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /event-ops/{eventEdition}/participants/search:
+    get:
+      tags: [Event Ops]
+      summary: Buscar participante por dorsal o nombre
+      parameters:
+        - $ref: "#/components/parameters/EventEditionId"
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK — hasta 20 resultados, prioridad dorsal exacto > prefijo > id externo > nombre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ParticipantSummary" }
+
+  /event-ops/participants/{eventParticipant}:
+    get:
+      tags: [Event Ops]
+      summary: Detalle de participante — resultado, splits, elegibilidad
+      parameters:
+        - $ref: "#/components/parameters/EventParticipantId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/ParticipantDetail" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /event-ops/participants/{eventParticipant}/plate:
+    post:
+      tags: [Event Ops]
+      summary: Generar placa integrada
+      parameters:
+        - $ref: "#/components/parameters/EventParticipantId"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string }
+      responses:
+        "201":
+          description: Placa creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Plate" }
+        "409":
+          description: Ya existe una placa para este participante
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: El evento no tiene molde asignado (PLATE_TEMPLATE_MISSING)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /integrations/mappings/{eventMapping}/sync:
+    post:
+      tags: [Integrations]
+      summary: Encolar una sincronización con el proveedor externo
+      parameters:
+        - name: eventMapping
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sync_type: { type: string, enum: [roster, results, full] }
+                full: { type: boolean }
+      responses:
+        "202":
+          description: Encolado — no se ejecuta en este request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      mapping_id: { type: integer }
+
+  /integrations/mappings/{eventMapping}/sync-runs/latest:
+    get:
+      tags: [Integrations]
+      summary: Última corrida de sincronización de este mapping
+      parameters:
+        - name: eventMapping
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/SyncRun" }
+        "404":
+          description: Todavía no hay ninguna sincronización
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /device/bootstrap:
+    get:
+      tags: [Device]
+      summary: Payload de arranque para una estación (Device API — ver docs/device-api/v1.md)
+      security:
+        - deviceBearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      device: { $ref: "#/components/schemas/Device" }
+                      current_job:
+                        type: object
+                        nullable: true
+                        properties:
+                          id: { type: integer }
+                          status: { type: string }
+                          next_action: { type: string, nullable: true }
+                      server_time: { type: string, format: date-time }
+                      api_version: { type: string }
+                      minimum_supported_client_version: { type: string, nullable: true }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token Sanctum de un `User`
+    deviceBearerAuth:
+      type: http
+      scheme: bearer
+      description: Token Sanctum de un `ProductionDevice` — nunca intercambiable con un token de `User`
+
+  parameters:
+    EventEditionId:
+      name: eventEdition
+      in: path
+      required: true
+      schema: { type: integer }
+    EventParticipantId:
+      name: eventParticipant
+      in: path
+      required: true
+      schema: { type: integer }
+
+  responses:
+    Unauthenticated:
+      description: Token ausente o inválido
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Autenticado pero sin permiso
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: No encontrado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: NOT_FOUND }
+            message: { type: string }
+            details: { type: object }
+        request_id: { type: string, nullable: true }
+
+    ValidationError:
+      type: object
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        first_name: { type: string }
+        last_name: { type: string }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string, nullable: true }
+        email_verified: { type: boolean }
+        legacy_id: { type: string, nullable: true }
+        athlete:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            full_name: { type: string }
+        permissions:
+          type: array
+          items: { type: string }
+        created_at: { type: string, format: date-time }
+
+    ParticipantSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        bib_number: { type: string, nullable: true }
+        full_name: { type: string }
+        race: { type: string, nullable: true }
+        has_result: { type: boolean }
+        has_plate: { type: boolean }
+
+    Split:
+      type: object
+      properties:
+        label: { type: string }
+        sequence: { type: integer }
+        elapsed_time: { type: string, nullable: true }
+        segment_time: { type: string, nullable: true }
+
+    Result:
+      type: object
+      nullable: true
+      properties:
+        official_time: { type: string, nullable: true }
+        pace: { type: string, nullable: true }
+        status: { type: string }
+        overall_position: { type: integer, nullable: true }
+        category_position: { type: integer, nullable: true }
+        manual_override: { type: boolean }
+        splits:
+          type: array
+          items: { $ref: "#/components/schemas/Split" }
+
+    ParticipantDetail:
+      type: object
+      properties:
+        id: { type: integer }
+        bib_number: { type: string, nullable: true }
+        full_name: { type: string }
+        gender: { type: string, nullable: true }
+        category: { type: string, nullable: true }
+        race: { type: string, nullable: true }
+        athlete:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            full_name: { type: string }
+            previous_participations_count: { type: integer }
+        result: { $ref: "#/components/schemas/Result" }
+        template_name: { type: string, nullable: true }
+        plate:
+          allOf:
+            - { $ref: "#/components/schemas/Plate" }
+          nullable: true
+        eligibility:
+          type: object
+          properties:
+            eligible: { type: boolean }
+            reasons:
+              type: array
+              items: { type: string, enum: [NO_RESULT, NO_TEMPLATE, IDENTITY_CONFLICT, PLATE_ALREADY_EXISTS] }
+
+    Plate:
+      type: object
+      properties:
+        id: { type: integer }
+        serial_number: { type: string }
+        status: { type: string }
+        legacy_code: { type: string, nullable: true }
+        template_version_id: { type: integer, nullable: true }
+        production_job:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            status: { type: string }
+            next_action: { type: string, nullable: true }
+
+    Device:
+      type: object
+      properties:
+        uuid: { type: string }
+        name: { type: string }
+        station_code: { type: string, nullable: true }
+        status: { type: string }
+        online: { type: boolean }
+        last_seen_at: { type: string, format: date-time, nullable: true }
+        app_version: { type: string, nullable: true }
+        machine_profile:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            name: { type: string }
+        event_edition:
+          type: object
+          nullable: true
+          properties:
+            id: { type: integer }
+            name: { type: string }
+
+    SyncRun:
+      type: object
+      properties:
+        id: { type: integer }
+        status: { type: string, enum: [pending, running, completed, partial, failed] }
+        sync_type: { type: string, enum: [roster, results, full] }
+        provider: { type: string }
+        event: { type: string, nullable: true }
+        edition: { type: string, nullable: true }
+        started_at: { type: string, nullable: true }
+        completed_at: { type: string, nullable: true }
+        events_received: { type: integer }
+        participants_received: { type: integer }
+        participants_created: { type: integer }
+        participants_updated: { type: integer }
+        results_received: { type: integer }
+        results_created: { type: integer }
+        results_updated: { type: integer }
+        splits_received: { type: integer }
+        identity_conflicts: { type: integer }
+        errors_count: { type: integer }

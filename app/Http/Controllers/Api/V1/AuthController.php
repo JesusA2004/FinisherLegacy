@@ -72,7 +72,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->loadMissing('legacyId');
+        $user->loadMissing(['legacyId', 'athlete']);
 
         return $this->respond(new UserResource($user));
     }

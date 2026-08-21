@@ -13,6 +13,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property-read bool|null $plates_exists Only present when a query eager-loads it via
+ *                                          `withExists('plates')` — see
+ *                                          App\Queries\Operations\SearchEventParticipants.
+ */
 #[Fillable([
     'event_edition_id', 'event_race_id', 'user_id', 'athlete_id', 'external_participant_id', 'bib_number',
     'first_name', 'last_name', 'full_name', 'email', 'phone', 'gender', 'birth_date', 'category',

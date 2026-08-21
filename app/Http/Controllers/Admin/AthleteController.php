@@ -22,7 +22,7 @@ class AthleteController extends Controller
 
         $athletes = Athlete::query()
             ->where('identity_status', '!=', 'merged')
-            ->with('user')
+            ->with('user.legacyId')
             ->withCount('eventParticipations')
             ->when($search !== '', fn ($q) => $q->where(function ($query) use ($search) {
                 $query->where('full_name', 'like', "%{$search}%")
@@ -39,7 +39,7 @@ class AthleteController extends Controller
             'full_name' => $athlete->full_name,
             'email' => $athlete->email ?? '—',
             'has_user' => $athlete->user_id !== null ? 'Sí' : 'No',
-            'legacy_id' => $athlete->user?->legacyId?->code ?? '—',
+            'legacy_id' => $athlete->user?->legacyId->code ?? '—',
             'event_count' => $athlete->event_participations_count,
             'identity_status' => $athlete->identity_status->value,
         ]);

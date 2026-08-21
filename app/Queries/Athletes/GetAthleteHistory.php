@@ -3,7 +3,10 @@
 namespace App\Queries\Athletes;
 
 use App\Models\Athlete;
-use Illuminate\Support\Collection;
+use App\Models\EventParticipant;
+use App\Models\Medal;
+use App\Models\Plate;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Everything a canonical Athlete has done across every event — the query
@@ -13,7 +16,7 @@ use Illuminate\Support\Collection;
 class GetAthleteHistory
 {
     /**
-     * @return array{participations: Collection, plates: Collection, medals: Collection}
+     * @return array{participations: Collection<int, EventParticipant>, plates: Collection<int, Plate>, medals: Collection<int, Medal>}
      */
     public function handle(Athlete $athlete): array
     {

@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsureApiIdempotencyKey;
 use App\Http\Middleware\EnsureIdempotencyKey;
 use App\Http\Middleware\EnsureProductionDeviceToken;
 use App\Http\Middleware\EnsureUserToken;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Support\Api\ApiExceptionRenderer;
 use App\Support\Devices\DeviceExceptionRenderer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -32,6 +35,8 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        $middleware->api(prepend: [AssignRequestId::class]);
+
         // Device API (docs/adr/0002) — kept as aliases rather than global
         // middleware since only the device/production routes in
         // routes/api.php opt into them.
@@ -39,6 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'device.token' => EnsureProductionDeviceToken::class,
             'user.token' => EnsureUserToken::class,
             'device.idempotent' => EnsureIdempotencyKey::class,
+            'api.idempotent' => EnsureApiIdempotencyKey::class,
             'ability' => CheckForAnyAbility::class,
             'abilities' => CheckAbilities::class,
         ]);
@@ -58,6 +64,19 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return app(DeviceExceptionRenderer::class)->render($e);
+        });
+
+        // The rest of `/api/v1/*` (auth, medals, events, event-ops,
+        // integrations, …) — same unified `{"error": {...}}` envelope,
+        // via a separate renderer since the Device API's contract above is
+        // already documented/shipped and must not shift (docs/api/v1.md
+        // §Errores).
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return app(ApiExceptionRenderer::class)->render($e);
         });
 
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {

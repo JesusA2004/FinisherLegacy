@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\V1\Devices\DeviceController;
 use App\Http\Controllers\Api\V1\Devices\PairingController;
 use App\Http\Controllers\Api\V1\Devices\ProductionJobController;
 use App\Http\Controllers\Api\V1\EventController;
+use App\Http\Controllers\Api\V1\EventOpsController;
+use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\Integrations\SyncController as ApiIntegrationsSyncController;
 use App\Http\Controllers\Api\V1\LegacyCodeController;
 use App\Http\Controllers\Api\V1\MedalController;
 use App\Http\Controllers\Api\V1\PreregistrationController;
@@ -22,6 +25,8 @@ use Illuminate\Support\Facades\Route;
 | directly in a controller in this file.
 */
 Route::prefix('v1')->name('api.v1.')->group(function () {
+    Route::get('health', [HealthController::class, 'show'])->name('health');
+
     Route::post('auth/register', [AuthController::class, 'register'])
         ->middleware('throttle:api-register')
         ->name('auth.register');
@@ -46,6 +51,43 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('legacy-codes/{code}/claim', [LegacyCodeController::class, 'claim'])
             ->middleware('throttle:api-claim')
             ->name('legacy-codes.claim');
+
+        /*
+        |------------------------------------------------------------------
+        | Event Ops API (docs/adr/0006, docs/api/use-case-matrix.md) — same
+        | Queries/Services App\Http\Controllers\OperatorController (Web)
+        | uses. Staff-only: gated by the same `operator.access` permission
+        | Web already requires, never a parallel permission scheme.
+        |------------------------------------------------------------------
+        */
+        Route::middleware('can:operator.access')->prefix('event-ops')->name('event-ops.')->group(function () {
+            Route::get('{eventEdition}', [EventOpsController::class, 'dashboard'])->name('dashboard');
+            Route::get('{eventEdition}/participants/search', [EventOpsController::class, 'searchParticipants'])
+                ->middleware('throttle:60,1')
+                ->name('participants.search');
+            Route::get('participants/{eventParticipant}', [EventOpsController::class, 'participant'])
+                ->name('participants.show');
+            Route::post('participants/{eventParticipant}/plate', [EventOpsController::class, 'generatePlate'])
+                ->middleware('api.idempotent')
+                ->name('participants.plate');
+        });
+
+        /*
+        |------------------------------------------------------------------
+        | Integrations sync API (docs/adr/0005) — same App\Jobs\SyncExternalEventJob
+        | Web dispatches, never a second sync trigger.
+        |------------------------------------------------------------------
+        */
+        Route::prefix('integrations')->name('integrations.')->group(function () {
+            Route::middleware('can:integrations.view')->group(function () {
+                Route::get('mappings/{eventMapping}/sync-runs/latest', [ApiIntegrationsSyncController::class, 'latestRun'])
+                    ->name('mappings.sync-runs.latest');
+                Route::get('sync-runs/{syncRun}', [ApiIntegrationsSyncController::class, 'show'])
+                    ->name('sync-runs.show');
+            });
+            Route::middleware('can:integrations.sync')->post('mappings/{eventMapping}/sync', [ApiIntegrationsSyncController::class, 'store'])
+                ->name('mappings.sync');
+        });
     });
 
     Route::get('athletes/{athleteProfile:username}', [PublicAthleteController::class, 'show'])
@@ -89,6 +131,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('device', [DeviceController::class, 'show'])
             ->middleware('ability:device:heartbeat')
             ->name('device.show');
+        Route::get('device/bootstrap', [DeviceController::class, 'bootstrap'])
+            ->middleware('ability:device:heartbeat')
+            ->name('device.bootstrap');
         Route::post('device/heartbeat', [DeviceController::class, 'heartbeat'])
             ->middleware('ability:device:heartbeat')
             ->name('device.heartbeat');

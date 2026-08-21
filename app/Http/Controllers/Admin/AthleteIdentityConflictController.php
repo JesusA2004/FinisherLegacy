@@ -54,7 +54,7 @@ class AthleteIdentityConflictController extends Controller
             'athlete_id' => ['nullable', 'integer', 'exists:athletes,id'],
         ]);
 
-        $chosenAthlete = ! empty($data['athlete_id']) ? Athlete::find($data['athlete_id']) : null;
+        $chosenAthlete = ! empty($data['athlete_id']) ? Athlete::find((int) $data['athlete_id']) : null;
 
         $action->handle($conflict, $data['resolution'], $request->user(), $chosenAthlete);
 

@@ -6,6 +6,7 @@ use App\Enums\LegacyCodeStatus;
 use App\Enums\PlateGenerationMode;
 use App\Enums\PlateStatus;
 use App\Enums\ProductionJobStatus;
+use App\Exceptions\PlateAlreadyExistsException;
 use App\Exceptions\PlateTemplateMissingException;
 use App\Models\EventEdition;
 use App\Models\EventParticipant;
@@ -31,6 +32,13 @@ class PlateGenerationService
 
     public function generateIntegrated(EventParticipant $participant, ?PlateTemplateVersion $version = null): Plate
     {
+        // The one place this idempotency guard lives — Web and API both
+        // rely on it instead of each re-checking `Plate::exists()`
+        // themselves (docs/adr/0006-event-operations.md §5).
+        if (Plate::where('event_participant_id', $participant->id)->exists()) {
+            throw new PlateAlreadyExistsException;
+        }
+
         $participant->loadMissing(['eventEdition.event', 'eventRace', 'result.splits']);
         $edition = $participant->eventEdition;
         $result = $participant->result;

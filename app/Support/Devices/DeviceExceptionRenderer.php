@@ -72,6 +72,7 @@ class DeviceExceptionRenderer
                 'message' => $message,
                 'details' => (object) $details,
             ],
+            'request_id' => request()->attributes->get('request_id'),
         ], $status);
     }
 }

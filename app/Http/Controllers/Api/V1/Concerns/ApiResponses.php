@@ -20,7 +20,7 @@ trait ApiResponses
         return response()->json([
             'data' => $data,
             'message' => $message,
-            'meta' => (object) $meta,
+            'meta' => (object) [...$meta, 'request_id' => request()->attributes->get('request_id')],
         ], $status);
     }
 }
