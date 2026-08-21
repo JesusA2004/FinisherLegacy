@@ -19,6 +19,7 @@ import PlateMountDemo from '@/components/public/PlateMountDemo.vue';
 import ScrollCueButton from '@/components/public/ScrollCueButton.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 import StickyLegacyJourney from '@/components/public/StickyLegacyJourney.vue';
+import { useCanonicalUrl } from '@/composables/useCanonicalUrl';
 import { howItWorks, register } from '@/routes';
 import { index as eventsIndex } from '@/routes/events';
 import type {
@@ -30,6 +31,8 @@ defineProps<{
     featuredEditions: EventEditionCard[];
     legacyProfile: LegacyProfileType | null;
 }>();
+
+const canonicalUrl = useCanonicalUrl();
 
 const steps = [
     {
@@ -88,14 +91,27 @@ const mascotTips = [
     <Head title="Finisher Legacy — Tu meta termina. Tu historia no.">
         <meta
             name="description"
-            content="Finisher Legacy transforma cada logro deportivo en una historia que puedes conservar, revivir y compartir."
+            content="Finisher Legacy transforma cada logro deportivo en una historia que puedes conservar, revivir y compartir. Crea tu Legacy ID, conecta tu medalla física a un Legacy Code y construye tu colección de logros."
         />
-        <meta property="og:title" content="Finisher Legacy" />
+        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl" />
+        <meta property="og:type" content="website" />
+        <meta
+            property="og:title"
+            content="Finisher Legacy — Tu meta termina. Tu historia no."
+        />
         <meta
             property="og:description"
             content="Finisher Legacy transforma cada logro deportivo en una historia que puedes conservar, revivir y compartir."
         />
-        <meta property="og:type" content="website" />
+        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl" />
+        <meta
+            name="twitter:title"
+            content="Finisher Legacy — Tu meta termina. Tu historia no."
+        />
+        <meta
+            name="twitter:description"
+            content="Finisher Legacy transforma cada logro deportivo en una historia que puedes conservar, revivir y compartir."
+        />
     </Head>
 
     <HeroSection

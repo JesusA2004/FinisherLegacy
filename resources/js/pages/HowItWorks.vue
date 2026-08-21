@@ -7,7 +7,10 @@ import MascotGuide from '@/components/public/MascotGuide.vue';
 import PlateFlowCard from '@/components/public/PlateFlowCard.vue';
 import PlateShowcase from '@/components/public/PlateShowcase.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
+import { useCanonicalUrl } from '@/composables/useCanonicalUrl';
 import { register } from '@/routes';
+
+const canonicalUrl = useCanonicalUrl();
 
 const mascotTips = [
     {
@@ -91,9 +94,28 @@ const afterPlate = [
 </script>
 
 <template>
-    <Head title="Cómo funciona">
+    <Head title="Cómo funciona — De tu meta a tu legado">
         <meta
             name="description"
+            content="Descubre cómo Finisher Legacy conecta tu medalla física con tu historia digital: corre, registra, preserva y comparte cada logro."
+        />
+        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl" />
+        <meta property="og:type" content="website" />
+        <meta
+            property="og:title"
+            content="Cómo funciona Finisher Legacy — De tu meta a tu legado"
+        />
+        <meta
+            property="og:description"
+            content="Descubre cómo Finisher Legacy conecta tu medalla física con tu historia digital: corre, registra, preserva y comparte cada logro."
+        />
+        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl" />
+        <meta
+            name="twitter:title"
+            content="Cómo funciona Finisher Legacy — De tu meta a tu legado"
+        />
+        <meta
+            name="twitter:description"
             content="Descubre cómo Finisher Legacy conecta tu medalla física con tu historia digital."
         />
     </Head>

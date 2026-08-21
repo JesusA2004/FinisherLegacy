@@ -43,7 +43,15 @@ function submit() {
 </script>
 
 <template>
-    <Head :title="`Prerregistro — ${event.name}`" />
+    <Head :title="`Prerregistro — ${event.name} | Finisher Legacy`">
+        <meta
+            name="description"
+            :content="`Prerregístrate para ${event.name} en Finisher Legacy.`"
+        />
+        <!-- Transactional form, not content — keep it out of search
+             results (brand system §SEO: index content pages, not forms). -->
+        <meta name="robots" content="noindex, follow" />
+    </Head>
 
     <section class="mx-auto max-w-lg px-4 py-16 sm:px-6 lg:px-8">
         <template v-if="!edition || !isOpen">

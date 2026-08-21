@@ -4,6 +4,7 @@ import { Calendar, MapPin, Trophy } from '@lucide/vue';
 import { computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useCanonicalUrl } from '@/composables/useCanonicalUrl';
 import { preregister } from '@/routes/events';
 import type { EventDetail, EventEditionDetail } from '@/types';
 
@@ -11,6 +12,8 @@ const { event, edition } = defineProps<{
     event: EventDetail;
     edition: EventEditionDetail | null;
 }>();
+
+const canonicalUrl = useCanonicalUrl();
 
 const formattedDate = computed(() => {
     if (!edition) {
@@ -28,15 +31,94 @@ const phaseCopy: Record<string, string> = {
     ongoing: 'En curso',
     finished: 'Finalizado',
 };
+
+const metaDescription = computed(
+    () =>
+        event.description?.slice(0, 200) ??
+        `${event.name}${edition ? ` — ${formattedDate.value}, ${edition.city}` : ''}. Consulta detalles y prerregístrate en Finisher Legacy.`,
+);
+
+// SportsEvent structured data — only rendered when `edition` exists (see
+// the template below), since schema.org's rich-result eligibility needs
+// at minimum name/startDate/location, and a published edition is the only
+// place `event_date`/city/country come from. Every field here is exactly
+// what the page already renders elsewhere — nothing invented (brand
+// system: never present fabricated data as real).
+const eventJsonLd = computed(() => {
+    if (!edition) {
+        return null;
+    }
+
+    const data: Record<string, unknown> = {
+        '@context': 'https://schema.org',
+        '@type': 'SportsEvent',
+        name: event.name,
+        sport: event.sport,
+        startDate: edition.event_date,
+        // schema.org's EventStatusType has no "finished/completed" value —
+        // EventScheduled is correct whether the date is ahead or past.
+        eventStatus: 'https://schema.org/EventScheduled',
+        location: {
+            '@type': 'Place',
+            name: `${edition.city}, ${edition.country}`,
+            address: {
+                '@type': 'PostalAddress',
+                addressLocality: edition.city,
+                addressRegion: edition.state ?? undefined,
+                addressCountry: edition.country,
+            },
+        },
+    };
+
+    if (event.description) {
+        data.description = event.description;
+    }
+
+    if (event.cover_url) {
+        data.image = [event.cover_url];
+    }
+
+    if (event.organizer) {
+        data.organizer = { '@type': 'Organization', name: event.organizer };
+    }
+
+    if (canonicalUrl) {
+        data.url = canonicalUrl;
+    }
+
+    return data;
+});
 </script>
 
 <template>
-    <Head :title="event.name">
+    <Head :title="`${event.name} | Finisher Legacy`">
+        <meta name="description" :content="metaDescription" />
+        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl" />
+        <meta property="og:type" content="website" />
         <meta
-            name="description"
-            :content="event.description ?? `${event.name} — Finisher Legacy`"
+            property="og:title"
+            :content="`${event.name} | Finisher Legacy`"
         />
-        <meta property="og:title" :content="event.name" />
+        <meta property="og:description" :content="metaDescription" />
+        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl" />
+        <meta
+            v-if="event.cover_url"
+            property="og:image"
+            :content="event.cover_url"
+        />
+        <meta
+            name="twitter:title"
+            :content="`${event.name} | Finisher Legacy`"
+        />
+        <meta name="twitter:description" :content="metaDescription" />
+        <meta
+            v-if="event.cover_url"
+            name="twitter:image"
+            :content="event.cover_url"
+        />
+        <script v-if="eventJsonLd" type="application/ld+json">
+            {{ JSON.stringify(eventJsonLd) }}
+        </script>
     </Head>
 
     <section class="relative border-b border-white/5">

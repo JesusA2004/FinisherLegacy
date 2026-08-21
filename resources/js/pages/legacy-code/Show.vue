@@ -15,6 +15,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import { useCanonicalUrl } from '@/composables/useCanonicalUrl';
 import { claim, continueMethod } from '@/routes/legacy-code';
 import type { LegacyCodeAthlete, LegacyCodePlate } from '@/types';
 
@@ -31,6 +32,18 @@ const { code, available, linked, ownedByMe, plate, athlete, qrUrl } =
 
 const page = usePage();
 const isAuthenticated = computed(() => page.props.auth.user != null);
+const canonicalUrl = useCanonicalUrl();
+
+const pageTitle = computed(() =>
+    plate?.athlete_name && plate.event_name
+        ? `${plate.athlete_name} en ${plate.event_name} | Finisher Legacy`
+        : `Legacy Code ${code} | Finisher Legacy`,
+);
+const metaDescription = computed(() =>
+    plate?.athlete_name && plate.event_name
+        ? `El logro de ${plate.athlete_name} en ${plate.event_name}, conservado en su Legacy Profile.`
+        : 'Escanea tu placa Finisher Legacy para llegar a tu Legacy Profile.',
+);
 
 const confirmOpen = ref(false);
 const claiming = ref(false);
@@ -75,7 +88,17 @@ function submitClaim() {
 </script>
 
 <template>
-    <Head :title="`Legacy Code ${code}`" />
+    <Head :title="pageTitle">
+        <meta name="description" :content="metaDescription" />
+        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl" />
+        <!-- Unclaimed/generic codes are thin, near-duplicate content
+             across every unclaimed plate — only index once it's actually
+             linked to a real Legacy story. -->
+        <meta v-if="!linked" name="robots" content="noindex, follow" />
+        <meta property="og:title" :content="pageTitle" />
+        <meta property="og:description" :content="metaDescription" />
+        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl" />
+    </Head>
 
     <section class="mx-auto max-w-lg px-4 py-16 sm:px-6 lg:px-8">
         <div class="mb-8 flex items-center justify-center gap-1">

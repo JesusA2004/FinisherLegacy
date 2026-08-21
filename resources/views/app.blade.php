@@ -12,19 +12,70 @@
         <meta name="theme-color" content="#09090B">
         <meta name="msapplication-TileColor" content="#09090B">
 
-        {{-- Open Graph --}}
+        {{-- Open Graph — this is the site-wide default. Any page can
+             override og:title/og:description/og:image via its own
+             Inertia <Head>; Inertia dedupes on matching property/name, so
+             a page-level tag replaces this one instead of duplicating it. --}}
         <meta property="og:site_name" content="Finisher Legacy">
         <meta property="og:type" content="website">
-        <meta property="og:title" content="Finisher Legacy">
-        <meta property="og:description" content="Tu meta termina. Tu historia no. Conserva, revive y comparte cada logro deportivo.">
-        <meta property="og:image" content="{{ asset('images/brand/og-finisher-legacy.jpg') }}">
+        <meta property="og:locale" content="es_MX">
+        <meta property="og:title" content="Finisher Legacy — Tu meta termina. Tu historia no.">
+        <meta property="og:description" content="Finisher Legacy transforma cada logro deportivo en una historia que puedes conservar, revivir y compartir.">
+        <meta property="og:image" content="{{ asset('images/brand/og-finisher-legacy.png') }}">
         <meta property="og:image:width" content="1200">
         <meta property="og:image:height" content="630">
-        <meta property="og:image:type" content="image/jpeg">
+        <meta property="og:image:type" content="image/png">
+        <meta property="og:image:alt" content="Finisher Legacy — Tu historia. Tu legado.">
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="Finisher Legacy">
-        <meta name="twitter:description" content="Tu meta termina. Tu historia no. Conserva, revive y comparte cada logro deportivo.">
-        <meta name="twitter:image" content="{{ asset('images/brand/og-finisher-legacy.jpg') }}">
+        <meta name="twitter:title" content="Finisher Legacy — Tu meta termina. Tu historia no.">
+        <meta name="twitter:description" content="Finisher Legacy transforma cada logro deportivo en una historia que puedes conservar, revivir y compartir.">
+        <meta name="twitter:image" content="{{ asset('images/brand/og-finisher-legacy.png') }}">
+        <meta name="twitter:image:alt" content="Finisher Legacy — Tu historia. Tu legado.">
+
+        {{-- Organization + WebSite structured data — site-wide, safe to
+             repeat on every page (Google just reads the first valid one
+             per type it finds; duplicate identical JSON-LD across pages
+             is normal, not a penalty). Page-specific structured data
+             (SportsEvent, ProfilePage) is added per-page via Inertia
+             <Head> and is additive, not a replacement for this. --}}
+        {{-- '@@context' (not '@context'): Blade has a real @context
+             directive registered in this app (unrelated to JSON-LD) that
+             silently rewrites the literal text "@context" anywhere in this
+             file, including inside this PHP string — '@@' is Blade's
+             escape for a literal '@'. Confirmed by curling the rendered
+             page; don't "clean this up" back to '@context', it breaks the
+             JSON output. --}}
+        <script type="application/ld+json">
+            {!! json_encode([
+                '@@context' => 'https://schema.org',
+                '@graph' => [
+                    [
+                        '@type' => 'Organization',
+                        '@id' => rtrim(config('app.url'), '/').'/#organization',
+                        'name' => 'Finisher Legacy',
+                        'url' => config('app.url'),
+                        'logo' => asset('images/brand/logo/logo-mark-gold.png'),
+                        'description' => 'Finisher Legacy transforma cada logro deportivo en una historia que puedes conservar, revivir y compartir.',
+                    ],
+                    [
+                        '@type' => 'WebSite',
+                        '@id' => rtrim(config('app.url'), '/').'/#website',
+                        'name' => 'Finisher Legacy',
+                        'url' => config('app.url'),
+                        'inLanguage' => 'es-MX',
+                        'publisher' => ['@id' => rtrim(config('app.url'), '/').'/#organization'],
+                        'potentialAction' => [
+                            '@type' => 'SearchAction',
+                            'target' => [
+                                '@type' => 'EntryPoint',
+                                'urlTemplate' => rtrim(config('app.url'), '/').'/events?q={search_term_string}',
+                            ],
+                            'query-input' => 'required name=search_term_string',
+                        ],
+                    ],
+                ],
+            ], JSON_UNESCAPED_SLASHES) !!}
+        </script>
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>

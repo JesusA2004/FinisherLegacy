@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useCanonicalUrl } from '@/composables/useCanonicalUrl';
 import { index as eventsIndex } from '@/routes/events';
 import type { EventEditionCard } from '@/types';
 
@@ -50,6 +51,13 @@ function applyFilters() {
 
 const debouncedApply = useDebounceFn(applyFilters, 350);
 
+// No `keepQuery` — filters (?q=/?sport=/?status=) are facets of the same
+// listing, not distinct documents, so canonical always points at the
+// clean /events URL (standard faceted-navigation practice: consolidate
+// ranking signal on one page instead of spreading it across every filter
+// combination).
+const canonicalUrl = useCanonicalUrl();
+
 const mascotTips = [
     {
         id: 'filters',
@@ -70,10 +78,29 @@ const statusOptions = [
 </script>
 
 <template>
-    <Head title="Eventos">
+    <Head title="Eventos — Encuentra tu próxima meta">
         <meta
             name="description"
-            content="Descubre próximos eventos deportivos y su información oficial en Finisher Legacy."
+            content="Explora próximos eventos deportivos, filtra por deporte o ciudad y prerregístrate para tu próxima carrera en Finisher Legacy."
+        />
+        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl" />
+        <meta property="og:type" content="website" />
+        <meta
+            property="og:title"
+            content="Eventos — Encuentra tu próxima meta | Finisher Legacy"
+        />
+        <meta
+            property="og:description"
+            content="Explora próximos eventos deportivos y prerregístrate para tu próxima carrera."
+        />
+        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl" />
+        <meta
+            name="twitter:title"
+            content="Eventos — Encuentra tu próxima meta | Finisher Legacy"
+        />
+        <meta
+            name="twitter:description"
+            content="Explora próximos eventos deportivos y prerregístrate para tu próxima carrera."
         />
     </Head>
 

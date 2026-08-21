@@ -4,6 +4,7 @@ import { Award, MapPin, Trophy } from '@lucide/vue';
 import { computed } from 'vue';
 import MascotEmptyState from '@/components/public/MascotEmptyState.vue';
 import { Button } from '@/components/ui/button';
+import { useCanonicalUrl } from '@/composables/useCanonicalUrl';
 import { edit as editProfile } from '@/routes/dashboard/profile';
 import type { PublicAthleteMedal, PublicAthleteProfile } from '@/types';
 
@@ -14,6 +15,8 @@ const { isOwner, profile, stats, medals } = defineProps<{
     medals: PublicAthleteMedal[];
 }>();
 
+const canonicalUrl = useCanonicalUrl();
+
 const initials = computed(() =>
     profile.name
         .split(' ')
@@ -22,17 +25,88 @@ const initials = computed(() =>
         .join('')
         .toUpperCase(),
 );
+
+const metaDescription = computed(
+    () =>
+        profile.bio ??
+        `El Legacy Profile de ${profile.name}: ${stats.medals} medallas, ${stats.events} eventos. Conserva, revive y comparte cada logro deportivo.`,
+);
+
+// ProfilePage/Person structured data — every field is exactly what the
+// page already renders, nothing invented for athletes who haven't filled
+// in bio/city/sport (brand system: never present fabricated data as
+// real). Google surfaces this as a Profile rich result.
+const profileJsonLd = computed(() => {
+    const person: Record<string, unknown> = {
+        '@type': 'Person',
+        name: profile.name,
+        alternateName: `@${profile.username}`,
+    };
+
+    if (profile.photo_url) {
+        person.image = profile.photo_url;
+    }
+
+    if (profile.bio) {
+        person.description = profile.bio;
+    }
+
+    if (profile.city || profile.country) {
+        person.address = {
+            '@type': 'PostalAddress',
+            addressLocality: profile.city ?? undefined,
+            addressCountry: profile.country ?? undefined,
+        };
+    }
+
+    if (canonicalUrl) {
+        person.url = canonicalUrl;
+    }
+
+    const data: Record<string, unknown> = {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        mainEntity: person,
+    };
+
+    if (canonicalUrl) {
+        data.url = canonicalUrl;
+    }
+
+    return data;
+});
 </script>
 
 <template>
-    <Head :title="`${profile.name} (@${profile.username})`">
+    <Head :title="`${profile.name} (@${profile.username}) | Finisher Legacy`">
+        <meta name="description" :content="metaDescription" />
+        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl" />
+        <meta property="og:type" content="profile" />
+        <meta property="profile:username" :content="profile.username" />
         <meta
-            name="description"
-            :content="
-                profile.bio ??
-                `El Legacy Profile de ${profile.name} en Finisher Legacy.`
-            "
+            property="og:title"
+            :content="`${profile.name} (@${profile.username})`"
         />
+        <meta property="og:description" :content="metaDescription" />
+        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl" />
+        <meta
+            v-if="profile.photo_url"
+            property="og:image"
+            :content="profile.photo_url"
+        />
+        <meta
+            name="twitter:title"
+            :content="`${profile.name} (@${profile.username})`"
+        />
+        <meta name="twitter:description" :content="metaDescription" />
+        <meta
+            v-if="profile.photo_url"
+            name="twitter:image"
+            :content="profile.photo_url"
+        />
+        <script type="application/ld+json">
+            {{ JSON.stringify(profileJsonLd) }}
+        </script>
     </Head>
 
     <section>

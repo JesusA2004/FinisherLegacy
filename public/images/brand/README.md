@@ -91,9 +91,17 @@ aproximación):
   pérdida de calidad. Si alguna vez se obtiene el `.ai`/`.svg` original del
   logo, reemplazar este archivo y regenerar los PNG de arriba desde ahí en
   vez de este README.
-- `public/images/brand/og-finisher-legacy.jpg` (1200×630) — fondo oscuro
-  degradado + mark dorado + "FINISHER LEGACY" + "TU HISTORIA. TU LEGADO.".
-  Referenciado desde `og:image` / `twitter:image` en `app.blade.php`.
+- `public/images/brand/og-finisher-legacy.png` (1200×630, LISTO) — mismo
+  lockup (mark dorado + "FINISHER LEGACY" + "TU HISTORIA. TU LEGADO.") que
+  el `.jpg` original, pero recompuesto: el `.jpg` tenía el lockup pegado
+  abajo-a-la-izquierda con casi la mitad derecha vacía ("se ve fea, no está
+  centrada" — feedback 2026-08-21). Recortado y re-centrado sobre un fondo
+  degradado limpio vía un script PHP+GD puntual (no hay ImageMagick/sharp/
+  Playwright disponibles en este entorno para generar uno nuevo desde cero;
+  el script vive fuera del repo, en el scratchpad de esa sesión). El
+  `.jpg` original **sigue existiendo, sin usar** — se dejó por si se
+  prefiere borrarlo manualmente. Referenciado desde `og:image` /
+  `twitter:image` en `app.blade.php` (y ya no en ningún otro sitio).
 
 ## Cómo reemplazar / agregar un asset
 

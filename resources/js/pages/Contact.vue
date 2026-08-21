@@ -2,17 +2,26 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { Mail, MessageCircle } from '@lucide/vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
+import { useCanonicalUrl } from '@/composables/useCanonicalUrl';
 import { howItWorks } from '@/routes';
 
 const SUPPORT_EMAIL = 'hola@finisherlegacy.com';
+const canonicalUrl = useCanonicalUrl();
 </script>
 
 <template>
     <Head title="Contacto">
         <meta
             name="description"
-            content="Ponte en contacto con el equipo de Finisher Legacy."
+            content="¿Dudas sobre tu Legacy, un evento o una placa? Ponte en contacto con el equipo de Finisher Legacy."
         />
+        <link v-if="canonicalUrl" rel="canonical" :href="canonicalUrl" />
+        <meta property="og:title" content="Contacto | Finisher Legacy" />
+        <meta
+            property="og:description"
+            content="¿Dudas sobre tu Legacy, un evento o una placa? Escríbenos."
+        />
+        <meta v-if="canonicalUrl" property="og:url" :content="canonicalUrl" />
     </Head>
 
     <section class="mx-auto max-w-2xl px-4 py-24 text-center sm:px-6 lg:px-8">

@@ -1,2 +1,20 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /admin
+Disallow: /operator
+Disallow: /production
+Disallow: /imports
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /confirm-password
+Disallow: /verify-email
+Disallow: /two-factor-challenge
+Disallow: /preregistrations/
+Disallow: /l/*/qr.svg
+Disallow: /l/*/continue/
+
+Sitemap: /sitemap.xml
