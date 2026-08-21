@@ -1,66 +1,60 @@
 <script setup lang="ts">
 /**
- * Defaults to the CSS scene (track lanes + amber dawn light) — always
- * instant, zero network dependency. Upgrades to the real poster/video only
- * once useAssetExists confirms the file is actually there, so there's
- * never a flash of nothing while a video request is in flight or a 404
- * resolves (same fix as LegacyScanMedia/PlateMedia — optimistic-render +
- * @error-fallback raced against network timing and was flaky).
+ * `finisher-hero-desktop.mp4` is a real, confirmed-present asset (see
+ * public/media/home/hero/README.md) — it's rendered directly, no
+ * useAssetExists probe needed for it (brand system §20: don't HEAD-check a
+ * static path we already know exists). There's no `.webm` transcode and no
+ * poster image yet, so those aren't referenced — a `<source>` pointing at a
+ * file that doesn't exist would just be a guaranteed 404 on every load.
+ * If a webm/poster set gets added later, reintroduce the cascade here.
  *
- * Video is skipped below the sm breakpoint on purpose (autoplaying a hero
- * loop on mobile data is a real cost for a purely decorative background) —
- * mobile goes straight to the poster. See
- * public/media/home/hero/README.md for the asset spec — drop a file at
- * `public/media/home/hero/finisher-hero-desktop.webm` (+ `.mp4` fallback,
- * + `finisher-hero-poster.webp`) and it activates automatically, no code
- * changes.
+ * Plays on every viewport width (parity request, 2026-08-21 polish pass —
+ * mobile used to get the CSS scene only). `preload="metadata"` keeps the
+ * initial fetch light, and the video pauses itself once the Hero scrolls
+ * out of view (brand system §P6: never keep playing what isn't visible) —
+ * it's `muted`+`loop` so resuming on re-entry is seamless. Falls back to
+ * the CSS scene under prefers-reduced-motion or if the file fails to load.
  */
-import { useMediaQuery } from '@vueuse/core';
-import { computed } from 'vue';
-import { useAssetExists } from '@/composables/useAssetProbe';
+import { useIntersectionObserver } from '@vueuse/core';
+import { computed, ref, useTemplateRef } from 'vue';
 import { useReducedMotion } from '@/composables/useReducedMotion';
 
-const DESKTOP_POSTER = '/media/home/hero/finisher-hero-poster.webp';
-const MOBILE_POSTER = '/media/home/hero/finisher-hero-poster-mobile.webp';
-const DESKTOP_VIDEO_WEBM = '/media/home/hero/finisher-hero-desktop.webm';
 const DESKTOP_VIDEO_MP4 = '/media/home/hero/finisher-hero-desktop.mp4';
 
 const prefersReducedMotion = useReducedMotion();
-const isDesktop = useMediaQuery('(min-width: 640px)');
+const videoFailed = ref(false);
+const rootEl = useTemplateRef<HTMLElement>('root');
+const videoEl = useTemplateRef<HTMLVideoElement>('video');
 
-const { exists: desktopPosterExists } = useAssetExists(DESKTOP_POSTER);
-const { exists: mobilePosterExists } = useAssetExists(MOBILE_POSTER);
-const { exists: videoExists } = useAssetExists(DESKTOP_VIDEO_MP4);
-
-const posterSrc = computed(() =>
-    isDesktop.value
-        ? desktopPosterExists.value
-            ? DESKTOP_POSTER
-            : null
-        : mobilePosterExists.value
-          ? MOBILE_POSTER
-          : desktopPosterExists.value
-            ? DESKTOP_POSTER
-            : null,
+const stage = computed<'video' | 'css'>(() =>
+    !prefersReducedMotion.value && !videoFailed.value ? 'video' : 'css',
 );
 
-const stage = computed<'video' | 'poster' | 'css'>(() => {
-    if (isDesktop.value && !prefersReducedMotion.value && videoExists.value) {
-        return 'video';
-    }
+useIntersectionObserver(
+    rootEl,
+    ([entry]) => {
+        if (!videoEl.value) {
+            return;
+        }
 
-    if (posterSrc.value) {
-        return 'poster';
-    }
-
-    return 'css';
-});
+        if (entry?.isIntersecting) {
+            videoEl.value.play().catch(() => {});
+        } else {
+            videoEl.value.pause();
+        }
+    },
+    { threshold: 0 },
+);
 </script>
 
 <template>
-    <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+        ref="root"
+        class="pointer-events-none absolute inset-0 overflow-hidden"
+    >
         <video
             v-if="stage === 'video'"
+            ref="video"
             class="absolute inset-0 size-full object-cover"
             autoplay
             muted
@@ -68,18 +62,10 @@ const stage = computed<'video' | 'poster' | 'css'>(() => {
             playsinline
             preload="metadata"
             aria-hidden="true"
+            @error="videoFailed = true"
         >
-            <source :src="DESKTOP_VIDEO_WEBM" type="video/webm" />
             <source :src="DESKTOP_VIDEO_MP4" type="video/mp4" />
         </video>
-
-        <img
-            v-else-if="stage === 'poster'"
-            :src="posterSrc!"
-            alt=""
-            class="absolute inset-0 size-full object-cover"
-            fetchpriority="high"
-        />
 
         <!-- CSS fallback scene: track lanes + amber dawn light -->
         <div v-else class="absolute inset-0">

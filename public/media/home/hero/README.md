@@ -1,17 +1,15 @@
 # Hero media — asset contract
 
-Rendered by `resources/js/components/public/media/HomeHeroMedia.vue`, which
-already implements the video → poster → CSS-scene cascade below. Drop files
-in with these **exact names** and they take over automatically — no code
-changes needed.
+Rendered by `resources/js/components/public/media/HomeHeroMedia.vue`.
 
-| Archivo | Estado | Qué debe mostrar |
+| Archivo | Estado | Qué muestra |
 |---|---|---|
-| `finisher-hero-desktop.webm` | FALTA ASSET | Corredor cruzando/inmediatamente después de la meta. Iluminación dramática (amanecer/tarde), espacio negativo a la izquierda para el H1. Loop de 5–10s. |
-| `finisher-hero-desktop.mp4` | FALTA ASSET | Mismo contenido que el `.webm`, como fallback de códec. |
-| `finisher-hero-poster.webp` | FALTA ASSET | Frame fijo de esa misma escena — se usa como `poster` del video y como imagen si el video falla. ~2400×1350 (16:9). |
-| `finisher-hero-poster-mobile.webp` | FALTA ASSET | Recorte vertical de la misma escena, ~1080×1440 (3:4). Se usa en vez del video en mobile (el componente no reproduce video por debajo de 640px, por costo de datos). |
+| `finisher-hero-desktop.mp4` | **LISTO** | Video de fondo full-bleed del Hero (desktop, `lg`+). Autoplay, muted, loop, sin controles. |
+| `finisher-hero-desktop.webm` | FALTA (opcional) | Transcode WebM del mismo video — mejoraría peso/compatibilidad, no bloquea nada mientras el `.mp4` exista. |
+| `finisher-hero-poster.webp` | FALTA (opcional) | Frame fijo de esa escena — solo se usaría si algún día el video deja de reproducirse en algún navegador. Hoy el fallback es directamente la escena CSS. |
+| `finisher-hero-poster-mobile.webp` | FALTA (opcional) | Recorte vertical para mobile — el componente no reproduce video por debajo de `sm`, por costo de datos; mobile usa la escena CSS. |
 
-Sin estos archivos, `HomeHeroMedia.vue` cae en la escena CSS actual (líneas
-de pista + luz dorada de amanecer) — el layout y el espacio del hero no
-cambian cuando lleguen los archivos reales, solo la capa de fondo.
+Con solo el `.mp4` presente, `HomeHeroMedia.vue` ya reproduce el video
+directamente en desktop (sin `prefers-reduced-motion`) y cae a la escena
+CSS (líneas de pista + luz dorada) en mobile, reduced-motion, o si el
+video falla al cargar.

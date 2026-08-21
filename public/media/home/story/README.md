@@ -1,17 +1,19 @@
 # Story media — asset contract
 
 Rendered by `resources/js/components/public/media/StoryMediaSequence.vue`,
-used inside `EditorialMoment.vue` ("NO ES SOLO UNA MEDALLA"). One image is
-active at a time, crossfading in sync with which line is currently
-revealed. Drop files in with these **exact names**.
+used inside `EditorialMoment.vue` ("NO ES SOLO UNA MEDALLA").
 
-| Archivo | Estado | Qué debe mostrar |
+| Archivo | Estado | Qué muestra |
 |---|---|---|
-| `training-dawn.webp` | FALTA ASSET | Entrenamiento antes del amanecer — la parte que nadie ve. |
-| `race-effort.webp` | FALTA ASSET | Esfuerzo a mitad de carrera — kilómetros difíciles. |
-| `finish-emotion.webp` | FALTA ASSET | Emoción justo al cruzar meta. |
-| `medal-closeup.webp` | FALTA ASSET | Close-up de medalla recién entregada. |
+| `training-dawn.mp4` | **LISTO** | Abre la escena: primer golpe audiovisual antes de pasar a las fotos. Se reproduce una vez, sin loop, al entrar en viewport. |
+| `training-dawn.jpeg` | **LISTO** | Entrenamiento antes del amanecer — corredora en silueta contra el amanecer. |
+| `race-effort.jpeg` | **LISTO** | Esfuerzo a mitad de carrera. |
+| `finish-emotion.jpeg` | **LISTO** | Emoción/esfuerzo en plena acción. |
+| `medal-closeup.jpeg` | **LISTO** | Celebración con medalla puesta. |
 
-Mínimo ~1600px de lado largo, recorte editorial (no cuadrado). Sin estos
-archivos, la sección mantiene su fondo actual (radial dorado sobre grafito)
-y el texto sigue funcionando igual — solo falta la fotografía detrás.
+Los 4 `.jpeg` + el `.mp4` están referenciados directamente en el
+componente (no se prueban con `useAssetExists` — ya sabemos que existen).
+Orden narrativo: video → `training-dawn.jpeg` → `race-effort.jpeg` →
+`finish-emotion.jpeg` → `medal-closeup.jpeg`, en loop de crossfade tras el
+video. `prefers-reduced-motion` salta el video y el ciclo, mostrando
+`training-dawn.jpeg` fija.

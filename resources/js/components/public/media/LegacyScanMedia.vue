@@ -1,69 +1,64 @@
 <script setup lang="ts">
 /**
- * Defaults to the CSS phone-scanning scene in LegacyCodePreview.vue (mosaic
- * QR + scan line) — always instant, never a network dependency. Upgrades to
- * real scan photography only once useAssetExists confirms both files are
- * actually there, so there's never a flash of a missing/broken image while
- * waiting on a 404 (that was the bug: rendering the photo optimistically
- * and falling back on @error races against network timing and sometimes
- * showed neither). See public/media/home/scan/README.md.
+ * "UN CÓDIGO. TODA UNA HISTORIA." — keeps the phone-scanning CSS scene in
+ * LegacyCodePreview.vue exactly as it is (scan line, micro-grid, scanning/
+ * found states, flash, particles — brand system §9, "no la destruyas") and
+ * adds the real scan-phone.png as the opening node of a small process
+ * chain underneath: TELÉFONO → LEGACY CODE → ESCANEA → LEGACY ENCONTRADO
+ * → PROFILE — the last node previews the Legacy Profile section further
+ * down the page, so the chain doesn't dead-end at "found". Only the phone
+ * photo exists yet (no scan-result photo), so this doesn't gate on a pair
+ * of assets the way the plate/front-back flip does — it's referenced
+ * directly, a confirmed-present file (public/media/home/scan/README.md),
+ * no useAssetExists probe needed for it.
  */
-import { useIntersectionObserver } from '@vueuse/core';
-import { computed, ref, useTemplateRef } from 'vue';
+import { ChevronRight, IdCard, QrCode, ScanLine, UserRound } from '@lucide/vue';
 import LegacyCodePreview from '@/components/public/LegacyCodePreview.vue';
-import { useAssetExists } from '@/composables/useAssetProbe';
-import { useReducedMotion } from '@/composables/useReducedMotion';
 
-const SCAN_SRC = '/media/home/scan/scan-phone.webp';
-const RESULT_SRC = '/media/home/scan/scan-result.webp';
+const SCAN_PHOTO = '/media/home/scan/scan-phone.png';
 
-const { exists: scanExists } = useAssetExists(SCAN_SRC);
-const { exists: resultExists } = useAssetExists(RESULT_SRC);
-const readyForPhotos = computed(() => scanExists.value && resultExists.value);
-
-const showingResult = ref(false);
-const prefersReducedMotion = useReducedMotion();
-const rootEl = useTemplateRef<HTMLElement>('root');
-let timer: ReturnType<typeof setInterval> | undefined;
-
-useIntersectionObserver(
-    rootEl,
-    ([entry]) => {
-        if (
-            entry?.isIntersecting &&
-            !timer &&
-            !prefersReducedMotion.value &&
-            readyForPhotos.value
-        ) {
-            timer = setInterval(() => {
-                showingResult.value = !showingResult.value;
-            }, 2600);
-        }
-    },
-    { threshold: 0.3 },
-);
+const chain = [
+    { label: 'Teléfono', photo: SCAN_PHOTO },
+    { label: 'Legacy Code', icon: QrCode },
+    { label: 'Escanea', icon: ScanLine },
+    { label: 'Legacy encontrado', icon: UserRound },
+    { label: 'Profile', icon: IdCard },
+];
 </script>
 
 <template>
-    <LegacyCodePreview v-if="!readyForPhotos" />
+    <div class="flex flex-col items-center gap-8">
+        <LegacyCodePreview />
 
-    <div
-        v-else
-        ref="root"
-        class="relative mx-auto aspect-[3/4] w-full max-w-[260px] overflow-hidden rounded-[1.5rem] border border-white/10"
-    >
-        <img
-            :src="SCAN_SRC"
-            alt="Escaneando el Legacy Code de una placa"
-            class="absolute inset-0 size-full object-cover transition-opacity duration-700"
-            :class="showingResult ? 'opacity-0' : 'opacity-100'"
-        />
-        <img
-            :src="RESULT_SRC"
-            alt="Legacy Profile abierto después de escanear"
-            class="absolute inset-0 size-full object-cover transition-opacity duration-700"
-            :class="showingResult ? 'opacity-100' : 'opacity-0'"
-            loading="lazy"
-        />
+        <div
+            class="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-3"
+        >
+            <template v-for="(step, index) in chain" :key="step.label">
+                <div class="flex flex-col items-center gap-1.5">
+                    <span
+                        class="flex size-9 items-center justify-center overflow-hidden rounded-full border border-fl-gold/30 bg-fl-graphite/60 text-fl-gold-soft"
+                    >
+                        <img
+                            v-if="step.photo"
+                            :src="step.photo"
+                            alt=""
+                            loading="lazy"
+                            class="size-full object-cover"
+                        />
+                        <component :is="step.icon" v-else class="size-4" />
+                    </span>
+                    <span
+                        class="max-w-[4.5rem] text-center text-[10px] leading-tight font-medium tracking-wide text-white/50 uppercase"
+                    >
+                        {{ step.label }}
+                    </span>
+                </div>
+                <ChevronRight
+                    v-if="index < chain.length - 1"
+                    class="mb-4 size-3.5 shrink-0 text-white/20"
+                    aria-hidden="true"
+                />
+            </template>
+        </div>
     </div>
 </template>

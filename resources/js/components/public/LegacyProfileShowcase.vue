@@ -129,24 +129,49 @@ const initials = computed(() =>
                     </span>
                 </div>
 
+                <!-- Collection as a mini timeline, not a plain grid of
+                     cards — same connecting-line motif as LegacyTimeline
+                     below on the page, so this reads as "the start of your
+                     history," not a dashboard widget. -->
                 <div
                     v-if="display.medals.length"
-                    class="mt-5 grid w-full grid-cols-2 gap-2"
+                    class="relative mt-6 w-full text-left"
                 >
-                    <div
-                        v-for="medal in display.medals"
-                        :key="medal.title"
-                        class="fl-hover-lift rounded-lg border border-white/10 bg-fl-black/60 px-3 py-2 text-left transition-colors duration-300 hover:border-fl-gold/30"
+                    <span
+                        class="mb-2 block text-[10px] font-semibold tracking-[0.2em] text-white/30 uppercase"
                     >
-                        <p class="truncate text-xs font-medium text-white/85">
-                            {{ medal.title }}
-                        </p>
-                        <p
-                            v-if="medal.distance_label"
-                            class="legacy-numeric text-[11px] text-fl-gold-soft"
+                        Tu colección
+                    </span>
+                    <div
+                        class="absolute top-[26px] bottom-1 left-[7px] w-px bg-gradient-to-b from-fl-gold via-fl-gold-soft/40 to-transparent"
+                        aria-hidden="true"
+                    />
+                    <div class="flex flex-col gap-3">
+                        <div
+                            v-for="medal in display.medals"
+                            :key="medal.title"
+                            class="fl-hover-lift relative flex items-start gap-3 pl-5"
                         >
-                            {{ medal.distance_label }}
-                        </p>
+                            <span
+                                class="absolute top-1.5 left-0 size-[15px] shrink-0 rounded-full border-2 border-fl-gold bg-fl-black"
+                                aria-hidden="true"
+                            />
+                            <div
+                                class="min-w-0 flex-1 rounded-lg border border-white/10 bg-fl-black/60 px-3 py-2 transition-colors duration-300 hover:border-fl-gold/30"
+                            >
+                                <p
+                                    class="truncate text-xs font-medium text-white/85"
+                                >
+                                    {{ medal.title }}
+                                </p>
+                                <p
+                                    v-if="medal.distance_label"
+                                    class="legacy-numeric text-[11px] text-fl-gold-soft"
+                                >
+                                    {{ medal.distance_label }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

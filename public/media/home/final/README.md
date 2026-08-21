@@ -1,12 +1,13 @@
 # Final CTA media — asset contract
 
 Rendered by `resources/js/components/public/media/FinalMedia.vue`, used as
-the background of the closing `CTASection` on Home. Falls back to the
-current gradient + Legacy Line treatment when absent.
+the full-bleed background of the closing `CTASection` on Home
+(`cinematic` prop).
 
-| Archivo | Estado | Qué debe mostrar |
+| Archivo | Estado | Qué muestra |
 |---|---|---|
-| `legacy-final.webm` / `.mp4` | opcional | Atleta alejándose de la meta, medalla en mano, o placa terminada iluminada. |
-| `legacy-final-poster.webp` | FALTA ASSET | Frame fijo de esa escena — poster del video y fallback si no hay video. ~2400×1350. |
+| `legacy-final-poster.jpeg` | **LISTO** | Atleta celebrando meta en mano, blanco y negro de alto contraste. Fondo estructural de la escena de cierre. |
+| `legacy-final.webm` / `.mp4` | FALTA (opcional) | Si aparece, reemplazaría el JPEG como fondo en loop — hoy `FinalMedia.vue` solo referencia el JPEG (no hay `<source>` apuntando a un video inexistente). |
 
-Contenido cinematográfico, mismo criterio que el hero.
+`legacy-final-poster.jpeg` está referenciado directamente (no se prueba
+con `useAssetExists` — ya sabemos que existe).

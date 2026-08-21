@@ -1,14 +1,17 @@
 <script setup lang="ts">
 /**
- * Full-bleed cinematic hero: video/CSS scene as the only visual, no product
- * mockup competing with it (StickyLegacyJourney is where the plate/QR/
- * profile actually get shown, right below). Single column so the video
- * carries the scene the way a real campaign hero does, not a two-column
- * SaaS layout with a card floating on the side.
+ * Full-bleed cinematic hero: video as the base scene, with the Legacy
+ * Plate itself as the hero's second visual layer on wide desktop (xl+),
+ * floating in the section's own right-side gutter — it never shrinks the
+ * text column to make room for itself (that was tried and made the H1 read
+ * cramped; the plate just occupies space the text wasn't using). The H1
+ * container is intentionally wide (max-w-5xl) so "TU META TERMINA." /
+ * "TU HISTORIA NO." each render as one confident line instead of wrapping.
  */
 import { Link } from '@inertiajs/vue3';
 import type { InertiaLinkProps } from '@inertiajs/vue3';
 import MagneticButton from '@/components/public/MagneticButton.vue';
+import HeroPlateFeature from '@/components/public/media/HeroPlateFeature.vue';
 import HomeHeroMedia from '@/components/public/media/HomeHeroMedia.vue';
 import ScrollCueButton from '@/components/public/ScrollCueButton.vue';
 import { Button } from '@/components/ui/button';
@@ -48,8 +51,10 @@ defineProps<{
             >
         </div>
 
+        <HeroPlateFeature />
+
         <div
-            class="relative mx-auto w-full max-w-4xl px-4 py-28 pt-32 sm:px-6 lg:px-8"
+            class="relative mx-auto w-full max-w-5xl px-4 py-28 pt-32 sm:px-6 lg:px-8 2xl:max-w-6xl"
         >
             <div class="flex flex-col items-start gap-8">
                 <span
@@ -62,9 +67,16 @@ defineProps<{
                     Finisher Legacy
                 </span>
 
+                <!-- Sized as a stepped ladder, not a vw-fluid clamp: a
+                     fluid clamp scales with the VIEWPORT, but this
+                     container caps out at max-w-5xl/6xl — past that cap the
+                     text kept growing past its own box and wrapped each
+                     line into 2-3 sub-lines. Each step below was checked
+                     against this container's actual available width so
+                     "TU META TERMINA." / "TU HISTORIA NO." always render
+                     as exactly one line each from `sm:` up. -->
                 <h1
-                    class="leading-[0.95] font-black tracking-tight text-white"
-                    style="font-size: clamp(3rem, 8vw, 8rem)"
+                    class="text-3xl leading-[0.95] font-black tracking-tight text-white sm:text-4xl sm:whitespace-nowrap md:text-5xl lg:text-6xl xl:text-7xl"
                 >
                     <template
                         v-for="(line, index) in title.split('\n')"

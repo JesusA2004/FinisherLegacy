@@ -9,7 +9,7 @@ import PublicNavbar from '@/components/public/PublicNavbar.vue';
     <div class="min-h-screen bg-fl-black text-white antialiased">
         <ScrollProgress />
         <PublicNavbar />
-        <main class="pt-16">
+        <main class="relative pt-16">
             <slot />
         </main>
         <PublicFooter />

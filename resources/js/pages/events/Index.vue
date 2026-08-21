@@ -5,6 +5,7 @@ import { useDebounceFn } from '@vueuse/core';
 import { reactive } from 'vue';
 import StaggerGroup from '@/components/motion/StaggerGroup.vue';
 import EventCard from '@/components/public/EventCard.vue';
+import MascotGuide from '@/components/public/MascotGuide.vue';
 import Pagination from '@/components/public/Pagination.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,17 @@ function applyFilters() {
 
 const debouncedApply = useDebounceFn(applyFilters, 350);
 
+const mascotTips = [
+    {
+        id: 'filters',
+        text: 'Usa los filtros para encontrar tu evento por nombre, deporte o estado.',
+    },
+    {
+        id: 'results',
+        text: 'Toca cualquier evento para ver los detalles y cómo participar.',
+    },
+];
+
 const statusOptions = [
     { value: 'available', label: 'Disponibles' },
     { value: 'upcoming', label: 'Próximo' },
@@ -65,7 +77,7 @@ const statusOptions = [
         />
     </Head>
 
-    <section class="border-b border-white/5 py-20">
+    <section data-mascot-tip="filters" class="border-b border-white/5 py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 align="left"
@@ -141,7 +153,7 @@ const statusOptions = [
         </div>
     </section>
 
-    <section class="py-16">
+    <section data-mascot-tip="results" class="py-16">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div
                 v-if="editions.data.length === 0"
@@ -169,4 +181,9 @@ const statusOptions = [
             </div>
         </div>
     </section>
+
+    <MascotGuide
+        welcome="¡Hola! Te ayudo a encontrar tu próximo evento."
+        :tips="mascotTips"
+    />
 </template>

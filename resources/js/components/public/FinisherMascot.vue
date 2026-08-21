@@ -9,7 +9,7 @@ const props = withDefaults(
          * keeping the prop lets each call site express intent, and swapping
          * in dedicated poses later only touches the `poses` map below.
          */
-        variant?: 'hero' | 'small' | 'empty' | 'success';
+        variant?: 'hero' | 'small' | 'empty' | 'success' | 'guide';
         /** Accessible label. Pass '' to mark the image purely decorative. */
         alt?: string;
     }>(),
@@ -24,20 +24,26 @@ const props = withDefaults(
 // opaque light background and needed a radial mask hack to fade into dark
 // UI. The PNG needs none of that: it renders straight, no mask, no frame,
 // no card (brand system §23).
-const poses: Record<'hero' | 'small' | 'empty' | 'success', string> = {
-    hero: '/images/brand/mascot/mascot-hero.png',
-    small: '/images/brand/mascot/mascot-hero.png',
-    empty: '/images/brand/mascot/mascot-hero.png',
-    success: '/images/brand/mascot/mascot-hero.png',
-};
+const poses: Record<'hero' | 'small' | 'empty' | 'success' | 'guide', string> =
+    {
+        hero: '/images/brand/mascot/mascot-hero.png',
+        small: '/images/brand/mascot/mascot-hero.png',
+        empty: '/images/brand/mascot/mascot-hero.png',
+        success: '/images/brand/mascot/mascot-hero.png',
+        guide: '/images/brand/mascot/mascot-hero.png',
+    };
 
 const src = computed(() => poses[props.variant]);
 
-const sizeClass: Record<'hero' | 'small' | 'empty' | 'success', string> = {
+const sizeClass: Record<
+    'hero' | 'small' | 'empty' | 'success' | 'guide',
+    string
+> = {
     hero: 'h-64 sm:h-80',
     small: 'h-20',
     empty: 'h-24',
     success: 'h-28',
+    guide: 'h-24 sm:h-28',
 };
 
 const failed = ref(false);

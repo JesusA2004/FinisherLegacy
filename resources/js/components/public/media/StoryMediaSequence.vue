@@ -1,54 +1,83 @@
 <script setup lang="ts">
 /**
- * Crossfading photo sequence for "NO ES SOLO UNA MEDALLA" (Escena 02).
- * Defaults to the CSS panel — always instant. Cycles through whichever
- * story photos useAssetExists confirms exist (checked once on mount, no
- * optimistic render-then-@error race — see HomeHeroMedia.vue for why that
- * pattern was flaky). See public/media/home/story/README.md.
+ * "NO ES SOLO UNA MEDALLA" (Escena 02) — opens on the real training video,
+ * then evolves into a crossfading sequence of the other three story
+ * photos. All four are confirmed-present assets (public/media/home/story/
+ * README.md), so they're referenced directly rather than probed with
+ * useAssetExists — that composable is for genuinely-optional future
+ * assets, not files we already know are in the repo (brand system §20).
+ *
+ * Video plays once, muted, on entering the viewport, then hands off to the
+ * photo cycle permanently — never a second replay, never more than one
+ * video/animation running on the page at a time. Both the video and the
+ * cycle pause when scrolled out of view. prefers-reduced-motion skips the
+ * video and the cycle entirely, landing on the training-dawn photo static.
  */
 import { useIntersectionObserver } from '@vueuse/core';
-import { onBeforeUnmount, ref, useTemplateRef } from 'vue';
-import { useAssetsExisting } from '@/composables/useAssetProbe';
+import { computed, onBeforeUnmount, ref, useTemplateRef } from 'vue';
 import { useReducedMotion } from '@/composables/useReducedMotion';
 
-const SOURCES = [
-    '/media/home/story/training-dawn.webp',
-    '/media/home/story/race-effort.webp',
-    '/media/home/story/finish-emotion.webp',
-    '/media/home/story/medal-closeup.webp',
+const VIDEO_SRC = '/media/home/story/training-dawn.mp4';
+
+const PHOTOS = [
+    { src: '/media/home/story/training-dawn.jpeg', position: '62% 45%' },
+    { src: '/media/home/story/race-effort.jpeg', position: '30% 25%' },
+    { src: '/media/home/story/finish-emotion.jpeg', position: '55% 35%' },
+    { src: '/media/home/story/medal-closeup.jpeg', position: '50% 12%' },
 ];
 
-const { existing: available } = useAssetsExisting(SOURCES);
 const prefersReducedMotion = useReducedMotion();
-const activePos = ref(0);
 const rootEl = useTemplateRef<HTMLElement>('root');
+const videoEl = useTemplateRef<HTMLVideoElement>('video');
+const videoFailed = ref(false);
+const videoDone = ref(prefersReducedMotion.value);
+const activePos = ref(0);
 let timer: ReturnType<typeof setInterval> | undefined;
 
+const showingVideo = computed(
+    () => !prefersReducedMotion.value && !videoFailed.value && !videoDone.value,
+);
+
 function startCycle() {
-    if (timer || prefersReducedMotion.value || available.value.length < 2) {
+    if (timer || prefersReducedMotion.value) {
         return;
     }
 
     timer = setInterval(() => {
-        activePos.value = (activePos.value + 1) % available.value.length;
+        activePos.value = (activePos.value + 1) % PHOTOS.length;
     }, 2600);
+}
+
+function stopCycle() {
+    if (timer) {
+        clearInterval(timer);
+        timer = undefined;
+    }
+}
+
+function handleVideoEnded() {
+    videoDone.value = true;
+    startCycle();
 }
 
 useIntersectionObserver(
     rootEl,
     ([entry]) => {
         if (entry?.isIntersecting) {
-            startCycle();
+            if (showingVideo.value) {
+                videoEl.value?.play().catch(() => {});
+            } else {
+                startCycle();
+            }
+        } else {
+            videoEl.value?.pause();
+            stopCycle();
         }
     },
     { threshold: 0.3 },
 );
 
-onBeforeUnmount(() => {
-    if (timer) {
-        clearInterval(timer);
-    }
-});
+onBeforeUnmount(stopCycle);
 </script>
 
 <template>
@@ -56,55 +85,59 @@ onBeforeUnmount(() => {
         ref="root"
         class="relative aspect-4/5 w-full overflow-hidden rounded-2xl border border-white/10 bg-fl-graphite/50"
     >
-        <template v-if="available.length > 0">
-            <img
-                v-for="(src, pos) in available"
-                :key="src"
-                :src="src"
-                alt=""
-                loading="lazy"
-                class="absolute inset-0 size-full object-cover transition-opacity duration-700 ease-in-out"
-                :class="pos === activePos ? 'opacity-100' : 'opacity-0'"
-            />
-            <div
-                class="pointer-events-none absolute inset-0 bg-gradient-to-t from-fl-black/60 via-transparent to-transparent"
-            />
-        </template>
+        <video
+            v-if="showingVideo"
+            ref="video"
+            class="absolute inset-0 size-full object-cover"
+            muted
+            playsinline
+            preload="metadata"
+            aria-hidden="true"
+            @ended="handleVideoEnded"
+            @error="videoFailed = true"
+        >
+            <source :src="VIDEO_SRC" type="video/mp4" />
+        </video>
 
-        <!-- CSS fallback — never an empty gray box (brand system §23.12) -->
-        <div v-else class="absolute inset-0">
-            <div
-                class="absolute inset-0"
-                style="
-                    background:
-                        radial-gradient(
-                            ellipse 80% 60% at 30% 20%,
-                            color-mix(in srgb, var(--fl-gold) 16%, transparent),
-                            transparent 65%
-                        ),
-                        linear-gradient(
-                            160deg,
-                            var(--fl-graphite-light) 0%,
-                            var(--fl-graphite) 55%,
-                            var(--fl-black) 100%
-                        );
-                "
-            />
-            <div
-                class="absolute inset-0 opacity-[0.08]"
-                style="
-                    background-image: repeating-linear-gradient(
-                        115deg,
-                        rgba(255, 255, 255, 0.7) 0px,
-                        rgba(255, 255, 255, 0.7) 1px,
-                        transparent 1px,
-                        transparent 48px
-                    );
-                "
-            />
-            <div
-                class="legacy-line-v absolute top-1/2 left-1/2 h-2/3 -translate-x-1/2 -translate-y-1/2"
-            />
-        </div>
+        <img
+            v-for="(photo, pos) in PHOTOS"
+            v-show="!showingVideo"
+            :key="photo.src"
+            :src="photo.src"
+            alt=""
+            loading="lazy"
+            class="fl-story-photo absolute inset-0 size-full object-cover transition-opacity duration-700 ease-in-out"
+            :class="
+                pos === activePos ? 'fl-story-active opacity-100' : 'opacity-0'
+            "
+            :style="{ objectPosition: photo.position }"
+        />
+
+        <div
+            class="pointer-events-none absolute inset-0 bg-gradient-to-t from-fl-black/60 via-transparent to-transparent"
+        />
     </div>
 </template>
+
+<style scoped>
+/* Slow Ken Burns drift on the active photo — presence, not a static
+   thumbnail (brand system §7, "presencia editorial"). */
+.fl-story-active {
+    animation: fl-story-zoom 4s ease-out forwards;
+}
+
+@keyframes fl-story-zoom {
+    from {
+        transform: scale(1);
+    }
+    to {
+        transform: scale(1.05);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fl-story-active {
+        animation: none;
+    }
+}
+</style>

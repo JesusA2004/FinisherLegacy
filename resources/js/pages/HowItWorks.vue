@@ -3,10 +3,30 @@ import { Head } from '@inertiajs/vue3';
 import { Award, IdCard, Medal, QrCode } from '@lucide/vue';
 import CTASection from '@/components/public/CTASection.vue';
 import HowItWorksSteps from '@/components/public/HowItWorksSteps.vue';
+import MascotGuide from '@/components/public/MascotGuide.vue';
 import PlateFlowCard from '@/components/public/PlateFlowCard.vue';
 import PlateShowcase from '@/components/public/PlateShowcase.vue';
 import SectionHeading from '@/components/public/SectionHeading.vue';
 import { register } from '@/routes';
+
+const mascotTips = [
+    {
+        id: 'steps',
+        text: 'Corre, registra, preserva, comparte: así de simple es todo el proceso.',
+    },
+    {
+        id: 'chain',
+        text: 'De lo físico a lo digital: cada elemento conecta con el siguiente.',
+    },
+    {
+        id: 'flows',
+        text: 'No importa si el evento está conectado o no, tu placa siempre llega.',
+    },
+    {
+        id: 'next',
+        text: 'Esto es justo lo que sigue después de recibir tu placa.',
+    },
+];
 
 const steps = [
     {
@@ -88,13 +108,16 @@ const afterPlate = [
         </div>
     </section>
 
-    <section class="border-b border-white/10 py-20">
+    <section data-mascot-tip="steps" class="border-b border-white/10 py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <HowItWorksSteps :steps="steps" />
         </div>
     </section>
 
-    <section class="border-b border-white/10 bg-fl-graphite/30 py-24">
+    <section
+        data-mascot-tip="chain"
+        class="border-b border-white/10 bg-fl-graphite/30 py-24"
+    >
         <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="La cadena Finisher Legacy"
@@ -114,7 +137,7 @@ const afterPlate = [
                             class="flex items-center gap-3 text-center lg:text-left"
                         >
                             <div
-                                class="flex size-12 shrink-0 items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold-soft"
+                                class="flex size-12 shrink-0 cursor-default items-center justify-center rounded-full border border-fl-gold/30 bg-fl-black text-fl-gold-soft transition-transform duration-500 ease-out hover:rotate-[360deg] hover:border-fl-gold/60"
                             >
                                 <component :is="step.icon" class="size-5" />
                             </div>
@@ -132,7 +155,7 @@ const afterPlate = [
         </div>
     </section>
 
-    <section class="border-b border-white/10 py-24">
+    <section data-mascot-tip="flows" class="border-b border-white/10 py-24">
         <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Cómo preparamos tu placa"
@@ -163,7 +186,10 @@ const afterPlate = [
         </div>
     </section>
 
-    <section class="border-b border-white/10 bg-fl-graphite/30 py-24">
+    <section
+        data-mascot-tip="next"
+        class="border-b border-white/10 bg-fl-graphite/30 py-24"
+    >
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <SectionHeading
                 eyebrow="Después de recibir tu placa"
@@ -199,5 +225,10 @@ const afterPlate = [
         description="Crea tu Legacy ID hoy y prepárate para tu próxima meta."
         primary-label="CREAR MI LEGACY"
         :primary-href="register()"
+    />
+
+    <MascotGuide
+        welcome="¡Hola! Te explico cómo funciona todo, paso por paso."
+        :tips="mascotTips"
     />
 </template>
